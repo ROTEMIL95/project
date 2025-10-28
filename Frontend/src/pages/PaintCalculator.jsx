@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useUser } from '@/components/utils/UserContext';
 import {
   Select,
   SelectContent,
@@ -40,10 +41,11 @@ import {
   RefreshCw,
   Info
 } from 'lucide-react';
-import { User } from '@/api/entities';
+import { supabase } from '@/lib/supabase';
 
 export default function PaintCalculator() {
   const navigate = useNavigate();
+  const { user, loading: userLoading } = useUser();
   const [loading, setLoading] = useState(true);
   const [calculations, setCalculations] = useState([]);
   const [currentCalculation, setCurrentCalculation] = useState({
@@ -63,22 +65,24 @@ export default function PaintCalculator() {
   const [paintTypes, setPaintTypes] = useState([]);
 
   useEffect(() => {
-    loadSettings();
-  }, []);
+    if (userLoading) return;
 
-  const loadSettings = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      const userData = await User.me();
-      if (userData.paintSettings) {
-        setSettings(userData.paintSettings);
-        setPaintTypes(userData.paintSettings.paintTypes || []);
+      if (user.user_metadata?.paintSettings) {
+        setSettings(user.user_metadata.paintSettings);
+        setPaintTypes(user.user_metadata.paintSettings.paintTypes || []);
       }
       setLoading(false);
     } catch (error) {
       console.error("שגיאה בטעינת הגדרות:", error);
       setLoading(false);
     }
-  };
+  }, [user, userLoading]);
 
   // חישוב אוטומטי בכל שינוי של הפרמטרים
   useEffect(() => {

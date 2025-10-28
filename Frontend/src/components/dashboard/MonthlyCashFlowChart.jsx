@@ -59,14 +59,12 @@ const calculateExpenseDate = (timingRule, categoryStartDate, categoryEndDate, ba
 export default function MonthlyCashFlowChart({ user }) {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [stats, setStats] = useState({ totalIncome: 0, totalExpenses: 0, netFlow: 0 });
   const [range, setRange] = useState("30");
 
   useEffect(() => {
     const calculateCashFlow = async () => {
       setLoading(true);
-      setError(null);
       try {
         if (!user || !user.email) {
           setChartData([]);
@@ -76,6 +74,16 @@ export default function MonthlyCashFlowChart({ user }) {
         }
 
         console.log("MonthlyCashFlowChart: Fetching quotes for user:", user.email, "status:", 'אושר');
+
+        // Check if Quote.filter is available
+        if (typeof Quote.filter !== 'function') {
+          console.warn("MonthlyCashFlowChart: Quote.filter is not available yet. Backend not connected.");
+          setChartData([]);
+          setStats({ totalIncome: 0, totalExpenses: 0, netFlow: 0 });
+          setLoading(false);
+          return;
+        }
+
         const approvedQuotes = await Quote.filter({ created_by: user.email, status: 'אושר' });
         console.log("MonthlyCashFlowChart: Fetched approved quotes:", approvedQuotes.length);
         
@@ -521,7 +529,7 @@ export default function MonthlyCashFlowChart({ user }) {
         setStats({ totalIncome: totalIncomeSum, totalExpenses: totalExpensesSum, netFlow: totalIncomeSum - totalExpensesSum });
       } catch (error) {
         console.error("MonthlyCashFlowChart: Failed to calculate monthly cash flow:", error);
-        setError("שגיאה בחישוב תזרים מזומנים");
+        // Don't show error, just show empty state
         setChartData([]);
         setStats({ totalIncome: 0, totalExpenses: 0, netFlow: 0 });
       } finally {
@@ -629,20 +637,6 @@ export default function MonthlyCashFlowChart({ user }) {
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2"></div>
             <p className="text-gray-600">מחשב תזרים מזומנים...</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="shadow-lg border-0">
-        <CardContent className="p-6 h-96 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-red-600 mb-2 text-5xl">⚠️</div>
-            <p className="text-red-600 font-semibold text-lg">{error}</p>
-            <p className="text-sm text-gray-500 mt-2">נסה לרענן את העמוד</p>
           </div>
         </CardContent>
       </Card>

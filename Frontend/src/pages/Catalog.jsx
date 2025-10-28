@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { User } from '@/api/entities';
+import { useUser } from '@/components/utils/UserContext';
 import {
   Calculator,
   Search,
@@ -451,6 +452,7 @@ const TilingForm = ({ item, onSave, onCancel }) => {
 
 
 export default function Catalog() {
+  const { user, loading: userLoading } = useUser();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -564,30 +566,31 @@ export default function Catalog() {
   };
 
   useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        setLoading(true);
-        const user = await User.me();
-        let allItems = [];
+    if (userLoading) return;
 
-        if (user.tilingItems) {
-          allItems = [...allItems, ...user.tilingItems];
-        }
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-        if (user.paintItems) {
-          allItems = [...allItems, ...user.paintItems];
-        }
+    try {
+      let allItems = [];
 
-        setItems(allItems);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error loading user data:", error);
-        setLoading(false);
+      if (user.tilingItems) {
+        allItems = [...allItems, ...user.tilingItems];
       }
-    };
 
-    loadUserData();
-  }, []);
+      if (user.paintItems) {
+        allItems = [...allItems, ...user.paintItems];
+      }
+
+      setItems(allItems);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error loading user data:", error);
+      setLoading(false);
+    }
+  }, [user, userLoading]);
 
   const handleEditItem = (item) => {
     // במקום לנווט לדף הזנת נתונים, נעביר את הפריט לעריכה בדף CostCalculator
@@ -609,7 +612,6 @@ export default function Catalog() {
       const updatedItems = items.filter(item => item.id !== itemToDelete.id);
       setItems(updatedItems);
 
-      const user = await User.me();
       if (itemToDelete.category === 'tiling') {
         const updatedTilingItems = (user.tilingItems || []).filter(item => item.id !== itemToDelete.id);
         await User.updateMyUserData({ tilingItems: updatedTilingItems });
@@ -620,9 +622,8 @@ export default function Catalog() {
     } catch (error) {
       console.error("Error deleting item:", error);
       alert("שגיאה במחיקת הפריט");
-      // In case of error, re-fetch to revert to actual state
-      setLoading(true); // Temporarily set loading to true
-      const user = await User.me();
+      // In case of error, revert to previous state
+      setLoading(true);
       let allItems = [];
       if (user.tilingItems) {
         allItems = [...allItems, ...user.tilingItems];

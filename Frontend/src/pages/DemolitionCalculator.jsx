@@ -3,7 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CategorySwitcher from "@/components/common/CategorySwitcher";
 import { createPageUrl } from '@/utils';
-import { User } from '@/api/entities';
+import { supabase } from '@/lib/supabase';
+import { useUser } from '@/components/utils/UserContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -273,6 +274,7 @@ const DemolitionItemForm = ({ isOpen, onClose, onSubmit, itemToEdit, defaults })
 // Main Component
 export default function DemolitionCalculator() {
     const navigate = useNavigate();
+    const { user, loading: userLoading } = useUser();
     const [demolitionItems, setDemolitionItems] = useState([]);
     const [demolitionDefaults, setDemolitionDefaults] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -300,11 +302,17 @@ export default function DemolitionCalculator() {
 
     useEffect(() => {
         const loadData = async () => {
+            if (userLoading) return;
+
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+
             setLoading(true);
             try {
-                const user = await User.me();
-                const defaults = user.demolitionDefaults || { laborCostPerDay: 1000, profitPercent: 40 };
-                const items = user.demolitionItems || [];
+                const defaults = user.user_metadata?.demolitionDefaults || { laborCostPerDay: 1000, profitPercent: 40 };
+                const items = user.user_metadata?.demolitionItems || [];
 
                 const itemsWithMetrics = items.map(item => calculateItemMetrics(item, defaults));
 
@@ -317,12 +325,17 @@ export default function DemolitionCalculator() {
             }
         };
         loadData();
-    }, [calculateItemMetrics]);
+    }, [user, userLoading, calculateItemMetrics]);
 
     const handleUpdateDefaults = async (newDefaults) => {
         setLoading(true);
         try {
-            await User.updateMyUserData({ demolitionDefaults: newDefaults });
+            await supabase.auth.updateUser({
+                data: {
+                    ...user.user_metadata,
+                    demolitionDefaults: newDefaults
+                }
+            });
             setDemolitionDefaults(newDefaults);
             setDemolitionItems(prevItems => prevItems.map(item => calculateItemMetrics(item, newDefaults)));
         } catch (error) {
@@ -348,7 +361,12 @@ export default function DemolitionCalculator() {
 
         try {
             // Remove calculated fields before saving to DB
-            await User.updateMyUserData({ demolitionItems: updatedItems.map(({ contractorCost, clientPrice, profitAmount, profitPercent, ...rest }) => rest) });
+            await supabase.auth.updateUser({
+                data: {
+                    ...user.user_metadata,
+                    demolitionItems: updatedItems.map(({ contractorCost, clientPrice, profitAmount, profitPercent, ...rest }) => rest)
+                }
+            });
             const itemsWithMetrics = updatedItems.map(item => calculateItemMetrics(item, demolitionDefaults));
             setDemolitionItems(itemsWithMetrics);
         } catch (error) {
@@ -366,7 +384,12 @@ export default function DemolitionCalculator() {
         const updatedItems = demolitionItems.filter(i => i.id !== itemId);
         try {
             // Remove calculated fields before saving to DB
-            await User.updateMyUserData({ demolitionItems: updatedItems.map(({ contractorCost, clientPrice, profitAmount, profitPercent, ...rest }) => rest) });
+            await supabase.auth.updateUser({
+                data: {
+                    ...user.user_metadata,
+                    demolitionItems: updatedItems.map(({ contractorCost, clientPrice, profitAmount, profitPercent, ...rest }) => rest)
+                }
+            });
             setDemolitionItems(updatedItems);
         } catch (error) {
             console.error("Error deleting item:", error);

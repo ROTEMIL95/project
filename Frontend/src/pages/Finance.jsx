@@ -9,6 +9,7 @@ import { Landmark, TrendingUp, TrendingDown, DollarSign, BarChart3, PieChart, Us
 import { FinancialTransaction } from '@/api/entities';
 import { Quote } from '@/api/entities';
 import { User } from '@/api/entities';
+import { useUser } from '@/components/utils/UserContext';
 import StatCard from '@/components/finance/StatCard';
 
 import {
@@ -71,11 +72,11 @@ const statusOptions = {
 
 
 export default function Finance() {
+    const { user: currentUser, loading: userLoading } = useUser();
     const [transactions, setTransactions] = useState([]);
     const [quotes, setQuotes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [currentUser, setCurrentUser] = useState(null);
 
     // States for inline editing
     const [editingId, setEditingId] = useState(null);

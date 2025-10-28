@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User } from '@/api/entities';
+import { supabase } from '@/lib/supabase';
+import { useUser } from '@/components/utils/UserContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,29 +20,33 @@ const parseNumber = (value) => {
 };
 
 export default function PaintSettings() {
+    const { user, loading: userLoading } = useUser();
     const [paintItems, setPaintItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const user = await User.me();
-                if (user && user.paintItems && Array.isArray(user.paintItems)) {
-                    setPaintItems(user.paintItems);
-                } else {
-                    setPaintItems([]);
-                }
-            } catch (err) {
-                setError("שגיאה בטעינת נתוני המשתמש.");
-                console.error(err);
-            } finally {
-                setIsLoading(false);
+        if (userLoading) return;
+
+        if (!user) {
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            if (user && user.user_metadata?.paintItems && Array.isArray(user.user_metadata.paintItems)) {
+                setPaintItems(user.user_metadata.paintItems);
+            } else {
+                setPaintItems([]);
             }
-        };
-        fetchUserData();
-    }, []);
+        } catch (err) {
+            setError("שגיאה בטעינת נתוני המשתמש.");
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [user, userLoading]);
 
     const handleAddItem = () => {
         setPaintItems(prevItems => [
@@ -82,7 +87,12 @@ export default function PaintSettings() {
         setIsSaving(true);
         setError(null);
         try {
-            await User.updateMyUserData({ paintItems });
+            await supabase.auth.updateUser({
+                data: {
+                    ...user.user_metadata,
+                    paintItems
+                }
+            });
         } catch (err) {
             setError("שגיאה בשמירת הנתונים.");
             console.error(err);

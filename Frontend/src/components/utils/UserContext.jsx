@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { User } from '@/api/entities';
+import { supabase } from '@/lib/supabase';
 import useSafeUser from '@/components/utils/useSafeUser';
 
 const UserContext = createContext({ user: null, loading: true, error: null, isOnline: true, refresh: () => {} });
@@ -12,8 +12,8 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     if (!loading && user && user.isActive === false) {
       alert('החשבון שלך הושבת. אנא צור קשר עם מנהל המערכת.');
-      User.logout().finally(() => {
-        window.location.href = '/';
+      supabase.auth.signOut().finally(() => {
+        window.location.href = '/login';
       });
     }
   }, [loading, user]);

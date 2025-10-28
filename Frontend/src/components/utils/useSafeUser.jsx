@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { User } from "@/api/entities";
+import { supabase } from "@/lib/supabase";
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -12,6 +12,7 @@ const CACHE_KEY = "b44_user_cache_v1";
  * - טוען את המשתמש עם מנגנון נסיונות חוזרים (retry)
  * - מזהה אופליין ומציג cache (אם קיים) במקום להפיל את האפליקציה
  * - לא "זורק" שגיאות החוצה – מחזיר error state בלבד
+ * - משתמש ב-Supabase Auth במקום User.me()
  */
 export default function useSafeUser(options = {}) {
   const {
@@ -69,18 +70,33 @@ export default function useSafeUser(options = {}) {
     for (let i = 0; i < maxRetries && !abortRef.current; i++) {
       setAttempts(i + 1);
       try {
-        const u = await User.me();
+        // Use Supabase to get current user
+        const { data: { user: supabaseUser }, error: authError } = await supabase.auth.getUser();
+
+        if (authError) throw authError;
         if (abortRef.current) return;
-        setUser(u || null);
+
+        // Transform Supabase user to our app's user format
+        const u = supabaseUser ? {
+          id: supabaseUser.id,
+          email: supabaseUser.email,
+          full_name: supabaseUser.user_metadata?.full_name || supabaseUser.email,
+          phone: supabaseUser.user_metadata?.phone || '',
+          role: supabaseUser.user_metadata?.role || 'user',
+          isActive: supabaseUser.user_metadata?.isActive !== false,
+          created_at: supabaseUser.created_at,
+        } : null;
+
+        setUser(u);
         setError(null);
-        saveToCache(u || null);
+        saveToCache(u);
         setLoading(false);
         return;
       } catch (err) {
         const msg = (err && (err.message || err.toString())) || "Unknown error";
         const isNetwork = msg.toLowerCase().includes("network");
         // אם זו לא שגיאת רשת אלא "לא מחובר" – אל תנסה שוב, פשוט החזר null
-        const looksLikeUnauth = msg.toLowerCase().includes("not logged") || msg.toLowerCase().includes("unauth");
+        const looksLikeUnauth = msg.toLowerCase().includes("not logged") || msg.toLowerCase().includes("unauth") || msg.toLowerCase().includes("session");
         if (!suppressConsole) {
           console.warn(`useSafeUser: attempt ${i + 1}/${maxRetries} failed: ${msg}`);
         }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CustomerInquiry } from '@/api/entities';
 import { User } from '@/api/entities';
+import { useUser } from '@/components/utils/UserContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,6 +16,7 @@ import { createPageUrl } from '@/utils';
 
 export default function AdminCustomerInquiries() {
   const navigate = useNavigate();
+  const { user, loading: userLoading } = useUser();
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
@@ -35,21 +37,20 @@ export default function AdminCustomerInquiries() {
   }, []);
 
   useEffect(() => {
-    const checkAdminAccess = async () => {
-      try {
-        const user = await User.me();
-        if (user.role !== 'admin') {
-          navigate(createPageUrl('Dashboard'));
-          return;
-        }
-        loadInquiries();
-      } catch (error) {
-        console.error("Error checking admin access:", error);
-        navigate(createPageUrl('Dashboard'));
-      }
-    };
-    checkAdminAccess();
-  }, [loadInquiries, navigate]);
+    if (userLoading) return;
+
+    if (!user) {
+      navigate(createPageUrl('Login'));
+      return;
+    }
+
+    if (user.role !== 'admin') {
+      navigate(createPageUrl('Dashboard'));
+      return;
+    }
+
+    loadInquiries();
+  }, [user, userLoading, loadInquiries, navigate]);
 
   const handleOpenDialog = (inquiry) => {
     setSelectedInquiry(inquiry);

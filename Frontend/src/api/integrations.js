@@ -1,26 +1,48 @@
-import { base44 } from './base44Client';
 
+// Core API integrations
 
+export class Core {
+  static async InvokeLLM(prompt) {
+    // Implement your LLM integration here
+    throw new Error('Not implemented');
+  }
 
+  static async SendEmail(options) {
+    // Implement your email sending logic here
+    throw new Error('Not implemented');
+  }
 
-export const Core = base44.integrations.Core;
+  static async UploadFile(file) {
+    // Implement your file upload logic here
+    throw new Error('Not implemented');
+  }
 
-export const InvokeLLM = base44.integrations.Core.InvokeLLM;
+  static async GenerateImage(prompt) {
+    // Implement your image generation logic here
+    throw new Error('Not implemented');
+  }
 
-export const SendEmail = base44.integrations.Core.SendEmail;
+  static async ExtractDataFromUploadedFile(file) {
+    // Implement your file data extraction logic here
+    throw new Error('Not implemented');
+  }
 
-export const UploadFile = base44.integrations.Core.UploadFile;
+  static async CreateFileSignedUrl(path) {
+    // Implement your signed URL generation logic here
+    throw new Error('Not implemented');
+  }
 
-export const GenerateImage = base44.integrations.Core.GenerateImage;
+  static async UploadPrivateFile(file) {
+    // Implement your private file upload logic here
+    throw new Error('Not implemented');
+  }
+}
 
-export const ExtractDataFromUploadedFile = base44.integrations.Core.ExtractDataFromUploadedFile;
-
-export const CreateFileSignedUrl = base44.integrations.Core.CreateFileSignedUrl;
-
-export const UploadPrivateFile = base44.integrations.Core.UploadPrivateFile;
-
-
-
-
-
-
+// Export individual functions for convenience
+export const InvokeLLM = Core.InvokeLLM;
+export const SendEmail = Core.SendEmail;
+export const UploadFile = Core.UploadFile;
+export const GenerateImage = Core.GenerateImage;
+export const ExtractDataFromUploadedFile = Core.ExtractDataFromUploadedFile;
+export const CreateFileSignedUrl = Core.CreateFileSignedUrl;
+export const UploadPrivateFile = Core.UploadPrivateFile;

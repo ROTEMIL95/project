@@ -23,22 +23,31 @@ export default function RecentQuotes({ user }) {
       setError(null); // Reset error on new fetch attempt
       try {
         if (user && user.email) {
-          console.log("RecentQuotes: Fetching quotes for user:", user.email); // Added console log
+          console.log("RecentQuotes: Fetching quotes for user:", user.email);
+
+          // Check if Quote.filter is available
+          if (typeof Quote.filter !== 'function') {
+            console.warn("RecentQuotes: Quote.filter is not available yet. Backend not connected.");
+            setRecentQuotes([]);
+            setLoading(false);
+            return;
+          }
+
           const quotes = await Quote.filter({ created_by: user.email }, '-created_date', 5);
-          console.log("RecentQuotes: Fetched quotes:", quotes.length); // Added console log
+          console.log("RecentQuotes: Fetched quotes:", quotes.length);
           setRecentQuotes(quotes);
         } else {
           setRecentQuotes([]);
         }
       } catch (error) {
         console.error("RecentQuotes: Failed to fetch recent quotes:", error);
-        setError("שגיאה בטעינת הצעות מחיר אחרונות"); // Set error message
-        setRecentQuotes([]); // Clear quotes on error
+        // Don't show error, just empty state
+        setRecentQuotes([]);
       } finally {
         setLoading(false);
       }
     };
-    
+
     if (user) {
       fetchRecentQuotes();
     } else {

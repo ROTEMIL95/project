@@ -24,9 +24,20 @@ export default function RevenueChart({ user }) {
       setError(null); // Clear any previous errors
       try {
         if (user && user.email) {
-          console.log("RevenueChart: Fetching quotes for user:", user.email); // Added console log
+          console.log("RevenueChart: Fetching quotes for user:", user.email);
+
+          // Check if Quote.filter is available
+          if (typeof Quote.filter !== 'function') {
+            console.warn("RevenueChart: Quote.filter is not available yet. Backend not connected.");
+            // Set empty data instead of error
+            setChartData([]);
+            setStats({ totalRevenue: 0, totalProfit: 0, closingRate: 0, monthlyQuotes: 0 });
+            setLoading(false);
+            return;
+          }
+
           const allQuotes = await Quote.filter({ created_by: user.email });
-          console.log("RevenueChart: Fetched quotes:", allQuotes.length); // Added console log
+          console.log("RevenueChart: Fetched quotes:", allQuotes.length);
 
           const approvedQuotes = allQuotes.filter((q) => q.status === 'אושר');
           const totalRevenue = approvedQuotes.reduce((sum, quote) => sum + (quote.finalAmount || 0), 0);
@@ -78,9 +89,9 @@ export default function RevenueChart({ user }) {
         }
       } catch (error) {
         console.error("RevenueChart: Failed to fetch financial data:", error);
-        setError("שגיאה בטעינת נתונים פיננסיים"); // Set error message
-        setChartData([]); // Clear data on error
-        setStats({ totalRevenue: 0, totalProfit: 0, closingRate: 0, monthlyQuotes: 0 }); // Reset stats on error
+        // Don't show error, just show empty state
+        setChartData([]);
+        setStats({ totalRevenue: 0, totalProfit: 0, closingRate: 0, monthlyQuotes: 0 });
       } finally {
         setLoading(false);
       }

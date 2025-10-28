@@ -5,7 +5,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { User } from '@/api/entities';
 import { UserProvider, useUser } from '@/components/utils/UserContext';
-import { 
+import { useAuth } from '@/contexts/AuthContext';
+import {
   Home, Menu, X, LogOut, HelpCircle, User as UserIcon, Shield,
   LayoutDashboard, FilePlus2, Briefcase, Calculator, Send, DollarSign, Contact, Coins, Settings2, Settings
 } from 'lucide-react';
@@ -16,13 +17,30 @@ import { Toaster } from "@/components/ui/toaster";
 
 const PageLayout = ({ children, currentPageName }) => {
   const { user, loading: isCheckingStatus, error: userError, isOnline, refresh } = useUser();
+  const { signOut } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Changed: default state is now false
   const navigate = useNavigate();
   const location = useLocation(); // NEW: track route for transitions
-  
+
   const handleLogout = async () => {
-    await User.logout();
-    window.location.href = '/';
+    try {
+      // Sign out from Supabase
+      const { error } = await signOut();
+      if (error) {
+        console.error('Logout error:', error);
+      }
+
+      // Clear old tokens (backward compatibility)
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+
+      // Redirect to login
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Force redirect even if logout fails
+      window.location.href = '/login';
+    }
   };
 
   if (isCheckingStatus) {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User } from '@/api/entities';
-import { CustomerInquiry } from '@/api/entities';
+import { User } from '@/lib/entities';
+import { CustomerInquiry } from '@/lib/entities';
+import { useUser } from '@/components/utils/UserContext';
 import { SendEmail } from '@/api/integrations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ import { createPageUrl } from '@/utils';
 
 export default function SupportPage() {
     const navigate = useNavigate();
+    const { user: currentUser, loading: userLoading } = useUser();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -24,24 +26,16 @@ export default function SupportPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
-    const [currentUser, setCurrentUser] = useState(null);
     const [appOwnerEmail, setAppOwnerEmail] = useState(null);
 
     useEffect(() => {
         const fetchInitialData = async () => {
-            try {
-                // Fetch current user details if logged in
-                const user = await User.me();
-                if (user) {
-                    setCurrentUser(user);
-                    setFormData(prev => ({
-                        ...prev,
-                        name: user.full_name || '',
-                        email: user.email || ''
-                    }));
-                }
-            } catch (e) {
-                console.info("User not logged in, proceeding as guest.");
+            if (!userLoading && currentUser) {
+                setFormData(prev => ({
+                    ...prev,
+                    name: currentUser.full_name || '',
+                    email: currentUser.email || ''
+                }));
             }
 
             try {
@@ -57,7 +51,7 @@ export default function SupportPage() {
             }
         };
         fetchInitialData();
-    }, []);
+    }, [currentUser, userLoading]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;

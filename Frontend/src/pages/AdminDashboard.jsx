@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { User } from '@/api/entities';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { createPageUrl } from '@/utils';
+import { useUser } from '@/components/utils/UserContext';
 import { Users, LayoutGrid, Settings, BarChart2, MessageSquare } from 'lucide-react';
 
 const adminActions = [
@@ -46,20 +47,20 @@ const adminActions = [
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { user, loading: userLoading } = useUser();
 
   useEffect(() => {
-    const checkAdmin = async () => {
-      try {
-        const user = await User.me();
-        if (user.role !== 'admin') {
-          navigate(createPageUrl('Dashboard'));
-        }
-      } catch (error) {
-        navigate(createPageUrl('Login'));
-      }
-    };
-    checkAdmin();
-  }, [navigate]);
+    if (userLoading) return;
+
+    if (!user) {
+      navigate(createPageUrl('Login'));
+      return;
+    }
+
+    if (user.role !== 'admin') {
+      navigate(createPageUrl('Dashboard'));
+    }
+  }, [user, userLoading, navigate]);
 
   return (
     <div className="space-y-8">

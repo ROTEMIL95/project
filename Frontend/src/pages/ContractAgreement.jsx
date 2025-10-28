@@ -6,7 +6,8 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { User } from '@/api/entities';
+import { supabase } from '@/lib/supabase';
+import { useUser } from '@/components/utils/UserContext';
 import { UploadFile } from '@/api/integrations';
 import { FileSignature, Save, Printer, FileText, Loader2, PlusCircle, Trash2, AlertCircle, CheckCircle, DollarSign, Building, Image as ImageIcon, Upload, X, Settings, User as UserIcon, Phone, Share2, Globe, Facebook, Instagram, Paintbrush, Lightbulb, Wrench, Hammer } from 'lucide-react';
 import {
@@ -131,7 +132,7 @@ export default function ContractAgreementPage() {
   const [saving, setSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef(null);
-  const [user, setUser] = useState(null);
+  const { user, loading: userLoading } = useUser();
 
   const generateMilestoneName = (position, paymentRule) => {
     if (position === 'first') {
@@ -172,30 +173,34 @@ export default function ContractAgreementPage() {
 
   useEffect(() => {
     const loadUserContract = async () => {
-      try {
-        const userData = await User.me();
-        setUser(userData);
+      if (userLoading) return;
 
-        if (userData.contractTemplate) {
-          setContractText(userData.contractTemplate);
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        if (user.user_metadata?.contractTemplate) {
+          setContractText(user.user_metadata.contractTemplate);
         } else {
           setContractText(DEFAULT_CONTRACT_TEMPLATE);
         }
-        
-        if (userData.contractorCommitments) {
-          setContractorCommitments(userData.contractorCommitments);
+
+        if (user.user_metadata?.contractorCommitments) {
+          setContractorCommitments(user.user_metadata.contractorCommitments);
         } else {
           setContractorCommitments(DEFAULT_CONTRACTOR_COMMITMENTS);
         }
-        
-        if (userData.clientCommitments) {
-          setClientCommitments(userData.clientCommitments);
+
+        if (user.user_metadata?.clientCommitments) {
+          setClientCommitments(user.user_metadata.clientCommitments);
         } else {
           setClientCommitments(DEFAULT_CLIENT_COMMITMENTS);
         }
-        
-        let loadedTerms = (userData.defaultPaymentTerms && userData.defaultPaymentTerms.length === 3)
-            ? userData.defaultPaymentTerms.map(term => ({
+
+        let loadedTerms = (user.user_metadata?.defaultPaymentTerms && user.user_metadata.defaultPaymentTerms.length === 3)
+            ? user.user_metadata.defaultPaymentTerms.map(term => ({
                 ...term,
                 id: term.id || crypto.randomUUID(),
                 paymentDateRule: term.paymentDateRule || { type: 'proportional', days: 0 }
@@ -215,20 +220,20 @@ export default function ContractAgreementPage() {
         loadedTerms[2] = { ...loadedTerms[2], isFirst: false, isLast: true, milestone: generateMilestoneName('last', loadedTerms[2].paymentDateRule) };
 
         setPaymentTerms(loadedTerms);
-        
-        if (userData.companyInfo) {
+
+        if (user.user_metadata?.companyInfo) {
           setCompanyInfo({
-            companyName: userData.companyInfo.companyName || '',
-            companyOwnerName: userData.companyInfo.companyOwnerName || '',
-            businessNumber: userData.companyInfo.businessNumber || '',
-            address: userData.companyInfo.address || '',
-            email: userData.companyInfo.email || '',
-            phone: userData.companyInfo.phone || '',
-            website: userData.companyInfo.website || '',
-            logoUrl: userData.companyInfo.logoUrl || '',
-            specialization: userData.companyInfo.specialization || '',
-            facebookUrl: userData.companyInfo.facebookUrl || '',
-            instagramUrl: userData.companyInfo.instagramUrl || ''
+            companyName: user.user_metadata.companyInfo.companyName || '',
+            companyOwnerName: user.user_metadata.companyInfo.companyOwnerName || '',
+            businessNumber: user.user_metadata.companyInfo.businessNumber || '',
+            address: user.user_metadata.companyInfo.address || '',
+            email: user.user_metadata.companyInfo.email || '',
+            phone: user.user_metadata.companyInfo.phone || '',
+            website: user.user_metadata.companyInfo.website || '',
+            logoUrl: user.user_metadata.companyInfo.logoUrl || '',
+            specialization: user.user_metadata.companyInfo.specialization || '',
+            facebookUrl: user.user_metadata.companyInfo.facebookUrl || '',
+            instagramUrl: user.user_metadata.companyInfo.instagramUrl || ''
           });
         } else {
             setCompanyInfo({
@@ -247,12 +252,12 @@ export default function ContractAgreementPage() {
         }
 
         setCommitments({
-          cat_paint_plaster: userData?.categoryCommitments?.cat_paint_plaster || "",
-          cat_tiling: userData?.categoryCommitments?.cat_tiling || "",
-          cat_demolition: userData?.categoryCommitments?.cat_demolition || "",
-          cat_electricity: userData?.categoryCommitments?.cat_electricity || "",
-          cat_plumbing: userData?.categoryCommitments?.cat_plumbing || "",
-          cat_construction: userData?.categoryCommitments?.cat_construction || "",
+          cat_paint_plaster: user?.user_metadata?.categoryCommitments?.cat_paint_plaster || "",
+          cat_tiling: user?.user_metadata?.categoryCommitments?.cat_tiling || "",
+          cat_demolition: user?.user_metadata?.categoryCommitments?.cat_demolition || "",
+          cat_electricity: user?.user_metadata?.categoryCommitments?.cat_electricity || "",
+          cat_plumbing: user?.user_metadata?.categoryCommitments?.cat_plumbing || "",
+          cat_construction: user?.user_metadata?.categoryCommitments?.cat_construction || "",
         });
 
       } catch (error) {
@@ -301,7 +306,7 @@ export default function ContractAgreementPage() {
     };
 
     loadUserContract();
-  }, []);
+  }, [user, userLoading]);
 
   const handleSave = async () => {
     const totalPercentage = paymentTerms.reduce((sum, term) => sum + (Number(term.percentage) || 0), 0);
@@ -313,13 +318,16 @@ export default function ContractAgreementPage() {
     setSaving(true);
     try {
       const termsToSave = paymentTerms.map(({ id, isFirst, isLast, ...rest }) => rest);
-      await User.updateMyUserData({
-        contractTemplate: contractText,
-        contractorCommitments: contractorCommitments,
-        clientCommitments: clientCommitments,
-        defaultPaymentTerms: termsToSave,
-        companyInfo: companyInfo,
-        categoryCommitments: commitments,
+      await supabase.auth.updateUser({
+        data: {
+          ...user.user_metadata,
+          contractTemplate: contractText,
+          contractorCommitments: contractorCommitments,
+          clientCommitments: clientCommitments,
+          defaultPaymentTerms: termsToSave,
+          companyInfo: companyInfo,
+          categoryCommitments: commitments,
+        }
       });
       navigate(createPageUrl('Dashboard'));
     } catch (error) {

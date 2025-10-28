@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { User } from '@/api/entities';
 import { Quote } from '@/api/entities';
+import { useUser } from '@/components/utils/UserContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function QuoteCreateNewPage() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user, loading: userLoading } = useUser();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [currentStep, setCurrentStep] = useState(1); // 1: פרטי פרויקט, 2: בחירת פריטים, 3: סיכום
@@ -53,36 +54,37 @@ export default function QuoteCreateNewPage() {
   };
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setIsLoading(true);
-        const userData = await User.me();
-        setUser(userData);
-        
-        if (userData && userData.tilingItems && Array.isArray(userData.tilingItems)) {
-          console.log("QuoteCreateNewPage: Loaded tiling items from user data:", userData.tilingItems.length);
-          setTilingItems(userData.tilingItems);
-          
-          const initialQuantities = {};
-          userData.tilingItems.forEach(item => {
-            initialQuantities[item.id] = 1; // Default quantity
-          });
-          setCatalogItemQuantities(initialQuantities);
-        } else {
-          console.warn("QuoteCreateNewPage: No tiling items found in user data or data is not an array. userData.tilingItems:", userData ? userData.tilingItems : 'userData is null/undefined');
-          setTilingItems([]); 
-        }
-        
-      } catch (error) {
-        console.error("QuoteCreateNewPage: Error fetching user or processing tiling items:", error);
-        setTilingItems([]); 
-      } finally {
-        setIsLoading(false);
+    if (userLoading) return;
+
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      if (user && user.tilingItems && Array.isArray(user.tilingItems)) {
+        console.log("QuoteCreateNewPage: Loaded tiling items from user data:", user.tilingItems.length);
+        setTilingItems(user.tilingItems);
+
+        const initialQuantities = {};
+        user.tilingItems.forEach(item => {
+          initialQuantities[item.id] = 1; // Default quantity
+        });
+        setCatalogItemQuantities(initialQuantities);
+      } else {
+        console.warn("QuoteCreateNewPage: No tiling items found in user data or data is not an array.");
+        setTilingItems([]);
       }
-    };
-    
-    fetchUser();
-  }, []);
+
+    } catch (error) {
+      console.error("QuoteCreateNewPage: Error processing tiling items:", error);
+      setTilingItems([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, userLoading]);
 
   const handleProjectInfoChange = (field, value) => {
     setProjectInfo(prev => ({ ...prev, [field]: value }));

@@ -3,8 +3,7 @@
  * שירות חישוב מחירים משותף - משמש גם את מחירון הקבלן וגם את טופס הצעת מחיר
  */
 
-import { TilingItem } from '@/api/entities/TilingItem';
-import { PaintItem } from '@/api/entities/PaintItem';
+
 
 /**
  * מזהה את מדרגת המחיר הנכונה עבור כמות ופריט קטלוג נתונים.

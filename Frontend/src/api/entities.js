@@ -1,33 +1,108 @@
-import { base44 } from './base44Client';
+import { supabase } from '@/lib/supabase';
 
+// Entity type definitions
+export class Category {
+  static fromJSON(json) {
+    return json;
+  }
 
-export const Category = base44.entities.Category;
+  static async list() {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name');
+    
+    if (error) {
+      console.error("Error fetching categories:", error);
+      throw error;
+    }
+    
+    return data || [];
+  }
+}
 
-export const CatalogItem = base44.entities.CatalogItem;
+export class CatalogItem {
+  static fromJSON(json) {
+    return json;
+  }
+}
 
-export const PriceRange = base44.entities.PriceRange;
+export class PriceRange {
+  static fromJSON(json) {
+    return json;
+  }
+}
 
-export const Client = base44.entities.Client;
+export class Client {
+  static fromJSON(json) {
+    return json;
+  }
+}
 
-export const Quote = base44.entities.Quote;
+export class Quote {
+  static fromJSON(json) {
+    return json;
+  }
+}
 
-export const QuoteItem = base44.entities.QuoteItem;
+export class QuoteItem {
+  static fromJSON(json) {
+    return json;
+  }
+}
 
-export const Project = base44.entities.Project;
+export class Project {
+  static fromJSON(json) {
+    return json;
+  }
+}
 
-export const QuoteTemplate = base44.entities.QuoteTemplate;
+export class QuoteTemplate {
+  static fromJSON(json) {
+    return json;
+  }
+}
 
-export const TemplateItem = base44.entities.TemplateItem;
+export class TemplateItem {
+  static fromJSON(json) {
+    return json;
+  }
+}
 
-export const ContractorPricing = base44.entities.ContractorPricing;
+export class ContractorPricing {
+  static fromJSON(json) {
+    return json;
+  }
+}
 
-export const ProjectCosts = base44.entities.ProjectCosts;
+export class ProjectCosts {
+  static fromJSON(json) {
+    return json;
+  }
+}
 
-export const FinancialTransaction = base44.entities.FinancialTransaction;
+export class FinancialTransaction {
+  static fromJSON(json) {
+    return json;
+  }
+}
 
-export const CustomerInquiry = base44.entities.CustomerInquiry;
+export class CustomerInquiry {
+  static fromJSON(json) {
+    return json;
+  }
+}
 
-
-
-// auth sdk:
-export const User = base44.auth;
+export class User {
+  static fromJSON(json) {
+    return {
+      ...json,
+      isAdmin: json.role === 'admin'
+    };
+  }
+  
+  static getCurrentUser() {
+    // Implement your user authentication logic here
+    return null;
+  }
+}

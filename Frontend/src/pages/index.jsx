@@ -62,7 +62,12 @@ import PricebookSettings from "./PricebookSettings";
 
 import Settings from "./Settings";
 
+import Login from "./Login";
+
+import Register from "./Register";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PAGES = {
     
@@ -147,11 +152,54 @@ function _getCurrentPage(url) {
 function PagesContent() {
     const location = useLocation();
     const currentPage = _getCurrentPage(location.pathname);
-    
+    const { session, loading } = useAuth();
+
+    // Public routes (without Layout)
+    const publicRoutes = ['/login', '/register'];
+    const isPublicRoute = publicRoutes.includes(location.pathname.toLowerCase());
+
+    // Show loading state while checking authentication
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">טוען...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // If not authenticated and not on public route, redirect to login
+    if (!session && !isPublicRoute) {
+        return (
+            <Routes>
+                <Route path="*" element={<Login />} />
+            </Routes>
+        );
+    }
+
+    // If authenticated and on public route, redirect to dashboard
+    if (session && isPublicRoute) {
+        return (
+            <Routes>
+                <Route path="*" element={<Dashboard />} />
+            </Routes>
+        );
+    }
+
+    if (isPublicRoute) {
+        return (
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+            </Routes>
+        );
+    }
+
     return (
         <Layout currentPageName={currentPage}>
-            <Routes>            
-                
+            <Routes>
                     <Route path="/" element={<Dashboard />} />
                 
                 

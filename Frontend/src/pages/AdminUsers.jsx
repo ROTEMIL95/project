@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@/api/entities';
 import { createPageUrl } from '@/utils';
+import { useUser } from '@/components/utils/UserContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,34 +37,40 @@ import {
 
 export default function AdminUsers() {
   const navigate = useNavigate();
+  const { user: currentUser, loading: userLoading } = useUser();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(null);
   const [updating, setUpdating] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    const checkAdminAndFetchUsers = async () => {
+    const fetchUsers = async () => {
+      if (userLoading) return;
+
+      if (!currentUser) {
+        navigate(createPageUrl('Login'));
+        return;
+      }
+
+      if (currentUser.role !== 'admin') {
+        navigate(createPageUrl('Dashboard'));
+        return;
+      }
+
       try {
-        const user = await User.me();
-        setCurrentUser(user);
-        if (user.role !== 'admin') {
-          navigate(createPageUrl('Dashboard'));
-          return;
-        }
         const userList = await User.list('-created_date');
         setUsers(userList);
         setFilteredUsers(userList);
       } catch (error) {
-        navigate(createPageUrl('Login'));
+        console.error('Error fetching users:', error);
       } finally {
         setLoading(false);
       }
     };
-    checkAdminAndFetchUsers();
-  }, [navigate]);
+    fetchUsers();
+  }, [currentUser, userLoading, navigate]);
 
   // חיפוש וסינון משתמשים
   useEffect(() => {

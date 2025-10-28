@@ -16,11 +16,12 @@ import RoomEstimatesSettings from '@/components/costCalculator/RoomEstimatesSett
 import TilingDefaultsSettings from '@/components/costCalculator/TilingDefaultsSettings';
 import TilingQuickDefaults from '@/components/costCalculator/TilingQuickDefaults';
 import PaintQuickDefaults from '@/components/costCalculator/PaintQuickDefaults';
-import { User } from '@/api/entities';
+import { supabase } from '@/lib/supabase';
 import { Category } from '@/api/entities';
 import { cn } from '@/lib/utils';
 import CategorySwitcher from "@/components/common/CategorySwitcher";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useUser } from '@/components/utils/UserContext';
 
 // Consts
 const PAINT_TYPES = [
@@ -33,13 +34,13 @@ const PAINT_TYPES = [
 export default function CostCalculator() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { user: userData, loading: userLoading } = useUser();
 
     // State management
     const [activeTab, setActiveTab] = useState(null); // 'tiling', 'paint_plaster', or null for landing
     const [tilingItems, setTilingItems] = useState([]);
     const [paintItems, setPaintItems] = useState([]);
     // Removed: demolitionItems state
-    const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const [isAddingNewTilingItem, setIsAddingNewTilingItem] = useState(false);
@@ -618,7 +619,12 @@ export default function CostCalculator() {
     // New handler to save tiling defaults
     const handleSaveTilingDefaults = async (defaults) => {
         try {
-            await User.updateMyUserData({ tilingUserDefaults: defaults });
+            await supabase.auth.updateUser({
+                data: {
+                    ...userData.user_metadata,
+                    tilingUserDefaults: defaults
+                }
+            });
             setUserTilingDefaults(defaults);
             setShowTilingDefaultsSettings(false);
         } catch (error) {
@@ -633,7 +639,12 @@ export default function CostCalculator() {
             ...(userTilingDefaults || {}),
             ...partialDefaults,
         };
-        await User.updateMyUserData({ tilingUserDefaults: merged });
+        await supabase.auth.updateUser({
+            data: {
+                ...userData.user_metadata,
+                tilingUserDefaults: merged
+            }
+        });
         setUserTilingDefaults(merged);
 
         // החלת ההגדרות על כל פריטי הריצוף השמורים (ללא כניסה לפריטים)
@@ -670,7 +681,12 @@ export default function CostCalculator() {
                     return newItem;
                 });
 
-                await User.updateMyUserData({ tilingItems: updatedItems });
+                await supabase.auth.updateUser({
+                data: {
+                    ...userData.user_metadata,
+                    tilingItems: updatedItems
+                }
+            });
                 setTilingItems(updatedItems);
             }
         }
@@ -682,7 +698,12 @@ export default function CostCalculator() {
             ...(userPaintDefaults || {}),
             ...partialDefaults,
         };
-        await User.updateMyUserData({ paintUserDefaults: merged });
+        await supabase.auth.updateUser({
+            data: {
+                ...userData.user_metadata,
+                paintUserDefaults: merged
+            }
+        });
         setUserPaintDefaults(merged);
 
         if (options.applyToExisting) {
@@ -714,7 +735,12 @@ export default function CostCalculator() {
                     return newItem;
                 });
 
-                await User.updateMyUserData({ paintItems: updatedItems });
+                await supabase.auth.updateUser({
+                data: {
+                    ...userData.user_metadata,
+                    paintItems: updatedItems
+                }
+            });
                 setPaintItems(updatedItems);
             }
         }
@@ -730,7 +756,12 @@ export default function CostCalculator() {
 
     const handleSaveRoomEstimates = async (updatedEstimates) => {
         try {
-            await User.updateMyUserData({ roomEstimates: updatedEstimates });
+            await supabase.auth.updateUser({
+                data: {
+                    ...userData.user_metadata,
+                    roomEstimates: updatedEstimates
+                }
+            });
             setUserData(prevUserData => ({
                 ...prevUserData,
                 roomEstimates: updatedEstimates
@@ -804,7 +835,12 @@ export default function CostCalculator() {
                 updatedItems = [...tilingItems, newItem];
             }
 
-            await User.updateMyUserData({ tilingItems: updatedItems });
+            await supabase.auth.updateUser({
+                data: {
+                    ...userData.user_metadata,
+                    tilingItems: updatedItems
+                }
+            });
 
             setTilingItems(updatedItems);
             setIsAddingNewTilingItem(false);
@@ -874,7 +910,12 @@ export default function CostCalculator() {
                 updatedItems = [...paintItems, newItem];
             }
 
-            await User.updateMyUserData({ paintItems: updatedItems });
+            await supabase.auth.updateUser({
+                data: {
+                    ...userData.user_metadata,
+                    paintItems: updatedItems
+                }
+            });
 
             setPaintItems(updatedItems);
             setIsAddingNewPaintItem(false);
@@ -923,9 +964,15 @@ export default function CostCalculator() {
     // --- Start of data loading effect ---
     useEffect(() => {
         const loadInitialData = async () => {
+            if (userLoading) return;
+
+            if (!userData) {
+                setLoading(false);
+                return;
+            }
+
             try {
                 setLoading(true);
-                const user = await User.me();
                 const defaultRoomEstimates = [
                     { id: 'small_bedroom', roomType: 'חדר שינה קטן', wallAreaSqM: 35, ceilingAreaSqM: 10, openingsReduction: { few: 5, regular: 10, many: 15 } },
                     { id: 'medium_bedroom', roomType: 'חדר שינה בינוני', wallAreaSqM: 40, ceilingAreaSqM: 12, openingsReduction: { few: 5, regular: 10, many: 15 } },
@@ -935,18 +982,23 @@ export default function CostCalculator() {
                     { id: 'kitchen', roomType: 'מטבח', wallAreaSqM: 25, ceilingAreaSqM: 10, openingsReduction: { few: 5, regular: 10, many: 20 } },
                     { id: 'bathroom', roomType: 'אמבטיה', wallAreaSqM: 20, ceilingAreaSqM: 5, openingsReduction: { few: 5, regular: 10, many: 20 } },
                 ];
-                if (!user.roomEstimates || user.roomEstimates.length === 0) {
-                    await User.updateMyUserData({ roomEstimates: defaultRoomEstimates });
+                if (!userData.user_metadata?.roomEstimates || userData.user_metadata.roomEstimates.length === 0) {
+                    await supabase.auth.updateUser({
+                        data: {
+                            ...userData.user_metadata,
+                            roomEstimates: defaultRoomEstimates
+                        }
+                    });
                 }
 
                 // Load user's tiling defaults
-                if (user.tilingUserDefaults) {
-                    setUserTilingDefaults(user.tilingUserDefaults);
+                if (userData.user_metadata?.tilingUserDefaults) {
+                    setUserTilingDefaults(userData.user_metadata.tilingUserDefaults);
                 }
 
                 // Load user's paint defaults
-                if (user.paintUserDefaults) {
-                    setUserPaintDefaults(user.paintUserDefaults);
+                if (userData.user_metadata?.paintUserDefaults) {
+                    setUserPaintDefaults(userData.user_metadata.paintUserDefaults);
                 }
 
                 const categories = await Category.list();
@@ -958,18 +1010,22 @@ export default function CostCalculator() {
                 const newTilingItemsFromTable = [
                     { "id": "tiling_granite_porcelain_60x80", "tileName": "גרניט פורצלן", "size": "60x80", "category": "tiling", "materialCost": 400, "laborCost": 500, "additionalCost": 40, "dailyOutput": 20, "fixedProjectCost": 500, "wastagePercent": 10, "priceTiers": [{ "maxArea": 30, "price": 500 }, { "maxArea": 50, "price": 450 }, { "maxArea": 100, "price": 400 }], "selectedQuality": "איכותי", "workType": "ריצוף פנים", "averageCustomerPrice": 450, "averageCostPerMeter": 380, "averageProfitPerMeter": 70, "averageProfitPercent": 18.42 },
                 ];
-                let currentTilingItems = user.tilingItems;
-                if (user.tilingItems == null) {
-                    await User.updateMyUserData({ tilingItems: newTilingItemsFromTable });
+                let currentTilingItems = userData.user_metadata?.tilingItems;
+                if (currentTilingItems == null) {
+                    await supabase.auth.updateUser({
+                        data: {
+                            ...userData.user_metadata,
+                            tilingItems: newTilingItemsFromTable
+                        }
+                    });
                     currentTilingItems = newTilingItemsFromTable;
                 }
 
                 // Removed: Add initial demolition items logic
 
                 setTilingItems(currentTilingItems || []);
-                setPaintItems(user.paintItems || []);
+                setPaintItems(userData.user_metadata?.paintItems || []);
                 // Removed: setDemolitionItems
-                setUserData(user);
                 setLoading(false);
             } catch (error) {
                 console.error("Error loading user data:", error);
@@ -983,7 +1039,7 @@ export default function CostCalculator() {
             handleEditItem(itemToEditFromLocation);
             window.history.replaceState({}, document.title);
         }
-    }, [location.state]);
+    }, [userData, userLoading, location.state]);
     // --- End of data loading effect ---
 
     // Helper function for formatting price

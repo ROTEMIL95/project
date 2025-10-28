@@ -74,6 +74,36 @@ const DialogDescription = React.forwardRef(({ className, ...props }, ref) => (
   />
 ));
 
+const DialogClose = React.forwardRef(({ className, onClick, ...props }, ref) => (
+  <button
+    ref={ref}
+    type="button"
+    className={cn(
+      "absolute left-4 top-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:pointer-events-none",
+      className
+    )}
+    onClick={onClick}
+    {...props}
+  >
+    <X className="h-4 w-4" />
+    <span className="sr-only">Close</span>
+  </button>
+));
+
+const DialogTrigger = ({ children, ...props }) => (
+  <div {...props}>
+    {children}
+  </div>
+);
+
+DialogContent.displayName = "DialogContent";
+DialogHeader.displayName = "DialogHeader";
+DialogTitle.displayName = "DialogTitle";
+DialogFooter.displayName = "DialogFooter";
+DialogDescription.displayName = "DialogDescription";
+DialogClose.displayName = "DialogClose";
+DialogTrigger.displayName = "DialogTrigger";
+
 // Add default export
 export default Dialog;
 
@@ -83,5 +113,7 @@ export {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription
+  DialogDescription,
+  DialogClose,
+  DialogTrigger
 };

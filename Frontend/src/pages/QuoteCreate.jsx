@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { User } from '@/api/entities';
+import { supabase } from '@/lib/supabase';
 import { Quote } from '@/api/entities';
 import { Client } from '@/api/entities';
 import { CatalogItem } from '@/api/entities';
@@ -371,8 +371,8 @@ function PersistedStep3({
 
 export default function QuoteCreate() {
   const navigate = useNavigate();
-  const { user: ctxUser, refresh: refreshUser } = useUser();
-  const [currentUser, setCurrentUser] = useState(null); // Renamed from 'user'
+  const { user, refresh: refreshUser } = useUser();
+  const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true); // Renamed from 'isLoading'
   const [currentStep, setCurrentStep] = useState(1);
   const [showPreview, setShowPreview] = useState(false);
@@ -444,9 +444,9 @@ export default function QuoteCreate() {
 
   // NEW: filter categories by user's active map
   const userCategories = useMemo(() => {
-    const map = (currentUser && currentUser.categoryActiveMap) || {}; // Using currentUser
+    const map = (user?.user_metadata?.categoryActiveMap) || {};
     return AVAILABLE_CATEGORIES.filter(c => map[c.id] !== false);
-  }, [currentUser]);
+  }, [user?.user_metadata?.categoryActiveMap]);
 
   // NEW: Helper function to get ordered categories based on selectedCategories order
   const getOrderedSelectedCategories = useCallback(() => {
@@ -1186,7 +1186,7 @@ export default function QuoteCreate() {
 
     const fetchUser = async () => {
       try {
-        const userData = ctxUser || await User.me();
+          const userData = user;
         setCurrentUser(userData); // Renamed from setUser
 
         // Set new states from user defaults
@@ -1217,7 +1217,7 @@ export default function QuoteCreate() {
       }
     };
     fetchUser();
-  }, [ctxUser, loadExistingQuote, resetQuoteData, setPaymentTerms, setIsLoadingUser, setCurrentUser, setCategoryCommitments, setTilingWorkTypes, setUserTilingItems]);
+  }, [user, loadExistingQuote, resetQuoteData, setPaymentTerms, setIsLoadingUser, setCurrentUser, setCategoryCommitments, setTilingWorkTypes, setUserTilingItems]);
 
   // NEW: Add effect to refresh user data when returning to page
   useEffect(() => {
@@ -1225,7 +1225,7 @@ export default function QuoteCreate() {
       if (document.visibilityState === 'visible' && !existingQuoteId) { // Renamed from editingQuoteId
         try {
           await refreshUser();
-          const freshUserData = await User.me();
+          const { data: { user: freshUserData } } = await supabase.auth.getUser();
           setCurrentUser(freshUserData); // Renamed from setUser
           // Update new states on refresh
           setCategoryCommitments(freshUserData?.categoryCommitments || {});
@@ -1358,7 +1358,7 @@ export default function QuoteCreate() {
   const proceedWithSave = useCallback(async (isDraft = false) => {
     setIsLoadingUser(true); // Renamed from setIsLoading
     try {
-      if (!currentUser) { // Using currentUser
+      if (!user) {
         throw new Error("User not authenticated");
       }
 
@@ -1388,9 +1388,9 @@ export default function QuoteCreate() {
         estimatedWorkDays: currentTotals.totalWorkDays || 0,
         estimatedCost: currentTotals.totalCost,
         estimatedProfitPercent: currentTotals.totalCost > 0 ? ((currentTotals.total - currentTotals.totalCost) / currentTotals.totalCost) * 100 : 0,
-        companyInfo: currentUser.companyInfo || {}, // Using currentUser
+        companyInfo: user?.user_metadata?.companyInfo || {},
         paymentTerms: paymentTerms || [],
-        categoryCommitments: currentUser?.categoryCommitments || {}, // Using currentUser
+        categoryCommitments: user?.user_metadata?.categoryCommitments || {},
         tilingWorkTypes: tilingWorkTypes, // New state
         userTilingItems: userTilingItems, // New state
       };
@@ -1400,8 +1400,8 @@ export default function QuoteCreate() {
         savedQuote = await Quote.update(existingQuoteId, quoteDataToSave); // Renamed from editingQuoteId
         setQuoteData(prev => ({...prev, ...quoteDataToSave, id: existingQuoteId})); // Renamed from editingQuoteId
       } else {
-        if (currentUser && currentUser.email) { // Using currentUser
-            quoteDataToSave.created_by = currentUser.email;
+        if (user?.email) {
+            quoteDataToSave.created_by = user.email;
         }
         savedQuote = await Quote.create(quoteDataToSave);
         setQuoteData(prev => ({...prev, ...quoteDataToSave, id: savedQuote.id}));
@@ -1614,12 +1614,12 @@ export default function QuoteCreate() {
       estimatedCost: totalCost,
       estimatedProfitPercent: parseFloat(profitPercent),
       companyInfo: {
-        ...(currentUser?.companyInfo || {}), // Using currentUser
-        contractorCommitments: currentUser?.contractorCommitments || '', // Using currentUser
-        clientCommitments: currentUser?.clientCommitments || '' // Using currentUser
+        ...(user?.user_metadata?.companyInfo || {}),
+        contractorCommitments: user?.user_metadata?.contractorCommitments || '',
+        clientCommitments: user?.user_metadata?.clientCommitments || ''
       },
       paymentTerms: paymentTerms,
-      categoryCommitments: currentUser?.categoryCommitments || {}, // Using currentUser
+      categoryCommitments: user?.user_metadata?.categoryCommitments || {},
       created_date: new Date().toISOString(),
       quoteNumber: existingQuoteId ? `QUOTE-${existingQuoteId}` : 'PREVIEW', // Renamed from editingQuoteId
       generalStartDate: projectInfo.generalStartDate,
@@ -2012,7 +2012,7 @@ export default function QuoteCreate() {
         const workDaysFromForm = Number(projectInfo.workDays) || 0;
         const actualProfit = total - totalCost;
         const dailyProfit = workDaysFromForm > 0 ? (actualProfit / workDaysFromForm) : 0;
-        const desiredDailyProfit = currentUser?.desiredDailyProfit || 0; // Using currentUser
+        const desiredDailyProfit = user?.user_metadata?.desiredDailyProfit || 0;
         const dailyProfitDiff = desiredDailyProfit > 0 ? dailyProfit - desiredDailyProfit : 0;
 
         const missingProjectDates = projectInfo.generalStartDate === null || projectInfo.generalEndDate === null; // Check for null
@@ -2107,9 +2107,9 @@ export default function QuoteCreate() {
                 totals={totals}
                 selectedItems={selectedItems}
                 companyInfo={{
-                  ...(currentUser?.companyInfo || {}), // Using currentUser
-                  contractorCommitments: currentUser?.contractorCommitments || '', // Using currentUser
-                  clientCommitments: currentUser?.clientCommitments || '' // Using currentUser
+                  ...(user?.user_metadata?.companyInfo || {}),
+                  contractorCommitments: user?.user_metadata?.contractorCommitments || '',
+                  clientCommitments: user?.user_metadata?.clientCommitments || ''
                 }}
               />
 

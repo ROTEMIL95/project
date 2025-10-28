@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { User } from "@/api/entities";
+import { useUser } from '@/components/utils/UserContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,8 +35,8 @@ const CATS = [
 ];
 
 export default function PricebookSettings() {
+  const { user, loading: userLoading } = useUser();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
 
   const [generalSettings, setGeneralSettings] = useState({
     desiredDailyProfit: ""
@@ -129,18 +130,21 @@ export default function PricebookSettings() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (userLoading || !user) {
+      setLoading(true);
+      return;
+    }
+
     (async () => {
       setLoading(true);
-      const me = await User.me();
-      setUser(me);
 
       // טעינת הגדרות כלליות
       setGeneralSettings({
-        desiredDailyProfit: me?.desiredDailyProfit ?? ""
+        desiredDailyProfit: user?.desiredDailyProfit ?? ""
       });
 
       // טעינת צבע
-      const p = me?.paintUserDefaults || {};
+      const p = user?.paintUserDefaults || {};
       setPaint({
         workerDailyCost: p.workerDailyCost ?? "",
         desiredProfitPercent: p.desiredProfitPercent ?? "",
@@ -164,7 +168,7 @@ export default function PricebookSettings() {
       });
 
       // טעינת ריצוף
-      const t = me?.tilingUserDefaults || {};
+      const t = user?.tilingUserDefaults || {};
       setTiling({
         laborCostPerDay: t.laborCostPerDay ?? "",
         desiredProfitPercent: t.desiredProfitPercent ?? "",
@@ -188,7 +192,7 @@ export default function PricebookSettings() {
       });
 
       // טעינת הריסה
-      const d = me?.demolitionDefaults || {};
+      const d = user?.demolitionDefaults || {};
       setDemo({
         laborCostPerDay: d.laborCostPerDay ?? "",
         profitPercent: d.profitPercent ?? "",
@@ -203,7 +207,7 @@ export default function PricebookSettings() {
       });
 
       // טעינת בינוי
-      const c = me?.constructionDefaults || {};
+      const c = user?.constructionDefaults || {};
       setConstruct({
         desiredProfitPercent: c.desiredProfitPercent ?? "",
         workerCostPerUnit: c.workerCostPerUnit ?? "",
@@ -227,7 +231,7 @@ export default function PricebookSettings() {
       });
 
       // טעינת אינסטלציה
-      const pl = me?.plumbingDefaults || {};
+      const pl = user?.plumbingDefaults || {};
       setPlumb({ desiredProfitPercent: pl.desiredProfitPercent ?? "" });
 
       const plExpTiming = pl.expenseTiming || {};
@@ -238,7 +242,7 @@ export default function PricebookSettings() {
       });
 
       // טעינת חשמל
-      const el = me?.electricalDefaults || {};
+      const el = user?.electricalDefaults || {};
       setElec({ desiredProfitPercent: el.desiredProfitPercent ?? "" });
 
       const elExpTiming = el.expenseTiming || {};
@@ -249,7 +253,7 @@ export default function PricebookSettings() {
       });
 
       // טעינת עלויות נוספות
-      const addCostDef = me?.additionalCostDefaults || {};
+      const addCostDef = user?.additionalCostDefaults || {};
       const defaultFixedCosts = [
         { id: 'logistics_transport', description: 'שינוע חומרים ופסולת', contractorCost: 0, timing: 'project_start' },
         { id: 'logistics_crane', description: 'מנוף או הרמה מכנית', contractorCost: 0, timing: 'project_start' },
@@ -271,18 +275,18 @@ export default function PricebookSettings() {
       });
 
       setActiveMap({
-        cat_paint_plaster: me?.categoryActiveMap?.cat_paint_plaster !== false,
-        cat_tiling: me?.categoryActiveMap?.cat_tiling !== false,
-        cat_demolition: me?.categoryActiveMap?.cat_demolition !== false,
-        cat_electricity: me?.categoryActiveMap?.cat_electricity !== false,
-        cat_plumbing: me?.categoryActiveMap?.cat_plumbing !== false,
-        cat_construction: me?.categoryActiveMap?.cat_construction !== false,
+        cat_paint_plaster: user?.categoryActiveMap?.cat_paint_plaster !== false,
+        cat_tiling: user?.categoryActiveMap?.cat_tiling !== false,
+        cat_demolition: user?.categoryActiveMap?.cat_demolition !== false,
+        cat_electricity: user?.categoryActiveMap?.cat_electricity !== false,
+        cat_plumbing: user?.categoryActiveMap?.cat_plumbing !== false,
+        cat_construction: user?.categoryActiveMap?.cat_construction !== false,
       });
 
-      setGeneralNotes(me?.pricebookGeneralNotes || "");
+      setGeneralNotes(user?.pricebookGeneralNotes || "");
       setLoading(false);
     })();
-  }, []);
+  }, [user, userLoading]);
 
   const handleSave = useCallback(async () => {
     const payload = {

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Category } from '@/api/entities';
 import { User } from '@/api/entities';
 import { createPageUrl } from '@/utils';
+import { useUser } from '@/components/utils/UserContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,7 @@ import {
 
 export default function AdminCategories() {
   const navigate = useNavigate();
+  const { user, loading: userLoading } = useUser();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newCategory, setNewCategory] = useState({
@@ -48,24 +50,21 @@ export default function AdminCategories() {
     }
   };
 
-  const checkAdminAndFetch = async () => {
-    try {
-      const user = await User.me();
-      if (user.role !== 'admin') {
-        navigate(createPageUrl('Dashboard'));
-        return;
-      }
-      await loadCategories();
-    } catch (error) {
-      navigate(createPageUrl('Login'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    checkAdminAndFetch();
-  }, []); // Removed 'navigate' from dependencies as per outline, relying on initial call
+    if (userLoading) return;
+
+    if (!user) {
+      navigate(createPageUrl('Login'));
+      return;
+    }
+
+    if (user.role !== 'admin') {
+      navigate(createPageUrl('Dashboard'));
+      return;
+    }
+
+    loadCategories();
+  }, [user, userLoading, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

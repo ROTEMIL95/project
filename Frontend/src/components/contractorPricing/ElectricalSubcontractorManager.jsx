@@ -1,6 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
-import { User } from "@/api/entities";
+import { supabase } from "@/lib/supabase";
+import { useUser } from "@/components/utils/UserContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -130,12 +131,18 @@ export default function ElectricalSubcontractorManager() {
   const numPrice = `${numBase} text-indigo-600 font-bold`;
   const numProfit = `${numBase} text-green-700 font-bold`;
 
+  const { user } = useUser();
+
   useEffect(() => {
     const load = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
-      const u = await User.me();
-      const d = u.electricalDefaults || { desiredProfitPercent: 40 };
-      let its = u.electricalSubcontractorItems || [];
+      const d = user.user_metadata?.electricalDefaults || { desiredProfitPercent: 40 };
+      let its = user.user_metadata?.electricalSubcontractorItems || [];
 
       // אם אין פריטים – זורעים את כל ברירות המחדל
       if (!its || its.length === 0) {
@@ -148,7 +155,13 @@ export default function ElectricalSubcontractorManager() {
           ...DEFAULT_REPAIRS,
           ...DEFAULT_INSTALLATIONS, // Add new category defaults
         ].map((it) => ({ ...it, clientPricePerUnit: calcClientPrice(it.contractorCostPerUnit, profit) }));
-        await User.updateMyUserData({ electricalSubcontractorItems: its, electricalDefaults: d });
+        await supabase.auth.updateUser({
+          data: {
+            ...user.user_metadata,
+            electricalSubcontractorItems: its,
+            electricalDefaults: d
+          }
+        });
       } else {
         // השלמת פריטים חסרים מכל תתי־הקטגוריות בלי כפילויות (גם אם כבר יש פריטים בתת־קטגוריה)
         const existingIds = new Set(its.map((x) => x.id));
@@ -169,7 +182,13 @@ export default function ElectricalSubcontractorManager() {
 
         if (toAdd.length) {
           its = [...its, ...toAdd];
-          await User.updateMyUserData({ electricalSubcontractorItems: its, electricalDefaults: d });
+          await supabase.auth.updateUser({
+            data: {
+              ...user.user_metadata,
+              electricalSubcontractorItems: its,
+              electricalDefaults: d
+            }
+          });
         }
       }
 
@@ -178,7 +197,7 @@ export default function ElectricalSubcontractorManager() {
       setLoading(false);
     };
     load();
-  }, []);
+  }, [user]);
 
   const visibleItems = useMemo(() => {
     if (filterSubcat === "all") return items;
@@ -224,7 +243,13 @@ export default function ElectricalSubcontractorManager() {
     const exists = items.some((x) => x.id === newItem.id);
     const updated = exists ? items.map((x) => (x.id === newItem.id ? newItem : x)) : [...items, newItem];
     setItems(updated);
-    await User.updateMyUserData({ electricalSubcontractorItems: updated, electricalDefaults: defaults });
+    await supabase.auth.updateUser({
+      data: {
+        ...user.user_metadata,
+        electricalSubcontractorItems: updated,
+        electricalDefaults: defaults
+      }
+    });
     closeDialog();
   };
 
@@ -232,7 +257,13 @@ export default function ElectricalSubcontractorManager() {
     if (!window.confirm("למחוק את הפריט הזה?")) return;
     const updated = items.filter((x) => x.id !== id);
     setItems(updated);
-    await User.updateMyUserData({ electricalSubcontractorItems: updated, electricalDefaults: defaults });
+    await supabase.auth.updateUser({
+      data: {
+        ...user.user_metadata,
+        electricalSubcontractorItems: updated,
+        electricalDefaults: defaults
+      }
+    });
   };
 
   const handleSaveAll = async () => {

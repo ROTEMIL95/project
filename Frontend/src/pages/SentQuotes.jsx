@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Quote } from '@/api/entities';
 import { FinancialTransaction } from '@/api/entities';
-import { User } from '@/api/entities';
+import { useUser } from '@/components/utils/UserContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,7 +78,7 @@ export default function SentQuotes() {
     const [deleteAlert, setDeleteAlert] = useState({ isOpen: false, quote: null });
     const [statusFilter, setStatusFilter] = useState('הכל');
     const [sortConfig, setSortConfig] = useState({ key: 'created_date', direction: 'descending' });
-    const [currentUser, setCurrentUser] = useState(null);
+    const { user } = useUser();
     const [confettiTriggerId, setConfettiTriggerId] = useState(null);
     const [hoveredLegendItem, setHoveredLegendItem] = useState(null);
     const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
@@ -106,8 +106,6 @@ export default function SentQuotes() {
                     setStatusFilter(decodeURIComponent(statusFromUrl));
                 }
 
-                const user = await User.me();
-                setCurrentUser(user);
                 if (!user || !user.email) {
                     throw new Error("User not authenticated or user email not found.");
                 }
@@ -120,16 +118,15 @@ export default function SentQuotes() {
             }
         };
         fetchInitialData();
-    }, []);
+    }, [user]);
 
-    const loadQuotes = async (user) => {
+    const loadQuotes = async () => {
         setLoading(true);
         setError(null);
         try {
-            const userToFilterBy = user || currentUser;
-            if (!userToFilterBy) throw new Error("User context is missing.");
+            if (!user) throw new Error("User context is missing.");
 
-            const fetchedQuotes = await Quote.filter({ created_by: userToFilterBy.email });
+            const fetchedQuotes = await Quote.filter({ created_by: user.email });
             setQuotes(fetchedQuotes);
         } catch (err) {
             console.error("Error loading quotes:", err);
@@ -140,15 +137,15 @@ export default function SentQuotes() {
     };
 
     const handleRefresh = () => {
-        if(currentUser) {
-            loadQuotes(currentUser);
+        if(user) {
+            loadQuotes();
         }
     };
 
     const handleDeleteQuote = async (quoteToDelete) => {
-        if (!quoteToDelete || !currentUser) return;
+        if (!quoteToDelete || !user) return;
 
-        if (quoteToDelete.created_by !== currentUser.email) {
+        if (quoteToDelete.created_by !== user.email) {
             toast({
                 variant: "destructive",
                 title: "שגיאת הרשאות",
@@ -192,7 +189,7 @@ export default function SentQuotes() {
     };
 
     const handleEditQuote = (quote) => {
-        if (currentUser && quote.created_by !== currentUser.email) {
+        if (user && quote.created_by !== user.email) {
             toast({
                 variant: "destructive",
                 title: "שגיאת הרשאות",
@@ -204,7 +201,7 @@ export default function SentQuotes() {
     };
 
     const handleStatusChange = async (quote, newStatus) => {
-        if (!currentUser || quote.created_by !== currentUser.email) {
+        if (!user || quote.created_by !== user.email) {
             toast({
                 variant: "destructive",
                 title: "שגיאת הרשאות",
@@ -223,7 +220,7 @@ export default function SentQuotes() {
             await handleFinancialTransactionSync(quote, oldStatus, newStatus);
             
             // רענון הנתונים
-            await loadQuotes(currentUser);
+            await loadQuotes();
             
             // הודעה למשתמש וטריגר קונפטי
             if (newStatus === 'אושר' && oldStatus !== 'אושר') {

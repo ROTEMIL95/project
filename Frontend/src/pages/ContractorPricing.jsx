@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ContractorPricing as ContractorPricingEntity } from '@/api/entities'; // Renamed to avoid conflict
 import { User } from '@/api/entities';
+import { useUser } from '@/components/utils/UserContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -31,11 +32,11 @@ import CategorySwitcher from "@/components/common/CategorySwitcher";
 import { createPageUrl } from "@/utils";
 
 export default function ContractorPricing() { // Renamed component
+  const { user } = useUser();
   const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState({});
   const [editingItem, setEditingItem] = useState(null);
-  const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
 
   const location = useLocation();
@@ -44,8 +45,6 @@ export default function ContractorPricing() { // Renamed component
   const activeTab = urlParams.get("tab"); // Renamed 'tab' to 'activeTab' for consistency with outline
 
   useEffect(() => {
-    loadUser();
-
     // Show landing for no tab, avoid loading base table
     if (!activeTab) {
       setPrices([]);
@@ -63,16 +62,6 @@ export default function ContractorPricing() { // Renamed component
       setError(null);
     }
   }, [activeTab]); // Dependency changed to activeTab
-
-  const loadUser = async () => {
-    try {
-      const userData = await User.me();
-      setUser(userData);
-    } catch (error) {
-      console.error("Error loading user:", error);
-      setError("שגיאה בטעינת פרטי משתמש");
-    }
-  };
 
   const loadPrices = async () => {
     try {

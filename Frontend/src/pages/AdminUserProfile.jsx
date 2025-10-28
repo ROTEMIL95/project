@@ -4,6 +4,7 @@ import { User } from '@/api/entities';
 import { Quote } from '@/api/entities';
 import { FinancialTransaction } from '@/api/entities';
 import { createPageUrl } from '@/utils';
+import { useUser } from '@/components/utils/UserContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,8 +35,8 @@ import { he } from 'date-fns/locale';
 
 export default function AdminUserProfile() {
   const navigate = useNavigate();
+  const { user: currentUser, loading: userLoading } = useUser();
   const [user, setUser] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
   const [userQuotes, setUserQuotes] = useState([]);
   const [userTransactions, setUserTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,21 +45,26 @@ export default function AdminUserProfile() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      try {
-        // בדיקת הרשאות מנהל
-        const admin = await User.me();
-        setCurrentUser(admin);
-        if (admin.role !== 'admin') {
-          navigate(createPageUrl('Dashboard'));
-          return;
-        }
+      if (userLoading) return;
 
+      if (!currentUser) {
+        navigate(createPageUrl('Login'));
+        return;
+      }
+
+      if (currentUser.role !== 'admin') {
+        navigate(createPageUrl('Dashboard'));
+        return;
+      }
+
+      try {
         // שליפת ID המשתמש מה-URL
         const urlParams = new URLSearchParams(window.location.search);
         const userId = urlParams.get('id');
-        
+
         if (!userId) {
           setError('לא צוין מזהה משתמש');
+          setLoading(false);
           return;
         }
 
@@ -66,6 +72,7 @@ export default function AdminUserProfile() {
         const userData = await User.get ? await User.get(userId) : null;
         if (!userData) {
           setError('משתמש לא נמצא');
+          setLoading(false);
           return;
         }
         setUser(userData);
@@ -79,7 +86,7 @@ export default function AdminUserProfile() {
         if (quoteIds.length > 0) {
           // נחפש עסקאות עבור הצעות המחיר של המשתמש
           const transactions = await FinancialTransaction.list('-closingDate');
-          const userTransactionsFiltered = transactions.filter(t => 
+          const userTransactionsFiltered = transactions.filter(t =>
             quoteIds.includes(t.quoteId)
           );
           setUserTransactions(userTransactionsFiltered);
@@ -94,7 +101,7 @@ export default function AdminUserProfile() {
     };
 
     fetchUserProfile();
-  }, [navigate]);
+  }, [currentUser, userLoading, navigate]);
 
   const handleToggleUserStatus = async () => {
     if (!user || (currentUser && user.id === currentUser.id)) {

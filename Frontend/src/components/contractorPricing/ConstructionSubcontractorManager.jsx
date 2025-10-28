@@ -1,6 +1,7 @@
 
 import React from "react";
-import { User } from "@/api/entities";
+import { supabase } from "@/lib/supabase";
+import { useUser } from "@/components/utils/UserContext";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -256,12 +257,15 @@ export default function ConstructionSubcontractorManager() {
   const numPrice = `${numBase} text-indigo-600 font-bold`;
   const numProfit = `${numBase} text-green-700 font-bold`;
 
+  const { user } = useUser();
+
   React.useEffect(() => {
     const load = async () => {
-      const u = await User.me();
-      const desired = (u.constructionDefaults?.desiredProfitPercent ?? 30);
-      const worker = (u.constructionDefaults?.workerCostPerUnit ?? 0); // This is now day cost
-      const its = u.constructionSubcontractorItems || [];
+      if (!user) return;
+
+      const desired = (user.user_metadata?.constructionDefaults?.desiredProfitPercent ?? 30);
+      const worker = (user.user_metadata?.constructionDefaults?.workerCostPerUnit ?? 0); // This is now day cost
+      const its = user.user_metadata?.constructionSubcontractorItems || [];
 
       // אם אין נתונים – זורעים את כל הפריטים שנמסרו עם חישוב עלות קבלן מהחומרים והשעות
       if (!its || its.length === 0) {
@@ -276,9 +280,12 @@ export default function ConstructionSubcontractorManager() {
             desiredProfitPercent: undefined
           };
         });
-        await User.updateMyUserData({
-          constructionDefaults: { desiredProfitPercent: desired, workerCostPerUnit: worker },
-          constructionSubcontractorItems: seeded
+        await supabase.auth.updateUser({
+          data: {
+            ...user.user_metadata,
+            constructionDefaults: { desiredProfitPercent: desired, workerCostPerUnit: worker },
+            constructionSubcontractorItems: seeded
+          }
         });
         setItems(seeded);
         setDefaults({ desiredProfitPercent: desired, workerCostPerUnit: worker });
@@ -381,9 +388,12 @@ export default function ConstructionSubcontractorManager() {
 
       // היה שינוי כלשהו? נשמור אוטומטית (גם אם לא נוספו פריטים)
       if (didMerge || changedDuringEnrich) {
-        await User.updateMyUserData({
-          constructionDefaults: { desiredProfitPercent: desired, workerCostPerUnit: worker },
-          constructionSubcontractorItems: merged
+        await supabase.auth.updateUser({
+          data: {
+            ...user.user_metadata,
+            constructionDefaults: { desiredProfitPercent: desired, workerCostPerUnit: worker },
+            constructionSubcontractorItems: merged
+          }
         });
       }
 
@@ -391,14 +401,19 @@ export default function ConstructionSubcontractorManager() {
       setDefaults({ desiredProfitPercent: desired, workerCostPerUnit: worker });
     };
     load();
-  }, []);
+  }, [user]);
 
   // עדכון ברירות מחדל ושמירה למשתמש
   const updateDefaults = async (patch) => {
     setDefaults((prev) => {
       const next = { ...prev, ...patch };
       // שמירה אסינכרונית (אין צורך לחכות)
-      User.updateMyUserData({ constructionDefaults: next });
+      supabase.auth.updateUser({
+        data: {
+          ...user.user_metadata,
+          constructionDefaults: next
+        }
+      });
       return next;
     });
   };
@@ -435,7 +450,12 @@ export default function ConstructionSubcontractorManager() {
     const exists = items.some(i => i.id === itemToSave.id);
     const newList = exists ? items.map(i => (i.id === itemToSave.id ? itemToSave : i)) : [...items, itemToSave];
 
-    await User.updateMyUserData({ constructionSubcontractorItems: newList });
+    await supabase.auth.updateUser({
+      data: {
+        ...user.user_metadata,
+        constructionSubcontractorItems: newList
+      }
+    });
     setItems(newList);
     setIsDialogOpen(false);
     setEditingItem(null);
@@ -443,7 +463,12 @@ export default function ConstructionSubcontractorManager() {
 
   const removeItem = async (id) => {
     const newList = items.filter(i => i.id !== id);
-    await User.updateMyUserData({ constructionSubcontractorItems: newList });
+    await supabase.auth.updateUser({
+      data: {
+        ...user.user_metadata,
+        constructionSubcontractorItems: newList
+      }
+    });
     setItems(newList);
   };
 
@@ -467,9 +492,12 @@ export default function ConstructionSubcontractorManager() {
       };
     });
 
-    await User.updateMyUserData({
-      constructionDefaults: defaults,
-      constructionSubcontractorItems: updated,
+    await supabase.auth.updateUser({
+      data: {
+        ...user.user_metadata,
+        constructionDefaults: defaults,
+        constructionSubcontractorItems: updated,
+      }
     });
 
     setItems(updated);
