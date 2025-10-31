@@ -48,7 +48,7 @@ htmlcov/
 
 # Documentation and Data Files
 *.md
-*.txt
+
 *.sql
 
 # OS
