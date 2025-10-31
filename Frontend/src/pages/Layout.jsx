@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { User } from '@/api/entities';
+import { User } from '@/lib/entities';
 import { UserProvider, useUser } from '@/components/utils/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {

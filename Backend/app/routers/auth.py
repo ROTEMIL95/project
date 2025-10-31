@@ -34,3 +34,12 @@ async def refresh_token(user_id: str = Depends(get_current_user)):
         refresh_token=refresh_token,
         token_type="bearer"
     )
+
+
+@router.patch("/me", response_model=dict)
+async def update_current_user_profile(
+    user_data: dict,
+    user_id: str = Depends(get_current_user)
+):
+    """Update current user profile"""
+    return await auth_service.update_user_profile(user_id, user_data)

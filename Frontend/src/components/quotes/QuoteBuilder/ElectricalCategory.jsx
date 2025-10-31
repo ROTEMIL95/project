@@ -1,6 +1,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
-import { User } from "@/api/entities";
+import { useUser } from "@/components/utils/UserContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,17 +58,22 @@ export default function ElectricalCategory({
   // CHANGED: State for showing/hiding dates section - default to FALSE (closed)
   const [showDates, setShowDates] = useState(false);
 
+  // Get user data from context
+  const { user } = useUser();
+
   // Load user's electrical price list
   useEffect(() => {
-    const run = async () => {
-      setLoading(true);
-      const u = await User.me();
-      setItems((u.electricalSubcontractorItems || []).filter((x) => x.isActive !== false));
-      setDefaults(u.electricalDefaults || { desiredProfitPercent: 40 });
+    if (!user) {
       setLoading(false);
-    };
-    run();
-  }, []);
+      return;
+    }
+
+    setLoading(true);
+    const electricalItems = user.user_metadata?.electricalSubcontractorItems || [];
+    setItems(electricalItems.filter((x) => x.isActive !== false));
+    setDefaults(user.user_metadata?.electricalDefaults || { desiredProfitPercent: 40 });
+    setLoading(false);
+  }, [user]);
 
   const timing = categoryTimings?.[categoryId] || { startDate: "", endDate: "" };
   const startDate = timing.startDate ? new Date(timing.startDate) : undefined;

@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Quote } from '@/api/entities';
-import { User } from '@/api/entities';
+import { Quote, User } from '@/lib/entities';
 import { Users, Calendar, Clock, AlertTriangle, Package, ShoppingCart, DollarSign, Lightbulb, Landmark } from 'lucide-react'; // Added Landmark
 import { format, differenceInDays, addWeeks, addDays } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -111,7 +110,7 @@ export default function UpcomingWorkforce() {
           const today = new Date();
 
           approvedQuotes.forEach(quote => {
-            const { categoryTimings = {}, items = [], paymentTerms = [], finalAmount = 0, created_date, endDate: projectEndDate } = quote;
+            const { categoryTimings = {}, items = [], paymentTerms = [], total_price = 0, created_at, endDate: projectEndDate } = quote;
 
             // חישוב תאריך סיום העבודה האחרון בפרויקט
             let latestCategoryEndDate = new Date(0); // Initialize with a very old date
@@ -125,7 +124,7 @@ export default function UpcomingWorkforce() {
             });
             
             // אם אין תאריכי סיום לקטגוריות, נשתמש בתאריך סיום הפרויקט הכללי או בתאריך היצירה
-            const fallbackEndDate = projectEndDate ? new Date(projectEndDate) : (created_date ? new Date(created_date) : today);
+            const fallbackEndDate = projectEndDate ? new Date(projectEndDate) : (created_at ? new Date(created_at) : today);
             if (latestCategoryEndDate.getTime() === new Date(0).getTime() || isNaN(latestCategoryEndDate.getTime())) { 
                 latestCategoryEndDate = fallbackEndDate;
             }
@@ -135,7 +134,7 @@ export default function UpcomingWorkforce() {
             }
 
             // חישוב תאריכים עבור תנאי התשלום - עם קדימות לתאריכים ידניים
-            const approvalDate = new Date(created_date || today); // Use created_date if available, otherwise today
+            const approvalDate = new Date(created_at || today); // Use created_at if available, otherwise today
             const finalPaymentDate = addWeeks(latestCategoryEndDate, 1);
 
             const paymentTermsWithDates = (paymentTerms || []).map((term, index) => {
@@ -238,7 +237,7 @@ export default function UpcomingWorkforce() {
                     recommendation2,
                     costDetails,
                     paymentTerms: paymentTermsWithDates, // שימוש במערך המעודכן עם תאריכים
-                    finalAmount: finalAmount || 0,
+                    total_price: total_price || 0,
                     quoteId: quote.id
                   });
                 }
@@ -451,7 +450,7 @@ export default function UpcomingWorkforce() {
                                             <span className="text-gray-600 truncate flex-1">{term.milestone} ({term.percentage}%)</span>
                                             <div className="flex items-center gap-3 text-right">
                                                 <span className="font-bold text-gray-800 w-20 text-left">
-                                                    {formatPrice((work.finalAmount * term.percentage) / 100)} ₪
+                                                    {formatPrice((work.total_price * term.percentage) / 100)} ₪
                                                 </span>
                                                 <span className="font-mono text-gray-500 w-14 text-right">{term.paymentDate}</span>
                                             </div>

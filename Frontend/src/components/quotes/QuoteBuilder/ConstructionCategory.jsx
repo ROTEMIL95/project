@@ -13,7 +13,8 @@ import { Calendar as CalendarIcon, Hammer, Settings, Calculator, Plus, Trash2, P
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import CategoryStepper from "./CategoryStepper";
-import { User } from "@/api/entities";
+import { User } from "@/lib/entities";
+import { useUser } from "@/components/utils/UserContext";
 import ConstructionAddItemDialog from "./ConstructionAddItemDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ConstructionInlineEditor from "./ConstructionInlineEditor";
@@ -78,6 +79,7 @@ export default function ConstructionCategory({
   setSelectedItems,
   onProceed,
 }) {
+  const { user: currentUser } = useUser();
   const [pricingDefaults, setPricingDefaults] = React.useState({
     laborCostPerDay: 1000,
     desiredProfitPercent: 30
@@ -133,39 +135,39 @@ export default function ConstructionCategory({
   };
 
   React.useEffect(() => {
-    (async () => {
-      try {
-        const me = await User.me();
-        const d = me?.constructionDefaults || {};
+    if (!currentUser?.user_metadata) return;
 
-        let day = 1000;
-        const dayCandidate = Number(d.laborCostPerDay);
-        const workerCost = Number(d.workerCostPerUnit);
-        if (!isNaN(dayCandidate) && dayCandidate > 0) {
-          day = dayCandidate;
-        } else if (!isNaN(workerCost) && workerCost > 0) {
-          day = workerCost <= 500 ? workerCost * 8 : workerCost;
-        }
+    try {
+      const me = currentUser.user_metadata;
+      const d = me?.constructionDefaults || {};
 
-        console.log('Construction defaults loaded:', { 
-          laborCostPerDay: d.laborCostPerDay, 
-          workerCostPerUnit: d.workerCostPerUnit, 
-          calculated: day 
-        });
-
-        setPricingDefaults({
-          laborCostPerDay: day > 0 ? day : 1000,
-          desiredProfitPercent: Number(d.desiredProfitPercent) || 30
-        });
-        const items = Array.isArray(me?.constructionSubcontractorItems)
-          ? me.constructionSubcontractorItems.filter(it => it.isActive !== false)
-          : [];
-        setCatalogItems(items);
-      } catch (e) {
-        console.error("Failed to load construction defaults or catalog items:", e);
+      let day = 1000;
+      const dayCandidate = Number(d.laborCostPerDay);
+      const workerCost = Number(d.workerCostPerUnit);
+      if (!isNaN(dayCandidate) && dayCandidate > 0) {
+        day = dayCandidate;
+      } else if (!isNaN(workerCost) && workerCost > 0) {
+        day = workerCost <= 500 ? workerCost * 8 : workerCost;
       }
-    })();
-  }, []);
+
+      console.log('Construction defaults loaded:', {
+        laborCostPerDay: d.laborCostPerDay,
+        workerCostPerUnit: d.workerCostPerUnit,
+        calculated: day
+      });
+
+      setPricingDefaults({
+        laborCostPerDay: day > 0 ? day : 1000,
+        desiredProfitPercent: Number(d.desiredProfitPercent) || 30
+      });
+      const items = Array.isArray(me?.constructionSubcontractorItems)
+        ? me.constructionSubcontractorItems.filter(it => it.isActive !== false)
+        : [];
+      setCatalogItems(items);
+    } catch (e) {
+      console.error("Failed to load construction defaults or catalog items:", e);
+    }
+  }, [currentUser]);
 
   // NEW: compute available subcats from catalog
   const presentSubcats = React.useMemo(() => {

@@ -6,9 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Landmark, TrendingUp, TrendingDown, DollarSign, BarChart3, PieChart, Users, Loader2, Edit, Save, X, Trash2, CalendarIcon, Filter, ChevronDown, FileText, CheckCircle, XCircle, Clock, Send, Eye, ArrowUp, ArrowDown, CircleDollarSign, Percent, Archive } from 'lucide-react';
-import { FinancialTransaction } from '@/api/entities';
-import { Quote } from '@/api/entities';
-import { User } from '@/api/entities';
+import { FinancialTransaction } from '@/lib/entities';
+import { Quote } from '@/lib/entities';
+import { User } from '@/lib/entities';
 import { useUser } from '@/components/utils/UserContext';
 import StatCard from '@/components/finance/StatCard';
 
@@ -170,7 +170,7 @@ export default function Finance() {
             return;
         }
         try {
-            const quotesData = await Quote.filter({ created_by: user.email }, '-created_date');
+            const quotesData = await Quote.filter({ user_id: user.id });
             setQuotes(quotesData || []);
         } catch (err) {
             console.error("Failed to fetch quotes:", err);

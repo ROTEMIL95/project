@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User } from '@/api/entities';
+import { User } from '@/lib/entities';
 import { 
   Home, 
   Calculator, 

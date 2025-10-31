@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CustomerInquiry } from '@/api/entities';
-import { User } from '@/api/entities';
+import { CustomerInquiry } from '@/lib/entities';
+import { User } from '@/lib/entities';
 import { useUser } from '@/components/utils/UserContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

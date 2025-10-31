@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { ContractorPricing as ContractorPricingEntity } from '@/api/entities'; // Renamed to avoid conflict
-import { User } from '@/api/entities';
+import { ContractorPricing as ContractorPricingEntity } from '@/lib/entities'; // Renamed to avoid conflict
+import { User } from '@/lib/entities';
 import { useUser } from '@/components/utils/UserContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

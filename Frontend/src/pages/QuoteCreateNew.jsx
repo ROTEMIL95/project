@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { User } from '@/api/entities';
-import { Quote } from '@/api/entities';
+import { User } from '@/lib/entities';
+import { Quote } from '@/lib/entities';
 import { useUser } from '@/components/utils/UserContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

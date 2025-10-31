@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Quote } from '@/api/entities';
+import { Quote } from '@/lib/entities';
 import QuoteToHTML from '@/components/quotes/QuoteToHTML';
 import { Loader2, AlertCircle, Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';

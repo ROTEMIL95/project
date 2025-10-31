@@ -1,6 +1,7 @@
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { User } from "@/api/entities";
+import { User } from "@/lib/entities";
+import { useUser } from "@/components/utils/UserContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,7 @@ export default function DemolitionCategory({
   onSelectCategory,
   onProceed, // NEW: Added onProceed prop
 }) {
+  const { user: currentUser } = useUser();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [defaults, setDefaults] = useState({ laborCostPerDay: 1000, profitPercent: 30 });
@@ -49,24 +51,28 @@ export default function DemolitionCategory({
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [showEditDialog, setShowEdit] = useState(false);
-  
+
   // CHANGED: State for showing/hiding dates section - default to FALSE (closed)
   const [showDates, setShowDates] = useState(false);
 
   // טעינת פריטי הריסה מהמחירון
   useEffect(() => {
-    const run = async () => {
+    const run = () => {
       setLoading(true);
-      const u = await User.me();
-      setItems((u.demolitionItems || []).filter((x) => x.isActive !== false));
-      setDefaults({
-        laborCostPerDay: Number(u.demolitionDefaults?.laborCostPerDay) || 1000,
-        profitPercent: Number(u.demolitionDefaults?.profitPercent) || 30,
-      });
+      if (currentUser?.user_metadata) {
+        const u = currentUser.user_metadata;
+        setItems((u.demolitionItems || []).filter((x) => x.isActive !== false));
+        setDefaults({
+          laborCostPerDay: Number(u.demolitionDefaults?.laborCostPerDay) || 1000,
+          profitPercent: Number(u.demolitionDefaults?.profitPercent) || 30,
+        });
+      }
       setLoading(false);
     };
-    run();
-  }, []);
+    if (currentUser) {
+      run();
+    }
+  }, [currentUser]);
 
   const timing = categoryTimings?.[categoryId] || { startDate: "", endDate: "" };
   const startDate = timing.startDate ? new Date(timing.startDate) : undefined;

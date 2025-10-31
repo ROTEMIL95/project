@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User } from '@/api/entities';
-import { Quote } from '@/api/entities';
-import { FinancialTransaction } from '@/api/entities';
+import { User } from '@/lib/entities';
+import { Quote } from '@/lib/entities';
+import { FinancialTransaction } from '@/lib/entities';
 import { createPageUrl } from '@/utils';
 import { useUser } from '@/components/utils/UserContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -78,7 +78,7 @@ export default function AdminUserProfile() {
         setUser(userData);
 
         // שליפת הצעות המחיר של המשתמש
-        const quotes = await Quote.filter({ created_by: userData.email }, '-created_date');
+        const quotes = await Quote.filter({ user_id: userData.id });
         setUserQuotes(quotes);
 
         // שליפת עסקאות פיננסיות של המשתמש (באמצעות הצעות המחיר שלו)

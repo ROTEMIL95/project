@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Quote } from '@/api/entities';
-import { FinancialTransaction } from '@/api/entities';
+import { Quote } from '@/lib/entities';
+import { FinancialTransaction } from '@/lib/entities';
 import { useUser } from '@/components/utils/UserContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,7 +126,7 @@ export default function SentQuotes() {
         try {
             if (!user) throw new Error("User context is missing.");
 
-            const fetchedQuotes = await Quote.filter({ created_by: user.email });
+            const fetchedQuotes = await Quote.filter({ user_id: user.id });
             setQuotes(fetchedQuotes);
         } catch (err) {
             console.error("Error loading quotes:", err);

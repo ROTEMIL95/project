@@ -17,7 +17,7 @@ import TilingDefaultsSettings from '@/components/costCalculator/TilingDefaultsSe
 import TilingQuickDefaults from '@/components/costCalculator/TilingQuickDefaults';
 import PaintQuickDefaults from '@/components/costCalculator/PaintQuickDefaults';
 import { supabase } from '@/lib/supabase';
-import { Category } from '@/api/entities';
+import { Category, User } from '@/lib/entities';
 import { cn } from '@/lib/utils';
 import CategorySwitcher from "@/components/common/CategorySwitcher";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -576,11 +576,19 @@ export default function CostCalculator() {
         try {
             if (category === 'tiling') {
                 const updatedTilingItems = tilingItems.filter(i => i.id !== itemId);
-                await User.updateMyUserData({ tilingItems: updatedTilingItems });
+                if (typeof User.updateMyUserData === 'function') {
+                    await User.updateMyUserData({ tilingItems: updatedTilingItems });
+                } else {
+                    console.log('User.updateMyUserData not available - backend not connected');
+                }
                 setTilingItems(updatedTilingItems);
             } else if (category === 'paint_plaster') {
                 const updatedPaintItems = paintItems.filter(i => i.id !== itemId);
-                await User.updateMyUserData({ paintItems: updatedPaintItems });
+                if (typeof User.updateMyUserData === 'function') {
+                    await User.updateMyUserData({ paintItems: updatedPaintItems });
+                } else {
+                    console.log('User.updateMyUserData not available - backend not connected');
+                }
                 setPaintItems(updatedPaintItems);
             }
             // Removed: else if for demolition_disposal
@@ -619,12 +627,11 @@ export default function CostCalculator() {
     // New handler to save tiling defaults
     const handleSaveTilingDefaults = async (defaults) => {
         try {
-            await supabase.auth.updateUser({
-                data: {
-                    ...userData.user_metadata,
-                    tilingUserDefaults: defaults
-                }
-            });
+            if (typeof User.updateMyUserData === 'function') {
+                await User.updateMyUserData({ tiling_user_defaults: defaults });
+            } else {
+                console.log('User.updateMyUserData not available - backend not connected');
+            }
             setUserTilingDefaults(defaults);
             setShowTilingDefaultsSettings(false);
         } catch (error) {
@@ -639,12 +646,11 @@ export default function CostCalculator() {
             ...(userTilingDefaults || {}),
             ...partialDefaults,
         };
-        await supabase.auth.updateUser({
-            data: {
-                ...userData.user_metadata,
-                tilingUserDefaults: merged
-            }
-        });
+        if (typeof User.updateMyUserData === 'function') {
+            await User.updateMyUserData({ tiling_user_defaults: merged });
+        } else {
+            console.log('User.updateMyUserData not available - backend not connected');
+        }
         setUserTilingDefaults(merged);
 
         // החלת ההגדרות על כל פריטי הריצוף השמורים (ללא כניסה לפריטים)
@@ -681,12 +687,11 @@ export default function CostCalculator() {
                     return newItem;
                 });
 
-                await supabase.auth.updateUser({
-                data: {
-                    ...userData.user_metadata,
-                    tilingItems: updatedItems
+                if (typeof User.updateMyUserData === 'function') {
+                    await User.updateMyUserData({ tiling_items: updatedItems });
+                } else {
+                    console.log('User.updateMyUserData not available - backend not connected');
                 }
-            });
                 setTilingItems(updatedItems);
             }
         }
@@ -698,12 +703,11 @@ export default function CostCalculator() {
             ...(userPaintDefaults || {}),
             ...partialDefaults,
         };
-        await supabase.auth.updateUser({
-            data: {
-                ...userData.user_metadata,
-                paintUserDefaults: merged
-            }
-        });
+        if (typeof User.updateMyUserData === 'function') {
+            await User.updateMyUserData({ paint_user_defaults: merged });
+        } else {
+            console.log('User.updateMyUserData not available - backend not connected');
+        }
         setUserPaintDefaults(merged);
 
         if (options.applyToExisting) {
@@ -735,12 +739,11 @@ export default function CostCalculator() {
                     return newItem;
                 });
 
-                await supabase.auth.updateUser({
-                data: {
-                    ...userData.user_metadata,
-                    paintItems: updatedItems
+                if (typeof User.updateMyUserData === 'function') {
+                    await User.updateMyUserData({ paint_items: updatedItems });
+                } else {
+                    console.log('User.updateMyUserData not available - backend not connected');
                 }
-            });
                 setPaintItems(updatedItems);
             }
         }
@@ -756,12 +759,11 @@ export default function CostCalculator() {
 
     const handleSaveRoomEstimates = async (updatedEstimates) => {
         try {
-            await supabase.auth.updateUser({
-                data: {
-                    ...userData.user_metadata,
-                    roomEstimates: updatedEstimates
-                }
-            });
+            if (typeof User.updateMyUserData === 'function') {
+                await User.updateMyUserData({ room_estimates: updatedEstimates });
+            } else {
+                console.log('User.updateMyUserData not available - backend not connected');
+            }
             setUserData(prevUserData => ({
                 ...prevUserData,
                 roomEstimates: updatedEstimates
@@ -835,12 +837,12 @@ export default function CostCalculator() {
                 updatedItems = [...tilingItems, newItem];
             }
 
-            await supabase.auth.updateUser({
-                data: {
-                    ...userData.user_metadata,
-                    tilingItems: updatedItems
-                }
-            });
+            // Save to user_profile table via backend API
+            if (typeof User.updateMyUserData === 'function') {
+                await User.updateMyUserData({ tiling_items: updatedItems });
+            } else {
+                console.log('User.updateMyUserData not available - backend not connected');
+            }
 
             setTilingItems(updatedItems);
             setIsAddingNewTilingItem(false);
@@ -910,12 +912,12 @@ export default function CostCalculator() {
                 updatedItems = [...paintItems, newItem];
             }
 
-            await supabase.auth.updateUser({
-                data: {
-                    ...userData.user_metadata,
-                    paintItems: updatedItems
-                }
-            });
+            // Save to user_profile table via backend API
+            if (typeof User.updateMyUserData === 'function') {
+                await User.updateMyUserData({ paint_items: updatedItems });
+            } else {
+                console.log('User.updateMyUserData not available - backend not connected');
+            }
 
             setPaintItems(updatedItems);
             setIsAddingNewPaintItem(false);
@@ -983,12 +985,11 @@ export default function CostCalculator() {
                     { id: 'bathroom', roomType: 'אמבטיה', wallAreaSqM: 20, ceilingAreaSqM: 5, openingsReduction: { few: 5, regular: 10, many: 20 } },
                 ];
                 if (!userData.user_metadata?.roomEstimates || userData.user_metadata.roomEstimates.length === 0) {
-                    await supabase.auth.updateUser({
-                        data: {
-                            ...userData.user_metadata,
-                            roomEstimates: defaultRoomEstimates
-                        }
-                    });
+                    if (typeof User.updateMyUserData === 'function') {
+                        await User.updateMyUserData({ room_estimates: defaultRoomEstimates });
+                    } else {
+                        console.log('User.updateMyUserData not available - backend not connected');
+                    }
                 }
 
                 // Load user's tiling defaults
@@ -1012,12 +1013,11 @@ export default function CostCalculator() {
                 ];
                 let currentTilingItems = userData.user_metadata?.tilingItems;
                 if (currentTilingItems == null) {
-                    await supabase.auth.updateUser({
-                        data: {
-                            ...userData.user_metadata,
-                            tilingItems: newTilingItemsFromTable
-                        }
-                    });
+                    if (typeof User.updateMyUserData === 'function') {
+                        await User.updateMyUserData({ tiling_items: newTilingItemsFromTable });
+                    } else {
+                        console.log('User.updateMyUserData not available - backend not connected');
+                    }
                     currentTilingItems = newTilingItemsFromTable;
                 }
 

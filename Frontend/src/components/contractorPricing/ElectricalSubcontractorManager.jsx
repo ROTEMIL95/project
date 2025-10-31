@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/components/utils/UserContext";
+import { User } from '@/lib/entities';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -268,7 +269,15 @@ export default function ElectricalSubcontractorManager() {
 
   const handleSaveAll = async () => {
     setSaving(true);
-    await User.updateMyUserData({ electricalSubcontractorItems: items, electricalDefaults: defaults });
+    try {
+      if (typeof User.updateMyUserData === 'function') {
+        await User.updateMyUserData({ electricalSubcontractorItems: items, electricalDefaults: defaults });
+      } else {
+        console.log('User.updateMyUserData not available - backend not connected');
+      }
+    } catch (error) {
+      console.error('Failed to save electrical subcontractor data:', error);
+    }
     setSaving(false);
   };
 

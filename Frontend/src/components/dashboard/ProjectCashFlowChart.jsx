@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Quote } from '@/api/entities';
-import { User } from '@/api/entities';
+import { Quote } from '@/lib/entities';
+import { User } from '@/lib/entities';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, Filter, BarChart3, Calendar, Users } from 'lucide-react';
 import { addDays, addWeeks, format, startOfMonth, differenceInDays, isWithinInterval, startOfDay, addMonths } from 'date-fns';
@@ -108,13 +108,13 @@ export default function ProjectCashFlowChart() {
 
         filteredQuotes.forEach(quote => {
           const { 
-            finalAmount = 0, 
+            total_price = 0, 
             paymentTerms = [], 
             categoryTimings = {}, 
             items = [], 
-            estimatedCost = 0,
+            total_cost = 0,
             startDate: quoteStartDate, // תאריך התחלה מוגדר בהצעה
-            created_date
+            created_at
           } = quote;
           
           const projectPaymentTerms = user.defaultPaymentTerms || paymentTerms;
@@ -129,12 +129,12 @@ export default function ProjectCashFlowChart() {
               }
             });
 
-            const approvalDate = new Date(quote.created_date || today);
+            const approvalDate = new Date(quote.created_at || today);
             const finalPaymentDate = addWeeks(latestCategoryEndDate, 1);
 
             projectPaymentTerms.forEach((term, index) => {
               let paymentDate;
-              const paymentAmount = (finalAmount * term.percentage) / 100;
+              const paymentAmount = (total_price * term.percentage) / 100;
               
               if (index === 0) paymentDate = approvalDate;
               else if (index === projectPaymentTerms.length - 1) paymentDate = finalPaymentDate;
@@ -160,7 +160,7 @@ export default function ProjectCashFlowChart() {
           
           // חישוב הוצאות - רק עבור הצעות מאושרות
           if (quote.status === 'אושר') {
-            const totalProjectCost = estimatedCost;
+            const totalProjectCost = total_cost;
             let distributedCost = 0;
 
             // חישוב הוצאות לפי קטגוריות ותאריכי עבודה בפועל
@@ -211,7 +211,7 @@ export default function ProjectCashFlowChart() {
 
               // אם גם זה לא קיים, השתמש בתאריך יצירת ההצעה (כברירת מחדל אחרונה)
               if (projectRealStartDate.getTime() === today.getTime()) {
-                projectRealStartDate = new Date(created_date || today);
+                projectRealStartDate = new Date(created_at || today);
               }
 
               let projectEndDate = new Date(projectRealStartDate);

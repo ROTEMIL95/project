@@ -1,5 +1,5 @@
 import React from 'react';
-import { User } from '@/api/entities';
+import { User } from '@/lib/entities';
 
 // פונקציה שבודקת אם המשתמש פעיל לפני כל פעולה
 export const checkUserActiveStatus = async () => {

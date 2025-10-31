@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Category } from '@/api/entities';
-import { CatalogItem } from '@/api/entities';
+import { Category } from '@/lib/entities';
+import { CatalogItem } from '@/lib/entities';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { QuoteTemplate } from '@/api/entities';
+import { QuoteTemplate } from '@/lib/entities';
 import {
   Card,
   CardContent,

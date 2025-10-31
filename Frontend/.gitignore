@@ -24,3 +24,7 @@ dist-ssr
 *.sw?
 
 .env
+
+# Documentation and Data Files
+*.md
+*.sql

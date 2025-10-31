@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Quote } from '@/api/entities';
-import { User } from '@/api/entities';
+import { Quote } from '@/lib/entities';
+import { User } from '@/lib/entities';
 import QuoteToHTML from '@/components/quotes/QuoteToHTML';
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle, ArrowLeft, Edit, Download } from 'lucide-react';
@@ -34,7 +34,7 @@ export default function QuoteView() {
           return;
         }
 
-        const fetchedQuotes = await Quote.filter({ id: quoteId, created_by: user.email });
+        const fetchedQuotes = await Quote.filter({ id: quoteId, user_id: user.id });
         const fetchedQuote = fetchedQuotes[0];
 
         if (fetchedQuote) {

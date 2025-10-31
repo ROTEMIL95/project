@@ -69,15 +69,12 @@ async def register_user(user_data: UserCreate) -> dict:
 
     try:
         # Check if user already exists
-        existing = supabase.table("users").select("*").eq("email", user_data.email).execute()
+        existing = supabase.table("user_profiles").select("*").eq("email", user_data.email).execute()
         if existing.data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
-
-        # Hash password
-        hashed_password = hash_password(user_data.password)
 
         # Create user in Supabase Auth
         auth_response = supabase.auth.sign_up({
@@ -93,17 +90,20 @@ async def register_user(user_data: UserCreate) -> dict:
 
         user_id = auth_response.user.id
 
-        # Create user profile in users table
-        user_profile = {
-            "id": user_id,
+        # Create user profile in user_profiles table
+        # Note: Most fields have defaults in the database schema
+        y = {
+            "auth_user_id": user_id,
             "email": user_data.email,
             "full_name": user_data.full_name,
             "phone": user_data.phone,
-            "role": "user",
-            "password_hash": hashed_password
+            "role": "admin" if user_data.email in ["rotemiluz53@gmail.com", "avishaycohen11@gmail.com"] else "user",
+            "contract_template": "",
+            "contractor_commitments": "",
+            "client_commitments": ""
         }
 
-        profile_response = supabase.table("users").insert(user_profile).execute()
+        profile_response = supabase.table("user_profiles").insert(user_profile).execute()
 
         # Generate tokens
         access_token = create_access_token(user_id)
@@ -131,27 +131,35 @@ async def login_user(credentials: UserLogin) -> Token:
     supabase = get_supabase()
 
     try:
-        # Get user from database
-        response = supabase.table("users").select("*").eq("email", credentials.email).execute()
+        # Use Supabase Auth for login (it handles password verification)
+        auth_response = supabase.auth.sign_in_with_password({
+            "email": credentials.email,
+            "password": credentials.password
+        })
+
+        if not auth_response.user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
+            )
+
+        user_id = auth_response.user.id
+
+        # Get user profile from database
+        response = supabase.table("user_profiles").select("*").eq("auth_user_id", user_id).execute()
 
         if not response.data:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User profile not found"
             )
 
-        user = response.data[0]
-
-        # Verify password
-        if not verify_password(credentials.password, user["password_hash"]):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
-            )
+        # Update last login date
+        supabase.table("user_profiles").update({"last_login_date": datetime.utcnow().isoformat()}).eq("auth_user_id", user_id).execute()
 
         # Generate tokens
-        access_token = create_access_token(user["id"])
-        refresh_token = create_refresh_token(user["id"])
+        access_token = create_access_token(user_id)
+        refresh_token = create_refresh_token(user_id)
 
         return Token(
             access_token=access_token,
@@ -174,7 +182,7 @@ async def get_user_by_id(user_id: str) -> dict:
     supabase = get_supabase()
 
     try:
-        response = supabase.table("users").select("*").eq("id", user_id).execute()
+        response = supabase.table("user_profiles").select("*").eq("auth_user_id", user_id).execute()
 
         if not response.data:
             raise HTTPException(
@@ -183,8 +191,6 @@ async def get_user_by_id(user_id: str) -> dict:
             )
 
         user = response.data[0]
-        # Remove password hash from response
-        user.pop("password_hash", None)
         return user
 
     except HTTPException:
@@ -194,4 +200,46 @@ async def get_user_by_id(user_id: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get user"
+        )
+
+
+async def update_user_profile(user_id: str, user_data: dict) -> dict:
+    """Update user profile"""
+    supabase = get_supabase()
+
+    try:
+        # Check if user exists
+        existing = supabase.table("user_profiles").select("*").eq("auth_user_id", user_id).execute()
+
+        if not existing.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        # Remove sensitive fields that shouldn't be updated via this endpoint
+        update_data = {k: v for k, v in user_data.items() if k not in ['id', 'auth_user_id', 'created_at']}
+
+        if not update_data:
+            return existing.data[0]
+
+        # Update user
+        response = supabase.table("user_profiles").update(update_data).eq("auth_user_id", user_id).execute()
+
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update user"
+            )
+
+        user = response.data[0]
+        return user
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Update user error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user"
         )

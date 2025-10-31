@@ -3,10 +3,10 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { supabase } from '@/lib/supabase';
-import { Quote } from '@/api/entities';
-import { Client } from '@/api/entities';
-import { CatalogItem } from '@/api/entities';
-import { Category } from '@/api/entities';
+import { Quote } from '@/lib/entities';
+import { Client } from '@/lib/entities';
+import { CatalogItem } from '@/lib/entities';
+import { Category } from '@/lib/entities';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -214,6 +214,9 @@ function PersistedStep3({
   // NEW PROPS:
   tilingWorkTypes,
   userTilingItems,
+  user,
+  stagedManualItems,
+  setStagedManualItems,
 }) {
   // compute effective category
   const effectiveCategoryId = selectedCategories.includes(currentCategoryForItems)
@@ -356,6 +359,9 @@ function PersistedStep3({
             // NEW PROPS
             tilingWorkTypes={tilingWorkTypes}
             userTilingItems={userTilingItems}
+            user={user}
+            stagedManualItems={stagedManualItems}
+            setStagedManualItems={setStagedManualItems}
           />
         </>
       </ErrorBoundary>
@@ -363,7 +369,20 @@ function PersistedStep3({
   }
 
   return (
-    <div style={{ display: visible ? 'block' : 'none' }}>
+    <div 
+      style={{ display: visible ? 'block' : 'none' }} 
+      className="persisted-step3-container"
+    >
+      <style>{`
+        .persisted-step3-container [role="dialog"] {
+          margin: 24px;
+        }
+        @media (max-width: 768px) {
+          .persisted-step3-container [role="dialog"] {
+            margin: 12px;
+          }
+        }
+      `}</style>
       {content}
     </div>
   );
@@ -406,6 +425,7 @@ export default function QuoteCreate() {
 
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
+  const [stagedManualItems, setStagedManualItems] = useState([]); // Temporary storage for manual items before consolidation
   const [currentCategoryForItems, setCurrentCategoryForItems] = useState(null);
   const [processedCategories, setProcessedCategories] = useState([]);
   const [discountPercent, setDiscountPercent] = useState(0); // Renamed from 'discount'
@@ -503,6 +523,20 @@ export default function QuoteCreate() {
     const itemCategoryId = itemsToAdd[0].categoryId;
     if (!itemCategoryId) {
         return;
+    }
+
+    // Check if these are manual items that should be staged instead of added directly
+    const isManualItem = itemsToAdd.some(item =>
+      item.source === 'manual_calc' ||
+      item.source === 'tiling_manual' ||
+      item.source === 'tiling_area_autosave'
+    );
+
+    if (isManualItem) {
+      // Stage manual items for consolidation when category is saved
+      setStagedManualItems(prev => [...prev, ...itemsToAdd]);
+      console.log('Manual items staged for consolidation:', itemsToAdd);
+      return; // Don't add to selectedItems yet
     }
 
     const roomBreakdownKey = itemCategoryId === 'cat_paint_plaster' ? 'paint' :
@@ -871,7 +905,7 @@ export default function QuoteCreate() {
         },
       }));
     }
-  }, [normalizeRoomBreakdown, roomBreakdowns, setProjectComplexities, setSelectedItems]);
+  }, [normalizeRoomBreakdown, roomBreakdowns, setProjectComplexities, setSelectedItems, setStagedManualItems]);
 
 
   // נשמור פונקציה גלובלית שתאפשר הוספה לעגלה גם מאזין כללי
@@ -1037,7 +1071,7 @@ export default function QuoteCreate() {
           return;
       }
 
-      const quotes = await Quote.filter({ id: quoteId, created_by: userLoadedData.email });
+      const quotes = await Quote.filter({ id: quoteId, user_id: userLoadedData.id });
       const existingQuote = quotes[0];
 
       if (existingQuote) {
@@ -1190,9 +1224,9 @@ export default function QuoteCreate() {
         setCurrentUser(userData); // Renamed from setUser
 
         // Set new states from user defaults
-        setCategoryCommitments(userData?.categoryCommitments || {});
-        setTilingWorkTypes(userData?.tilingOptions?.workTypes || []);
-        setUserTilingItems(userData?.tilingItems || []);
+        setCategoryCommitments(userData?.user_metadata?.categoryCommitments || {});
+        setTilingWorkTypes(userData?.user_metadata?.tilingWorkTypes || []);
+        setUserTilingItems(userData?.user_metadata?.tilingItems || []);
 
         const urlParams = new URLSearchParams(window.location.search);
         const quoteIdParam = urlParams.get('id');
@@ -1219,28 +1253,9 @@ export default function QuoteCreate() {
     fetchUser();
   }, [user, loadExistingQuote, resetQuoteData, setPaymentTerms, setIsLoadingUser, setCurrentUser, setCategoryCommitments, setTilingWorkTypes, setUserTilingItems]);
 
-  // NEW: Add effect to refresh user data when returning to page
-  useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && !existingQuoteId) { // Renamed from editingQuoteId
-        try {
-          await refreshUser();
-          const { data: { user: freshUserData } } = await supabase.auth.getUser();
-          setCurrentUser(freshUserData); // Renamed from setUser
-          // Update new states on refresh
-          setCategoryCommitments(freshUserData?.categoryCommitments || {});
-          setTilingWorkTypes(freshUserData?.tilingOptions?.workTypes || []);
-          setUserTilingItems(freshUserData?.tilingItems || []);
-        } catch (error) {
-          console.warn("Failed to refresh user data:", error);
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [existingQuoteId, refreshUser, setCurrentUser, setCategoryCommitments, setTilingWorkTypes, setUserTilingItems]);
-
+  // REMOVED: visibilitychange handler that was causing data loss when minimizing tab
+  // The useSafeUser hook already handles connectivity with online/offline events
+  // If user settings need to be refreshed, users can manually refresh the page (F5)
 
   // ADDED: Keep currentCategoryForItems valid when categories change or on step 3
   useEffect(() => {
@@ -2480,6 +2495,9 @@ export default function QuoteCreate() {
           generalEndDate={projectInfo.generalEndDate}
           tilingWorkTypes={tilingWorkTypes}
           userTilingItems={userTilingItems}
+          user={user}
+          stagedManualItems={stagedManualItems}
+          setStagedManualItems={setStagedManualItems}
         />
 
         <FloatingCart

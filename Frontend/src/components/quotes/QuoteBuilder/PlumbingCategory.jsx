@@ -1,6 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
-import { User } from "@/api/entities";
+import { User } from "@/lib/entities";
+import { useUser } from "@/components/utils/UserContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,10 +41,11 @@ export default function PlumbingCategory({
   onSelectCategory,
   onProceed, // NEW: optional next-step handler
 }) {
+  const { user: currentUser } = useUser();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [defaults, setDefaults] = useState({ desiredProfitPercent: 30 }); // CHANGED: default profit percent from 40 to 30
-  const [user, setUser] = useState(null); // Added user state
+  const [user, setUser] = useState(null); // Keep for backward compatibility with existing code
   const [subcatFilter, setSubcatFilter] = useState("all");
   const [qtyMap, setQtyMap] = useState({}); // per item id
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -54,16 +56,20 @@ export default function PlumbingCategory({
 
   // Load user's plumbing price list
   useEffect(() => {
-    const run = async () => {
+    const run = () => {
       setLoading(true);
-      const u = await User.me();
-      setUser(u); // Store the user object
-      setItems((u.plumbingSubcontractorItems || []).filter((x) => x.isActive !== false));
-      setDefaults(u.plumbingDefaults || { desiredProfitPercent: 30 }); // CHANGED: default profit percent from 40 to 30
+      if (currentUser?.user_metadata) {
+        const u = currentUser.user_metadata;
+        setUser(u); // Store the user object
+        setItems((u.plumbingSubcontractorItems || []).filter((x) => x.isActive !== false));
+        setDefaults(u.plumbingDefaults || { desiredProfitPercent: 30 }); // CHANGED: default profit percent from 40 to 30
+      }
       setLoading(false);
     };
-    run();
-  }, []);
+    if (currentUser) {
+      run();
+    }
+  }, [currentUser]);
 
   // אוטוקומפליט לשם פריט בדיאלוג אינסטלציה – הצעות בתוך הדיאלוג (לא חלון דפדפן)
   // + חישוב אוטומטי של 'מחיר ללקוח' כשמשנים 'עלות קבלן'

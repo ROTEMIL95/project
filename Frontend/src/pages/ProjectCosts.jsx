@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { ProjectCosts } from '@/api/entities';
-import { Project } from '@/api/entities';
-import { ContractorPricing } from '@/api/entities';
-import { User } from '@/api/entities';
+import { ProjectCosts } from '@/lib/entities';
+import { Project } from '@/lib/entities';
+import { ContractorPricing } from '@/lib/entities';
+import { User } from '@/lib/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';

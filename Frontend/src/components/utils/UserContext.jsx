@@ -8,6 +8,16 @@ const UserContext = createContext({ user: null, loading: true, error: null, isOn
 export const UserProvider = ({ children }) => {
   const { user, loading, error, isOnline, refresh } = useSafeUser({ enableCache: true });
 
+  // Listen for user data updates and refresh
+  useEffect(() => {
+    const handleUserDataUpdate = () => {
+      refresh(); // Reload user data from database
+    };
+
+    window.addEventListener('user-data-updated', handleUserDataUpdate);
+    return () => window.removeEventListener('user-data-updated', handleUserDataUpdate);
+  }, [refresh]);
+
   // Ensure disabled accounts are blocked when we have connectivity/user data
   useEffect(() => {
     if (!loading && user && user.isActive === false) {

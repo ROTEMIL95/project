@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, ArrowLeft, ArrowRight, Calculator, Edit2, Lock } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { User } from '@/api/entities';
+import { User } from '@/lib/entities';
 
 const formatPrice = (price) => {
     if (typeof price !== 'number' || isNaN(price)) return '0';

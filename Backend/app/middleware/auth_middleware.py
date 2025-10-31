@@ -2,28 +2,49 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from app.config import settings
+from app.database import get_supabase
 from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 security = HTTPBearer()
 
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    """Verify JWT token and return payload"""
+def verify_supabase_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """Verify Supabase JWT token and return user data"""
     token = credentials.credentials
+    supabase = get_supabase()
 
     try:
-        payload = jwt.decode(
-            token,
-            settings.JWT_SECRET,
-            algorithms=[settings.JWT_ALGORITHM]
-        )
-        return payload
-    except JWTError:
+        # Get user from Supabase using the token
+        response = supabase.auth.get_user(token)
+
+        if not response or not response.user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        user = response.user
+        return {
+            "sub": user.id,
+            "email": user.email,
+            "user_metadata": user.user_metadata
+        }
+    except Exception as e:
+        logger.error(f"Token verification error: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """Verify JWT token and return payload - supports both Supabase and custom tokens"""
+    return verify_supabase_token(credentials)
 
 
 def get_current_user(payload: dict = Depends(verify_token)) -> str:
@@ -35,6 +56,11 @@ def get_current_user(payload: dict = Depends(verify_token)) -> str:
             detail="Invalid authentication credentials"
         )
     return user_id
+
+
+def get_current_user_data(payload: dict = Depends(verify_token)) -> dict:
+    """Get current user full data from token payload"""
+    return payload
 
 
 def get_optional_user(

@@ -18,7 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { User } from '@/api/entities';
+import { User } from '@/lib/entities';
+import { useUser } from '@/components/utils/UserContext';
 import {
   Popover,
   PopoverContent,
@@ -243,6 +244,7 @@ const calculateMetrics = (area, formData, tierPrice = null, defaults = {}) => {
 };
 
 export default function TilingForm({ editItem, onSubmit, onCancel, defaults, userTilingDefaults }) {
+  const { user } = useUser();
   const [formData, setFormData] = useState({
     id: editItem?.id || `tiling_${Date.now()}`,
     tileName: editItem?.tileName || '',
@@ -295,18 +297,26 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
   });
 
   useEffect(() => {
-    const loadDynamicOptions = async () => {
+    const loadDynamicOptions = () => {
       try {
-        const user = await User.me();
-        setTileSizes(user.tilingOptions?.sizes || ['30x30', '45x45', '60x60', '80x80', '100x100', '120x120', 'מותאם אישית']);
-        setQualityTiers(user.tilingOptions?.qualities || ['בסיסי', 'איכותי', 'איכותי מאד', 'פרמיום']);
-        setWorkTypes(user.tilingOptions?.workTypes || ['חיפוי קירות', 'ריצוף רצפה', 'ריצוף פנלים', 'ריצוף מדרגות', 'ריצוף פסיפס', 'החלקה בטון']);
+        if (user?.user_metadata?.tilingOptions) {
+          setTileSizes(user.user_metadata.tilingOptions.sizes || ['30x30', '45x45', '60x60', '80x80', '100x100', '120x120', 'מותאם אישית']);
+          setQualityTiers(user.user_metadata.tilingOptions.qualities || ['בסיסי', 'איכותי', 'איכותי מאד', 'פרמיום']);
+          setWorkTypes(user.user_metadata.tilingOptions.workTypes || ['חיפוי קירות', 'ריצוף רצפה', 'ריצוף פנלים', 'ריצוף מדרגות', 'ריצוף פסיפס', 'החלקה בטון']);
+        } else {
+          // Set default values if no user data
+          setTileSizes(['30x30', '45x45', '60x60', '80x80', '100x100', '120x120', 'מותאם אישית']);
+          setQualityTiers(['בסיסי', 'איכותי', 'איכותי מאד', 'פרמיום']);
+          setWorkTypes(['חיפוי קירות', 'ריצוף רצפה', 'ריצוף פנלים', 'ריצוף מדרגות', 'ריצוף פסיפס', 'החלקה בטון']);
+        }
       } catch (error) {
         console.error("Failed to load user options:", error);
       }
     };
 
-    loadDynamicOptions();
+    if (user) {
+      loadDynamicOptions();
+    }
 
     if (editItem) {
       setFormData(prev => ({
@@ -333,7 +343,7 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
         pricingMethod: 'quick' // Always force quick pricing method
       }));
     }
-  }, [editItem]);
+  }, [editItem, user]);
 
   // THIS useEffect IS NOW REMOVED TO PREVENT OVERWRITING VALUES
 
@@ -484,14 +494,20 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
 
   const saveDynamicOptions = async (type, options) => {
       try {
-        const user = await User.me();
-        const currentOptions = user.tilingOptions || {};
-        await User.updateMyUserData({
+        if (!user?.user_metadata) return;
+
+        const currentOptions = user.user_metadata.tilingOptions || {};
+
+        if (typeof User.updateMyUserData === 'function') {
+          await User.updateMyUserData({
             tilingOptions: {
-                ...currentOptions,
-                [type]: options
+              ...currentOptions,
+              [type]: options
             }
-        });
+          });
+        } else {
+          console.log('User.updateMyUserData not available - backend not connected');
+        }
       } catch (error) {
         console.error("Failed to save dynamic options:", error);
       }

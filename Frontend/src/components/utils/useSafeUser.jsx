@@ -76,6 +76,25 @@ export default function useSafeUser(options = {}) {
         if (authError) throw authError;
         if (abortRef.current) return;
 
+        // Load user profile data from database
+        let profileData = null;
+        if (supabaseUser) {
+          try {
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('auth_user_id', supabaseUser.id)
+              .single();
+
+            profileData = profile;
+          } catch (profileError) {
+            // If profile doesn't exist yet, continue with null profileData
+            if (!suppressConsole) {
+              console.warn('useSafeUser: Could not load user profile, continuing with auth data only');
+            }
+          }
+        }
+
         // Transform Supabase user to our app's user format
         const u = supabaseUser ? {
           id: supabaseUser.id,
@@ -85,6 +104,25 @@ export default function useSafeUser(options = {}) {
           role: supabaseUser.user_metadata?.role || 'user',
           isActive: supabaseUser.user_metadata?.isActive !== false,
           created_at: supabaseUser.created_at,
+          // Add user_metadata from user_profiles table
+          user_metadata: {
+            paintItems: profileData?.paint_items || [],
+            tilingItems: profileData?.tiling_items || [],
+            roomEstimates: profileData?.room_estimates || [],
+            paintUserDefaults: profileData?.paint_user_defaults || {},
+            tilingUserDefaults: profileData?.tiling_user_defaults || {},
+            customPaintTypes: profileData?.custom_paint_types || null,
+            customPlasterTypes: profileData?.custom_plaster_types || null,
+            // Construction category data
+            constructionDefaults: profileData?.construction_defaults || {},
+            constructionSubcontractorItems: profileData?.construction_subcontractor_items || [],
+            // Electrical category data
+            electricalDefaults: profileData?.electrical_defaults || {},
+            electricalSubcontractorItems: profileData?.electrical_subcontractor_items || [],
+            // Plumbing category data
+            plumbingDefaults: profileData?.plumbing_defaults || {},
+            plumbingSubcontractorItems: profileData?.plumbing_subcontractor_items || [],
+          }
         } : null;
 
         setUser(u);

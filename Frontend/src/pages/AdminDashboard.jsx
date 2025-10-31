@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User } from '@/api/entities';
+import { User } from '@/lib/entities';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { createPageUrl } from '@/utils';
 import { useUser } from '@/components/utils/UserContext';

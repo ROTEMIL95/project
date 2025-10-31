@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Quote } from '@/api/entities';
-import { Client } from '@/api/entities';
+import { Quote } from '@/lib/entities';
+import { Client } from '@/lib/entities';
 // ... keeping all the previous imports
 
 // שאר הקוד זהה לקודם, רק שינינו את מיקום הקובץ

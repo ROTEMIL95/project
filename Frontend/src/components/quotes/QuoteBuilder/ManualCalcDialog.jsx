@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User } from "@/api/entities";
+import { User } from "@/lib/entities";
 import { Badge } from "@/components/ui/badge";
 import { Paintbrush, Layers, Ruler, Trash2, FileText } from "lucide-react";
 
@@ -358,7 +358,7 @@ export default function ManualCalcDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-2xl" dir="rtl">
+      <DialogContent className="max-w-2xl m-6 md:m-8 p-6 md:p-8" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">חישוב ידני</DialogTitle>
         </DialogHeader>

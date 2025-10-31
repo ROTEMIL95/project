@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Quote } from '@/api/entities';
+import { Quote } from '@/lib/entities';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { addDays, addWeeks, format, startOfMonth, differenceInDays, isWithinInterval, startOfDay, eachDayOfInterval } from 'date-fns';
@@ -84,7 +84,7 @@ export default function MonthlyCashFlowChart({ user }) {
           return;
         }
 
-        const approvedQuotes = await Quote.filter({ created_by: user.email, status: 'אושר' });
+        const approvedQuotes = await Quote.filter({ user_id: user.id, status: 'אושר' });
         console.log("MonthlyCashFlowChart: Fetched approved quotes:", approvedQuotes.length);
         
         const today = startOfDay(new Date());
@@ -147,11 +147,11 @@ export default function MonthlyCashFlowChart({ user }) {
 
         approvedQuotes.forEach(quote => {
           const { 
-            finalAmount = 0, 
+            total_price = 0, 
             paymentTerms = [], 
             categoryTimings = {}, 
             items = [], 
-            estimatedCost = 0 
+            total_cost = 0 
           } = quote;
           
           const projectPaymentTerms = (paymentTerms && paymentTerms.length > 0) ? paymentTerms : user.defaultPaymentTerms;
@@ -166,12 +166,12 @@ export default function MonthlyCashFlowChart({ user }) {
               }
             });
 
-            const approvalDate = new Date(quote.created_date || today);
+            const approvalDate = new Date(quote.created_at || today);
             const finalPaymentDate = latestCategoryEndDate > new Date(0) ? addWeeks(latestCategoryEndDate, 1) : addWeeks(approvalDate, 4);
 
             projectPaymentTerms.forEach((term, index) => {
               let paymentDate;
-              const paymentAmount = (finalAmount * term.percentage) / 100;
+              const paymentAmount = (total_price * term.percentage) / 100;
               
               if (term.paymentDate) {
                 paymentDate = new Date(term.paymentDate);
@@ -448,7 +448,7 @@ export default function MonthlyCashFlowChart({ user }) {
           });
 
           // הוצאות נוספות (אם יש)
-          const remainingCost = Math.max(0, (estimatedCost || 0) - totalCategoryCostsSum);
+          const remainingCost = Math.max(0, (total_cost || 0) - totalCategoryCostsSum);
           if (remainingCost > 0 && categorySummaries.length > 0) {
             if (categorySummaries.length === 1) {
               const { categoryId, categoryName, expenseDate } = categorySummaries[0];

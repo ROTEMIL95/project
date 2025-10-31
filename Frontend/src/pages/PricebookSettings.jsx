@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { User } from "@/api/entities";
 import { useUser } from '@/components/utils/UserContext';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -138,13 +138,26 @@ export default function PricebookSettings() {
     (async () => {
       setLoading(true);
 
+      // Fetch user profile from user_profiles table
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('auth_user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error loading profile:', error);
+        setLoading(false);
+        return;
+      }
+
       // טעינת הגדרות כלליות
       setGeneralSettings({
-        desiredDailyProfit: user?.desiredDailyProfit ?? ""
+        desiredDailyProfit: profile?.desired_daily_profit ?? ""
       });
 
       // טעינת צבע
-      const p = user?.paintUserDefaults || {};
+      const p = profile?.paint_user_defaults || {};
       setPaint({
         workerDailyCost: p.workerDailyCost ?? "",
         desiredProfitPercent: p.desiredProfitPercent ?? "",
@@ -168,7 +181,7 @@ export default function PricebookSettings() {
       });
 
       // טעינת ריצוף
-      const t = user?.tilingUserDefaults || {};
+      const t = profile?.tiling_user_defaults || {};
       setTiling({
         laborCostPerDay: t.laborCostPerDay ?? "",
         desiredProfitPercent: t.desiredProfitPercent ?? "",
@@ -192,7 +205,7 @@ export default function PricebookSettings() {
       });
 
       // טעינת הריסה
-      const d = user?.demolitionDefaults || {};
+      const d = profile?.demolition_defaults || {};
       setDemo({
         laborCostPerDay: d.laborCostPerDay ?? "",
         profitPercent: d.profitPercent ?? "",
@@ -207,7 +220,7 @@ export default function PricebookSettings() {
       });
 
       // טעינת בינוי
-      const c = user?.constructionDefaults || {};
+      const c = profile?.construction_defaults || {};
       setConstruct({
         desiredProfitPercent: c.desiredProfitPercent ?? "",
         workerCostPerUnit: c.workerCostPerUnit ?? "",
@@ -231,7 +244,7 @@ export default function PricebookSettings() {
       });
 
       // טעינת אינסטלציה
-      const pl = user?.plumbingDefaults || {};
+      const pl = profile?.plumbing_defaults || {};
       setPlumb({ desiredProfitPercent: pl.desiredProfitPercent ?? "" });
 
       const plExpTiming = pl.expenseTiming || {};
@@ -242,7 +255,7 @@ export default function PricebookSettings() {
       });
 
       // טעינת חשמל
-      const el = user?.electricalDefaults || {};
+      const el = profile?.electrical_defaults || {};
       setElec({ desiredProfitPercent: el.desiredProfitPercent ?? "" });
 
       const elExpTiming = el.expenseTiming || {};
@@ -253,7 +266,7 @@ export default function PricebookSettings() {
       });
 
       // טעינת עלויות נוספות
-      const addCostDef = user?.additionalCostDefaults || {};
+      const addCostDef = profile?.additional_cost_defaults || {};
       const defaultFixedCosts = [
         { id: 'logistics_transport', description: 'שינוע חומרים ופסולת', contractorCost: 0, timing: 'project_start' },
         { id: 'logistics_crane', description: 'מנוף או הרמה מכנית', contractorCost: 0, timing: 'project_start' },
@@ -275,15 +288,15 @@ export default function PricebookSettings() {
       });
 
       setActiveMap({
-        cat_paint_plaster: user?.categoryActiveMap?.cat_paint_plaster !== false,
-        cat_tiling: user?.categoryActiveMap?.cat_tiling !== false,
-        cat_demolition: user?.categoryActiveMap?.cat_demolition !== false,
-        cat_electricity: user?.categoryActiveMap?.cat_electricity !== false,
-        cat_plumbing: user?.categoryActiveMap?.cat_plumbing !== false,
-        cat_construction: user?.categoryActiveMap?.cat_construction !== false,
+        cat_paint_plaster: profile?.category_active_map?.cat_paint_plaster !== false,
+        cat_tiling: profile?.category_active_map?.cat_tiling !== false,
+        cat_demolition: profile?.category_active_map?.cat_demolition !== false,
+        cat_electricity: profile?.category_active_map?.cat_electricity !== false,
+        cat_plumbing: profile?.category_active_map?.cat_plumbing !== false,
+        cat_construction: profile?.category_active_map?.cat_construction !== false,
       });
 
-      setGeneralNotes(user?.pricebookGeneralNotes || "");
+      setGeneralNotes(profile?.pricebook_general_notes || "");
       setLoading(false);
     })();
   }, [user, userLoading]);
@@ -373,12 +386,39 @@ export default function PricebookSettings() {
       categoryActiveMap: activeMap,
     };
 
-    await User.updateMyUserData(payload);
-    toast({
-      title: "נשמר בהצלחה",
-      description: "ההגדרות נשמרו.",
-    });
-    navigate(-1);
+    try {
+      // Update user profile in user_profiles table
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          desired_daily_profit: Number(payload.desiredDailyProfit) || null,
+          paint_user_defaults: payload.paintUserDefaults,
+          tiling_user_defaults: payload.tilingUserDefaults,
+          demolition_defaults: payload.demolitionDefaults,
+          construction_defaults: payload.constructionDefaults,
+          plumbing_defaults: payload.plumbingDefaults,
+          electrical_defaults: payload.electricalDefaults,
+          additional_cost_defaults: payload.additionalCostDefaults,
+          pricebook_general_notes: payload.pricebookGeneralNotes,
+          category_active_map: payload.categoryActiveMap,
+        })
+        .eq('auth_user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "נשמר בהצלחה",
+        description: "ההגדרות נשמרו בהצלחה.",
+      });
+      navigate(-1);
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast({
+        title: "שגיאה",
+        description: "לא ניתן לשמור את ההגדרות. נסה שוב.",
+        variant: "destructive"
+      });
+    }
   }, [generalSettings, paint, tiling, demo, plumb, elec, construct, additionalCostDefaults, generalNotes, activeMap, paintExpenseTiming, tilingExpenseTiming, demoExpenseTiming, constructExpenseTiming, plumbExpenseTiming, elecExpenseTiming, user, navigate]);
 
   useEffect(() => {
@@ -1101,14 +1141,14 @@ export default function PricebookSettings() {
             <Separator />
 
             <Collapsible open={timingExpanded.paint} onOpenChange={(open) => setTimingExpanded(prev => ({ ...prev, paint: open }))}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between">
+              <CollapsibleTrigger>
+                <button type="button" className="w-full flex items-center justify-between px-4 py-2 border-2 border-gray-200 rounded-lg hover:bg-gray-50">
                   <span className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-indigo-600" />
                     תזמון הוצאות הקבלן (צבע)
                   </span>
                   {timingExpanded.paint ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </Button>
+                </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 {renderExpenseTimingBlock("תזמון הוצאות הקבלן (צבע)", paintExpenseTiming, setPaintExpenseTiming, "paint", "blue")}
@@ -1162,14 +1202,14 @@ export default function PricebookSettings() {
             <Separator />
 
             <Collapsible open={timingExpanded.tiling} onOpenChange={(open) => setTimingExpanded(prev => ({ ...prev, tiling: open }))}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between">
+              <CollapsibleTrigger>
+                <button type="button" className="w-full flex items-center justify-between px-4 py-2 border-2 border-gray-200 rounded-lg hover:bg-gray-50">
                   <span className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-indigo-600" />
                     תזמון הוצאות הקבלן (ריצוף)
                   </span>
                   {timingExpanded.tiling ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </Button>
+                </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 {renderExpenseTimingBlock("תזמון הוצאות הקבלן (ריצוף)", tilingExpenseTiming, setTilingExpenseTiming, "tiling", "orange")}
@@ -1223,14 +1263,14 @@ export default function PricebookSettings() {
             <Separator />
 
             <Collapsible open={timingExpanded.demo} onOpenChange={(open) => setTimingExpanded(prev => ({ ...prev, demo: open }))}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between">
+              <CollapsibleTrigger>
+                <button type="button" className="w-full flex items-center justify-between px-4 py-2 border-2 border-gray-200 rounded-lg hover:bg-gray-50">
                   <span className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-indigo-600" />
                     תזמון הוצאות הקבלן (הריסה)
                   </span>
                   {timingExpanded.demo ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </Button>
+                </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 {renderDemolitionTiming("תזמון הוצאות הקבלן (הריסה)", demoExpenseTiming, setDemoExpenseTiming)}
@@ -1284,14 +1324,14 @@ export default function PricebookSettings() {
             <Separator />
 
             <Collapsible open={timingExpanded.construct} onOpenChange={(open) => setTimingExpanded(prev => ({ ...prev, construct: open }))}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between">
+              <CollapsibleTrigger>
+                <button type="button" className="w-full flex items-center justify-between px-4 py-2 border-2 border-gray-200 rounded-lg hover:bg-gray-50">
                   <span className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-indigo-600" />
                     תזמון הוצאות הקבלן (בינוי)
                   </span>
                   {timingExpanded.construct ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </Button>
+                </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 {renderExpenseTimingBlock("תזמון הוצאות הקבלן (בינוי)", constructExpenseTiming, setConstructExpenseTiming, "construct", "purple")}
@@ -1341,14 +1381,14 @@ export default function PricebookSettings() {
             <Separator />
 
             <Collapsible open={timingExpanded.elec} onOpenChange={(open) => setTimingExpanded(prev => ({ ...prev, elec: open }))}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between">
+              <CollapsibleTrigger>
+                <button type="button" className="w-full flex items-center justify-between px-4 py-2 border-2 border-gray-200 rounded-lg hover:bg-gray-50">
                   <span className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-indigo-600" />
                     תזמון תשלום לחשמלאי
                   </span>
                   {timingExpanded.elec ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </Button>
+                </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 {renderSimpleSubcontractorTiming("תזמון תשלום לחשמלאי", elecExpenseTiming, setElecExpenseTiming, "yellow")}
@@ -1398,14 +1438,14 @@ export default function PricebookSettings() {
             <Separator />
 
             <Collapsible open={timingExpanded.plumb} onOpenChange={(open) => setTimingExpanded(prev => ({ ...prev, plumb: open }))}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between">
+              <CollapsibleTrigger>
+                <button type="button" className="w-full flex items-center justify-between px-4 py-2 border-2 border-gray-200 rounded-lg hover:bg-gray-50">
                   <span className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-indigo-600" />
                     תזמון תשלום לאינסטלטור
                   </span>
                   {timingExpanded.plumb ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </Button>
+                </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 {renderSimpleSubcontractorTiming("תזמון תשלום לאינסטלטור", plumbExpenseTiming, setPlumbExpenseTiming, "teal")}

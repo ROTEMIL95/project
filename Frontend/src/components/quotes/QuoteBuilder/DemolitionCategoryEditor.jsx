@@ -1,6 +1,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { User } from "@/api/entities";
+import { User } from "@/lib/entities";
+import { useUser } from "@/components/utils/UserContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -102,6 +103,7 @@ export default function DemolitionCategoryEditor(props) {
     hideSelectedItemsList,
   } = props;
 
+  const { user: currentUser } = useUser();
   const [userItems, setUserItems] = useState([]);
   const [query, setQuery] = useState("");
   const [localRows, setLocalRows] = useState({}); // keyed by itemId: {quantity, difficulty}
@@ -265,17 +267,21 @@ export default function DemolitionCategoryEditor(props) {
   const roundingActive = !!(roundingTargetDays && roundingTargetDays > 0);
 
   useEffect(() => {
-    const load = async () => {
-      const me = await User.me();
-      const items = Array.isArray(me?.demolitionItems) ? me.demolitionItems : [];
-      setUserItems(items);
-      setDefaults({
-        laborCostPerDay: Number(me?.demolitionDefaults?.laborCostPerDay || 0),
-        profitPercent: Number(me?.demolitionDefaults?.profitPercent || 30),
-      });
+    const load = () => {
+      if (currentUser?.user_metadata) {
+        const me = currentUser.user_metadata;
+        const items = Array.isArray(me?.demolitionItems) ? me.demolitionItems : [];
+        setUserItems(items);
+        setDefaults({
+          laborCostPerDay: Number(me?.demolitionDefaults?.laborCostPerDay || 0),
+          profitPercent: Number(me?.demolitionDefaults?.profitPercent || 30),
+        });
+      }
     };
-    load();
-  }, []);
+    if (currentUser) {
+      load();
+    }
+  }, [currentUser]);
 
   React.useEffect(() => {
     // ברירת מחדל לאחוז רווח של התוספות = רווח ברירת מחדל מהמשתמש

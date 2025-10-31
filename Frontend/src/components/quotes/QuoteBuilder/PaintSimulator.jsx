@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { User } from '@/api/entities';
+import { User } from '@/lib/entities';
 
 export default function PaintSimulator({ onAddToQuote }) {
   const [settings, setSettings] = useState({

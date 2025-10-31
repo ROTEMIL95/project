@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { User } from '@/api/entities';
+import { useUser } from '@/components/utils/UserContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -30,6 +30,7 @@ export default function ImprovedItemSelector({
   categoriesNav, // New prop
   onSelectCategory // New prop
 }) {
+  const { user, loading: userLoading } = useUser();
   const [catalogItems, setCatalogItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -82,21 +83,28 @@ export default function ImprovedItemSelector({
   // יבוא נתוני קטלוג בטעינה ראשונית
   useEffect(() => {
     loadCatalogItems();
-  }, [activeCategoryId]); // Use activeCategoryId here
+  }, [activeCategoryId, user]); // Use activeCategoryId and user here
 
   // פונקציה לטעינת פריטי קטלוג לפי קטגוריה
   const loadCatalogItems = async () => {
     try {
       setLoading(true);
-      const user = await User.me();
+      
+      if (!user) {
+        setCatalogItems([]);
+        setLoading(false);
+        return;
+      }
       
       let fetchedItems = [];
       switch (activeCategoryId) { // Use activeCategoryId here
         case 'cat_flooring':
-          fetchedItems = user.tilingItems || [];
+        case 'cat_tiling':
+          fetchedItems = user.user_metadata?.tilingItems || [];
           break;
         case 'cat_painting':
-          fetchedItems = user.paintItems || [];
+        case 'cat_paint_plaster':
+          fetchedItems = user.user_metadata?.paintItems || [];
           break;
         default:
           fetchedItems = [];
@@ -397,11 +405,11 @@ export default function ImprovedItemSelector({
   };
   const calculateTotalWorkDays = () => addedQuoteItems.reduce((sum, item) => sum + (item.workDuration || 0), 0);
 
-  if (loading) {
+  if (userLoading || loading) {
     return (
       <div className="flex flex-col items-center justify-center h-48">
         <Loader2 className="h-8 w-8 animate-spin text-indigo-600 mb-2" />
-        <p className="text-gray-600">טוען פריטי קטלוג...</p>
+        <p className="text-gray-600">טוען נתונים...</p>
       </div>
     );
   }

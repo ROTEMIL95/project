@@ -1,6 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
-import { User } from "@/api/entities";
+import { useUser } from '@/components/utils/UserContext';
+import { supabase } from '@/lib/supabase';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -148,13 +149,19 @@ export default function PlumbingSubcontractorManager() {
   const numPrice = `${numBase} text-indigo-600 font-bold`;
   const numProfit = `${numBase} text-green-700 font-bold`;
 
+  const { user } = useUser();
+
   // טעינת נתונים מהמשתמש + זריעה ראשונית אם אין נתונים
   useEffect(() => {
     const load = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
-      const u = await User.me();
-      const d = u.plumbingDefaults || { desiredProfitPercent: 40 };
-      const its = u.plumbingSubcontractorItems || [];
+      const d = user.user_metadata?.plumbingDefaults || { desiredProfitPercent: 40 };
+      const its = user.user_metadata?.plumbingSubcontractorItems || [];
 
       setDefaults({ desiredProfitPercent: Number(d.desiredProfitPercent || 40) });
 
@@ -173,7 +180,13 @@ export default function PlumbingSubcontractorManager() {
           clientPricePerUnit: calcClientPrice(item.contractorCostPerUnit, profit),
           // לא שומרים desiredProfitPercent בפריט – משתמשים בברירת המחדל
         }));
-        await User.updateMyUserData({ plumbingSubcontractorItems: seeded, plumbingDefaults: d });
+        await supabase.auth.updateUser({
+          data: {
+            ...user.user_metadata,
+            plumbingSubcontractorItems: seeded,
+            plumbingDefaults: d
+          }
+        });
         setItems(seeded);
       } else {
         // NEW: השלמה אוטומטית לתת־קטגוריות שחסרות אצל המשתמש
@@ -196,9 +209,12 @@ export default function PlumbingSubcontractorManager() {
           });
 
           if (mergedItems.length !== its.length) {
-            await User.updateMyUserData({
-              plumbingSubcontractorItems: mergedItems,
-              plumbingDefaults: d,
+            await supabase.auth.updateUser({
+              data: {
+                ...user.user_metadata,
+                plumbingSubcontractorItems: mergedItems,
+                plumbingDefaults: d
+              }
             });
           }
         }
@@ -208,14 +224,17 @@ export default function PlumbingSubcontractorManager() {
       setLoading(false);
     };
     load();
-  }, []);
+  }, [user]);
 
   // שמירת הכל (ברירות מחדל + רשימת פריטים)
   const handleSaveAll = async () => {
     setSaving(true);
-    await User.updateMyUserData({
-      plumbingDefaults: defaults,
-      plumbingSubcontractorItems: items,
+    await supabase.auth.updateUser({
+      data: {
+        ...user.user_metadata,
+        plumbingDefaults: defaults,
+        plumbingSubcontractorItems: items,
+      }
     });
     setSaving(false);
   };
@@ -305,7 +324,12 @@ export default function PlumbingSubcontractorManager() {
 
     setItems(updated);
     // שמירה מיידית של הפריט החדש/המעודכן למסד המשתמש
-    await User.updateMyUserData({ plumbingSubcontractorItems: updated });
+    await supabase.auth.updateUser({
+      data: {
+        ...user.user_metadata,
+        plumbingSubcontractorItems: updated
+      }
+    });
     closeDialog();
   };
 
@@ -314,7 +338,12 @@ export default function PlumbingSubcontractorManager() {
     if (!window.confirm("למחוק את הפריט הזה?")) return;
     const updated = items.filter((x) => x.id !== id);
     setItems(updated);
-    await User.updateMyUserData({ plumbingSubcontractorItems: updated });
+    await supabase.auth.updateUser({
+      data: {
+        ...user.user_metadata,
+        plumbingSubcontractorItems: updated
+      }
+    });
   };
 
   // נתונים לתצוגה (סינון)
@@ -495,14 +524,9 @@ export default function PlumbingSubcontractorManager() {
                       </TableHeader>
                       <TableBody>
                         {groupItems.length === 0 ? (
-                          <TableRow>
-                            {/* עדכון colSpan מ-5 ל-6 לאחר הוספת 'רווח (₪)' */}
-                            <TableCell colSpan={6} className="text-center text-gray-500 py-6">
-                              אין פריטים בתת־קטגוריה זו.
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          groupItems.map((it) => {
+                    <TableRow><TableCell colSpan={6} className="text-center text-gray-500 py-6">אין פריטים בתת־קטגוריה זו.</TableCell></TableRow>
+                  ) : (
+                    groupItems.map((it) => {
                             const profitPercent =
                               (it.desiredProfitPercent === 0 || it.desiredProfitPercent
                                 ? Number(it.desiredProfitPercent)
@@ -577,12 +601,7 @@ export default function PlumbingSubcontractorManager() {
                 </TableHeader>
                 <TableBody>
                   {visibleItems.length === 0 ? (
-                    <TableRow>
-                      {/* עדכון colSpan מ-6 ל-7 לאחר הוספת 'רווח (₪)' */}
-                      <TableCell colSpan={7} className="text-center text-gray-500 py-8">
-                        אין פריטים להצגה. הוסף פריט חדש בעזרת הכפתור למעלה.
-                      </TableCell>
-                    </TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-center text-gray-500 py-8">אין פריטים להצגה. הוסף פריט חדש בעזרת הכפתור למעלה.</TableCell></TableRow>
                   ) : (
                     visibleItems.map((it) => {
                       const profitPercent =

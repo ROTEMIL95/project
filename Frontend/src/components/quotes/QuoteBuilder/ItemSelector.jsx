@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef, useImperativeHandle } from 'react';
-import { User } from "@/api/entities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,10 +7,9 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RoomEstimatesCalculator from './RoomEstimatesCalculator';
 import BucketUsageIndicator from './BucketUsageIndicator';
-import { Plus, Trash2, Loader2, ArrowLeft, ArrowRight, Settings, Calculator as CalculatorIcon, Paintbrush2, PlusCircle, Hammer, AlertCircle, ChevronUp, ChevronDown, CheckCircle, PaintBucket, Calendar as CalendarIcon, Copy, Minus, Building2, Eye, EyeOff, Calculator, Edit, Check, Save, X, RefreshCcw, CalendarDays, Building } from 'lucide-react';
+import { Plus, Trash2, Loader2, ArrowLeft, ArrowRight, Settings, Calculator as CalculatorIcon, Paintbrush2, PlusCircle, Hammer, AlertCircle, ChevronUp, ChevronDown, CheckCircle, PaintBucket, Calendar as CalendarIcon, Copy, Minus, Building2, Eye, EyeOff, Calculator, Edit, Check, Save, X, CalendarDays, Building } from 'lucide-react';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Collapsible,
   CollapsibleContent,
@@ -31,7 +29,6 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 import HideTilingCatalogAdd from "./HideTilingCatalogAdd";
 import TilingAutoSaveOnAddArea from "./TilingAutoSaveOnAddArea";
-import useSafeUser from "@/components/utils/useSafeUser";
 
 import PaintSimulatorV2 from "./PaintSimulatorV2";
 import CategoryFloatingAddButton from './CategoryFloatingAddButton';
@@ -795,7 +792,7 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
                         setSelectedPlasterId(value);
                     }
                 }}>
-                    <SelectTrigger className={cn('border-2', (isPaint ? !selectedPaintId : !selectedPlasterId) ? 'border-red-300' : 'border-green-300')}>
+                    <SelectTrigger  dir="rtl" className={cn('border-2', (isPaint ? !selectedPaintId : !selectedPlasterId) ? 'border-red-300' : 'border-green-300')}>
                         <SelectValue placeholder={`בחר סוג ${title}`}>
                             {isPaint
                                 ? (paintItem ? getItemDisplayName(paintItem) : "בחר סוג צבע")
@@ -803,7 +800,7 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
                             }
                         </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent dir="rtl">
                         {availableItems.map(p => (
                             <SelectItem key={p.id} value={p.id}>
                                 {getItemDisplayName(p)}
@@ -823,7 +820,7 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
                         value={String(currentLayers)}
                         onValueChange={(value) => onLayersChange(Number(value))}
                     >
-                        <SelectTrigger className={cn(
+                        <SelectTrigger dir="rtl" className={cn(
                             "text-center font-medium transition-colors duration-200 bg-white text-gray-900",
                             currentLayers > 0
                                 ? "border-green-400"
@@ -874,7 +871,7 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
                     <div className="flex items-center gap-2 mb-3">
                         <span className="font-semibold text-gray-700">{title} {isWall ? 'קירות' : 'תקרה'}</span>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ">
                         <div className="space-y-1">
                             <Label>סוג {title}</Label>
                             <Select value={itemHookId} onValueChange={setItemHookId}>
@@ -913,9 +910,9 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
              <div
                 className={`space-y-4 p-3 bg-${colorClass}-50/50 border border-${colorClass}-200 rounded-md overflow-hidden`}
             >
-                <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-                        {isPaint ? <Paintbrush2 className={`w-5 h-5 text-${colorClass}-600`} /> : <Building2 className={`w-5 h-5 text-${colorClass}-600`} />}
+                <div className="flex items-center justify-between ">
+                    <h4 className="font-bold text-lg text-gray-800 flex items-center gap-2" >
+                        {isPaint ? <Paintbrush2 className={`w-5 h-5 text-${colorClass}-600`}  /> : <Building2 className={`w-5 h-5 text-${colorClass}-600`} />}
                         {isPaint ? 'הגדרות צבע' : 'הגדרות טיח'}
                     </h4>
                     <div className="flex items-center gap-1">
@@ -1248,7 +1245,7 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
                                                     />
                                                 </div>
                                             )}
-                                        </motion.div>
+                                        </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -1281,6 +1278,9 @@ const PaintRoomsManager = React.forwardRef(({
     onAddItemToQuote,
     existingCategoryData,
     categoryTimings, // Added to pass down
+    stagedManualItems = [], // 🆕 Staged manual items for consolidation
+    setStagedManualItems, // 🆕 Function to clear staged items after consolidation
+    selectedItems = [], // 🆕 Current selected items (needed to filter manual items)
 }, ref) => {
     const [rooms, setRooms] = useState(() => {
         if (existingCategoryData && existingCategoryData.rooms && existingCategoryData.rooms.length > 0) {
@@ -1463,9 +1463,32 @@ const PaintRoomsManager = React.forwardRef(({
             aggregateIndividualMetrics(room.plasterCalculatedMetrics, room.isPlasterDetailed, 'plaster');
         });
 
+        // 🆕 Add staged manual items to totals
+        const stagedPaintItems = (stagedManualItems || []).filter(item =>
+            item.categoryId === categoryId && item.source === 'manual_calc'
+        );
+
+        let manualMaterialCostSum = 0; // Track manual material costs separately
+
+        stagedPaintItems.forEach(item => {
+            baseTotalCostRaw += Number(item.totalCost) || 0;
+            baseTotalSellingPriceRaw += Number(item.totalPrice) || 0;
+            sumExactWorkDays += Number(item.workDuration) || 0;
+            sumExactLaborCosts += Number(item.laborCost) || 0;
+
+            // 🆕 Add manual item quantity/area to total for accurate per-sqm calculations
+            totalQuantity += Number(item.quantity) || 0;
+
+            // 🆕 Track material costs from manual items for breakdown display
+            manualMaterialCostSum += Number(item.materialCost) || 0;
+
+            // Note: Manual items don't have bucket calculations or separate paint/plaster breakdown
+        });
+
         let finalMaterialCost = 0;
         const materialSummary = [];
 
+        // Calculate material costs from catalog items (bucket-based)
         Object.values(rawMaterialAggregates).forEach(material => {
             const bucketsToPurchase = preciseBucketCalculation
                 ? material.exactBucketsNeeded
@@ -1482,18 +1505,17 @@ const PaintRoomsManager = React.forwardRef(({
             });
         });
 
+        // 🆕 Add manual item material costs to the total
+        finalMaterialCost += manualMaterialCostSum;
+
         let finalWorkDaysValue;
         let finalLaborCostValue;
 
         if (sumExactWorkDays > 0) {
             finalWorkDaysValue = preciseWorkDays ? sumExactWorkDays : Math.ceil(sumExactWorkDays);
-            const avgDailyLaborRate = sumExactLaborCosts / sumExactWorkDays;
-
-            if (!isNaN(avgDailyLaborRate) && isFinite(avgDailyLaborRate)) {
-                finalLaborCostValue = finalWorkDaysValue * avgDailyLaborRate;
-            } else {
-                finalLaborCostValue = sumExactLaborCosts;
-            }
+            // 🆕 Use actual labor costs instead of recalculating with average rate
+            // This preserves the exact labor costs from both catalog and manual items
+            finalLaborCostValue = sumExactLaborCosts;
         } else {
             finalWorkDaysValue = sumExactWorkDays;
             finalLaborCostValue = sumExactLaborCosts;
@@ -1546,11 +1568,12 @@ const PaintRoomsManager = React.forwardRef(({
                 complexityWorkDaysIncrease: totalPlasterComplexityWorkDaysIncrease
             }
         };
-    }, [rooms, preciseBucketCalculation, preciseWorkDays]);
+    }, [rooms, preciseBucketCalculation, preciseWorkDays, stagedManualItems, categoryId]);
 
     useImperativeHandle(ref, () => ({
         saveData: () => {
-            const quoteItems = rooms.flatMap(room => {
+            // 1. Get catalog-based room items
+            const catalogItems = rooms.flatMap(room => {
                 const items = [];
                 if (room.isPaintSelected && room.paintCalculatedMetrics) {
                     items.push({
@@ -1581,12 +1604,89 @@ const PaintRoomsManager = React.forwardRef(({
                 return items;
             });
 
+            // 2. Get manual items for this category
+            const manualItems = stagedManualItems.filter(item =>
+                item.categoryId === categoryId && item.source === 'manual_calc'
+            );
+
+            // 3. Consolidate into ONE summary item if there are catalog items
+            let quoteItems;
+            if (catalogItems.length > 0) {
+                // Calculate totals from catalog items
+                const catalogTotalCost = catalogItems.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
+                const catalogTotalPrice = catalogItems.reduce((sum, item) => sum + (Number(item.totalSellingPrice) || 0), 0);
+                const catalogTotalWorkDays = catalogItems.reduce((sum, item) => sum + (Number(item.totalWorkDays) || 0), 0);
+                const catalogTotalQuantity = catalogItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+
+                // Add manual items totals
+                const manualTotalCost = manualItems.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
+                const manualTotalPrice = manualItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
+                const manualTotalWorkDays = manualItems.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
+
+                // Create consolidated summary item
+                const consolidatedItem = {
+                    id: `cat_paint_plaster_summary_${Date.now()}`,
+                    categoryId: categoryId,
+                    categoryName: 'צבע וטיח',
+                    name: 'סיכום צבע ושפכטל',
+                    source: 'paint_plaster_category_summary',
+                    totalCost: catalogTotalCost + manualTotalCost,
+                    totalSellingPrice: catalogTotalPrice + manualTotalPrice,
+                    totalPrice: catalogTotalPrice + manualTotalPrice,
+                    totalProfit: (catalogTotalPrice + manualTotalPrice) - (catalogTotalCost + manualTotalCost),
+                    totalWorkDays: catalogTotalWorkDays + manualTotalWorkDays,
+                    workDuration: catalogTotalWorkDays + manualTotalWorkDays,
+                    quantity: catalogTotalQuantity,
+                    unit: 'מ"ר',
+                    // Store detailed breakdown for reference
+                    detailedBreakdown: [...catalogItems, ...manualItems],
+                    detailedRoomsData: rooms, // Keep room structure
+                    catalogItemsCount: catalogItems.length,
+                    manualItemsCount: manualItems.length,
+                };
+
+                quoteItems = [consolidatedItem];
+            } else if (manualItems.length > 0) {
+                // If only manual items exist, still consolidate them
+                const manualTotalCost = manualItems.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
+                const manualTotalPrice = manualItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
+                const manualTotalWorkDays = manualItems.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
+
+                const consolidatedItem = {
+                    id: `cat_paint_plaster_summary_${Date.now()}`,
+                    categoryId: categoryId,
+                    categoryName: 'צבע וטיח',
+                    name: 'סיכום צבע ושפכטל (ידני)',
+                    source: 'paint_plaster_category_summary',
+                    totalCost: manualTotalCost,
+                    totalSellingPrice: manualTotalPrice,
+                    totalPrice: manualTotalPrice,
+                    totalProfit: manualTotalPrice - manualTotalCost,
+                    totalWorkDays: manualTotalWorkDays,
+                    workDuration: manualTotalWorkDays,
+                    detailedBreakdown: manualItems,
+                    catalogItemsCount: 0,
+                    manualItemsCount: manualItems.length,
+                };
+
+                quoteItems = [consolidatedItem];
+            } else {
+                quoteItems = [];
+            }
+
+            // 4. Clear staged manual items for this category
+            if (setStagedManualItems && manualItems.length > 0) {
+                setStagedManualItems(prev => prev.filter(item =>
+                    item.categoryId !== categoryId || item.source !== 'manual_calc'
+                ));
+            }
+
             return {
                 quoteItems: quoteItems,
                 rawRooms: rooms // Return the full internal rooms state for parent to store in categoryDataMap
             };
         }
-    }), [rooms, categoryId]);
+    }), [rooms, categoryId, stagedManualItems, setStagedManualItems]);
 
 
     useEffect(() => {
@@ -1607,17 +1707,24 @@ const PaintRoomsManager = React.forwardRef(({
             <div className="space-y-4">
                 <AnimatePresence mode="popLayout">
                     {rooms.map((room, index) => (
-                        <PaintRoomItem
+                        <motion.div
                             key={room.id}
-                            roomIndex={index}
-                            room={room}
-                            onUpdateRoom={handleUpdateRoom}
-                            onUpdateRoomMetrics={handleUpdateRoomMetrics}
-                            onRemoveRoom={handleRemoveRoom}
-                            paintItems={paintItems}
-                            projectComplexities={projectComplexities}
-                            user={user}
-                        />
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <PaintRoomItem
+                                roomIndex={index}
+                                room={room}
+                                onUpdateRoom={handleUpdateRoom}
+                                onUpdateRoomMetrics={handleUpdateRoomMetrics}
+                                onRemoveRoom={handleRemoveRoom}
+                                paintItems={paintItems}
+                                projectComplexities={projectComplexities}
+                                user={user}
+                            />
+                        </motion.div>
                     ))}
                 </AnimatePresence>
 
@@ -1634,7 +1741,7 @@ const PaintRoomsManager = React.forwardRef(({
             <div className="mt-6 p-0">
                 <Collapsible open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
                     <CollapsibleTrigger asChild>
-                        <div className="w-full bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 rounded-lg border-2 border-blue-300 p-3 hover:shadow-md transition-all duration-300 cursor-pointer">
+                        <button className="w-full bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 rounded-lg border-2 border-blue-300 p-3 hover:shadow-md transition-all duration-300 cursor-pointer">
                             <div className="flex justify-between items-center">
                                 <h3 className="text-lg font-bold text-gray-800 flex items-center">
                                     <Paintbrush2 className="w-5 h-5 ml-2 text-indigo-600" />
@@ -1642,7 +1749,7 @@ const PaintRoomsManager = React.forwardRef(({
                                 </h3>
                                 {isSummaryOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                             </div>
-                        </div>
+                        </button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="pt-3">
                         <div className="bg-white rounded-lg border-2 border-blue-300 shadow-sm overflow-hidden">
@@ -2501,22 +2608,79 @@ const TilingCategoryEditorLocalWrapper = React.forwardRef(({
     userTilingItems = [], // PASSED DOWN
     tilingWorkTypes = [], // PASSED DOWN
     userDefaults = {}, // NEW PROP, derived from userForData.tilingUserDefaults
+    stagedManualItems = [], // 🆕 Staged manual items for consolidation
+    setStagedManualItems, // 🆕 Function to clear staged items after consolidation
 }, ref) => {
+    const tilingEditorInternalRef = useRef(null);
+
     useImperativeHandle(ref, () => ({
         saveData: () => {
-            return selectedItems.map(item => ({
-                ...item,
-                source: 'tiling_category_item',
-                categoryId: categoryId,
-                categoryName: 'ריצוף וחיפוי',
-            }));
+            // Get items from TilingCategoryEditorComponent's internal state
+            let catalogItems = [];
+            if (tilingEditorInternalRef.current && typeof tilingEditorInternalRef.current.saveData === 'function') {
+                catalogItems = tilingEditorInternalRef.current.saveData();
+            }
+
+            // Get manual items for tiling category
+            const manualItems = stagedManualItems.filter(item =>
+                item.categoryId === categoryId &&
+                (item.source === 'tiling_manual' || item.source === 'tiling_area_autosave' || item.source === 'manual_calc')
+            );
+
+            // Consolidate into ONE summary item if there are items
+            let quoteItems;
+            if (catalogItems.length > 0 || manualItems.length > 0) {
+                // Calculate totals from catalog items
+                const catalogTotalCost = catalogItems.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
+                const catalogTotalPrice = catalogItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
+                const catalogTotalWorkDays = catalogItems.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
+                const catalogTotalQuantity = catalogItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+
+                // Add manual items totals
+                const manualTotalCost = manualItems.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
+                const manualTotalPrice = manualItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
+                const manualTotalWorkDays = manualItems.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
+
+                // Create consolidated summary item
+                const consolidatedItem = {
+                    id: `cat_tiling_summary_${Date.now()}`,
+                    categoryId: categoryId,
+                    categoryName: 'ריצוף וחיפוי',
+                    name: 'סיכום ריצוף וחיפוי',
+                    source: 'tiling_category_summary',
+                    totalCost: catalogTotalCost + manualTotalCost,
+                    totalPrice: catalogTotalPrice + manualTotalPrice,
+                    totalProfit: (catalogTotalPrice + manualTotalPrice) - (catalogTotalCost + manualTotalCost),
+                    workDuration: catalogTotalWorkDays + manualTotalWorkDays,
+                    quantity: catalogTotalQuantity,
+                    unit: 'מ"ר',
+                    // Store detailed breakdown for reference
+                    detailedBreakdown: [...catalogItems, ...manualItems],
+                    catalogItemsCount: catalogItems.length,
+                    manualItemsCount: manualItems.length,
+                };
+
+                quoteItems = [consolidatedItem];
+            } else {
+                quoteItems = [];
+            }
+
+            // Clear staged manual items for this category
+            if (setStagedManualItems && manualItems.length > 0) {
+                setStagedManualItems(prev => prev.filter(item =>
+                    item.categoryId !== categoryId ||
+                    !(item.source === 'tiling_manual' || item.source === 'tiling_area_autosave' || item.source === 'manual_calc')
+                ));
+            }
+
+            return quoteItems;
         }
-    }));
+    }), [categoryId, stagedManualItems, setStagedManualItems]);
 
 
     return (
         <TilingCategoryEditorComponent
-            ref={ref}
+            ref={tilingEditorInternalRef}
             categoryTimings={categoryTimings}
             onCategoryTimingChange={onCategoryTimingChange}
             categoryId={categoryId}
@@ -2536,6 +2700,8 @@ const TilingCategoryEditorLocalWrapper = React.forwardRef(({
             userTilingItems={userTilingItems} // PASSED DOWN
             tilingWorkTypes={tilingWorkTypes} // PASSED DOWN
             userDefaults={userDefaults} // PASSED DOWN
+            stagedManualItems={stagedManualItems} // 🆕 Pass to child component
+            setStagedManualItems={setStagedManualItems} // 🆕 Pass to child component
         />
     );
 });
@@ -2667,14 +2833,13 @@ export default function ItemSelector({
   generalEndDate,
   tilingWorkTypes = [],
   userTilingItems = [],
+  user, // ✅ Receive user from parent QuoteCreate
+  stagedManualItems = [], // 🆕 Staged manual items for consolidation
+  setStagedManualItems, // 🆕 Function to update staged manual items
 }) {
-  const {
-    user: userForData,
-    loading: isUserLoadingHook,
-    error: userLoadErrorHook,
-    retry: retryUserLoadHook,
-  } = useSafeUser();
-
+  // Use user from parent instead of loading separately
+  const userForData = user;
+  const isUserLoadingHook = !user;
   const isLoadingUser = isUserLoadingHook;
 
   const [catalogItems, setCatalogItems] = useState([]);
@@ -2727,8 +2892,14 @@ export default function ItemSelector({
   // חישוב סיכום כולל לריצוף - כולל פריטים ידניים
   const tilingCategorySummary = useMemo(() => {
     const tilingItems = selectedItems.filter(item => item.categoryId === 'cat_tiling');
-    
-    if (tilingItems.length === 0) {
+
+    // 🆕 Include staged manual items for real-time summary
+    const stagedTilingItems = (stagedManualItems || []).filter(item =>
+      item.categoryId === 'cat_tiling' &&
+      (item.source === 'tiling_manual' || item.source === 'tiling_area_autosave' || item.source === 'manual_calc')
+    );
+
+    if (tilingItems.length === 0 && stagedTilingItems.length === 0) {
       return {
         totalArea: 0,
         totalMaterialCost: 0,
@@ -2741,7 +2912,8 @@ export default function ItemSelector({
       };
     }
 
-    return tilingItems.reduce((acc, item) => {
+    // Calculate totals from catalog items
+    const catalogTotals = tilingItems.reduce((acc, item) => {
       return {
         totalArea: acc.totalArea + (Number(item.quantity) || 0),
         totalMaterialCost: acc.totalMaterialCost + (Number(item.materialCost) || 0),
@@ -2762,34 +2934,43 @@ export default function ItemSelector({
       totalWorkDays: 0,
       itemCount: 0
     });
-  }, [selectedItems]);
 
+    // Calculate totals from staged manual items
+    const manualTotals = stagedTilingItems.reduce((acc, item) => {
+      return {
+        totalArea: acc.totalArea + (Number(item.quantity) || 0),
+        totalMaterialCost: acc.totalMaterialCost + (Number(item.materialCost) || 0),
+        totalLaborCost: acc.totalLaborCost + (Number(item.laborCost) || 0),
+        totalContractorCost: acc.totalContractorCost + (Number(item.totalCost) || 0),
+        totalClientPrice: acc.totalClientPrice + (Number(item.totalPrice) || 0),
+        totalProfit: acc.totalProfit + (Number(item.profit) || 0),
+        totalWorkDays: acc.totalWorkDays + (Number(item.workDuration) || 0),
+        itemCount: acc.itemCount + 1
+      };
+    }, {
+      totalArea: 0,
+      totalMaterialCost: 0,
+      totalLaborCost: 0,
+      totalContractorCost: 0,
+      totalClientPrice: 0,
+      totalProfit: 0,
+      totalWorkDays: 0,
+      itemCount: 0
+    });
 
-  // פונקציה לחישוב סיכום קטגוריית צבע ושפכטל מכל הפריטים
-  const calculatePaintCategorySummary = useCallback(() => {
-    const paintPlasterItems = selectedItems.filter(item => item.categoryId === 'cat_paint_plaster');
-    
-    if (paintPlasterItems.length === 0) {
-      return null;
-    }
-
-    const totalPrice = paintPlasterItems.reduce((sum, item) => sum + (Number(item.totalSellingPrice) || 0), 0); // Use totalSellingPrice from metrics
-    const totalCost = paintPlasterItems.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
-    const profit = totalPrice - totalCost;
-    const profitPercent = totalCost > 0 ? ((profit / totalCost) * 100) : 0;
-    const totalWorkDays = paintPlasterItems.reduce((sum, item) => sum + (Number(item.totalWorkDays) || 0), 0); // Use totalWorkDays from metrics
-
+    // Combine both totals
     return {
-      totalPrice: Math.round(totalPrice),
-      totalCost: Math.round(totalCost),
-      profit: Math.round(profit),
-      profitPercent: profitPercent.toFixed(1),
-      totalWorkDays: totalWorkDays.toFixed(1),
-      itemsCount: paintPlasterItems.length
+      totalArea: catalogTotals.totalArea + manualTotals.totalArea,
+      totalMaterialCost: catalogTotals.totalMaterialCost + manualTotals.totalMaterialCost,
+      totalLaborCost: catalogTotals.totalLaborCost + manualTotals.totalLaborCost,
+      totalContractorCost: catalogTotals.totalContractorCost + manualTotals.totalContractorCost,
+      totalClientPrice: catalogTotals.totalClientPrice + manualTotals.totalClientPrice,
+      totalProfit: catalogTotals.totalProfit + manualTotals.totalProfit,
+      totalWorkDays: catalogTotals.totalWorkDays + manualTotals.totalWorkDays,
+      itemCount: catalogTotals.itemCount + manualTotals.itemCount
     };
-  }, [selectedItems]);
+  }, [selectedItems, stagedManualItems]);
 
-  const paintSummary = currentCategoryForItems === 'cat_paint_plaster' ? calculatePaintCategorySummary() : null;
 
   const normalizeRoomsForBreakdown = useCallback((raw) => {
     if (!Array.isArray(raw)) return [];
@@ -2915,6 +3096,11 @@ export default function ItemSelector({
       tilingEditorRef, paintRoomsRef, demolitionManagerRef, electricalManagerRef
   ]);
 
+  // Create stable reference for paint items to prevent unnecessary re-renders
+  const userPaintItems = useMemo(() =>
+    userForData?.user_metadata?.paintItems || [],
+    [userForData?.user_metadata?.paintItems]
+  );
 
   useEffect(() => {
     if (userForData !== null || isUserLoadingHook === false) {
@@ -2922,8 +3108,8 @@ export default function ItemSelector({
             setIsLoadingCatalog(true);
             try {
                 if (userForData) {
-                    if (userForData.paintItems && Array.isArray(userForData.paintItems)) {
-                        const finalPaintItems = userForData.paintItems.filter(item => item).map(item => {
+                    if (userPaintItems && Array.isArray(userPaintItems) && userPaintItems.length > 0) {
+                        const finalPaintItems = userPaintItems.filter(item => item).map(item => {
                             const newItem = { ...item };
                             if (!newItem.itemType) {
                                 const name = (newItem.itemName || newItem.name || '').toLowerCase();
@@ -2959,7 +3145,7 @@ export default function ItemSelector({
         };
         loadCatalogData();
     }
-  }, [userForData, projectComplexities, isUserLoadingHook]);
+  }, [userPaintItems, projectComplexities, isUserLoadingHook, userForData]);
 
   useEffect(() => {
       const currentIsComplex = COMPLEX_CATEGORIES.includes(currentCategoryForItems);
@@ -3031,7 +3217,9 @@ export default function ItemSelector({
             AVAILABLE_CATEGORIES: AVAILABLE_CATEGORIES,
             userTilingItems: userTilingItems,
             tilingWorkTypes: tilingWorkTypes,
-            userDefaults: userForData?.tilingUserDefaults || {},
+            userDefaults: userForData?.user_metadata?.tilingUserDefaults || {},
+            stagedManualItems: stagedManualItems, // 🆕 Pass staged manual items
+            setStagedManualItems: setStagedManualItems, // 🆕 Pass setState function
         };
     } else if (currentCategoryForItems === 'cat_paint_plaster') {
         CategoryComponent = PaintPlasterCategory;
@@ -3045,6 +3233,9 @@ export default function ItemSelector({
             paintItems: catalogItems,
             categoryTimings: categoryTimings, // Pass categoryTimings down to PaintPlasterCategory
             onCategoryTimingChange: onCategoryTimingChange, // Pass for consistency
+            stagedManualItems: stagedManualItems, // 🆕 Pass staged manual items
+            setStagedManualItems: setStagedManualItems, // 🆕 Pass setState function
+            selectedItems: selectedItems, // 🆕 Pass selectedItems to filter manual items
         };
     } else if (currentCategoryForItems === 'cat_demolition') {
         CategoryComponent = DemolitionCategory;
@@ -3112,7 +3303,7 @@ export default function ItemSelector({
     selectedItems, setSelectedItems, setCurrentCategoryForItems, processedCategories,
     setProcessedCategories, selectedCategories, AVAILABLE_CATEGORIES, tilingEditorRef,
     paintRoomsRef, demolitionManagerRef, electricalManagerRef, isCategorySpecificLoading, categoryName, COMPLEX_CATEGORIES,
-    userTilingItems, tilingWorkTypes, onCategoryTimingChange
+    userTilingItems, tilingWorkTypes, onCategoryTimingChange, stagedManualItems, setStagedManualItems
   ]);
 
 
@@ -3187,20 +3378,6 @@ export default function ItemSelector({
 
   return (
     <>
-      {userLoadErrorHook && (
-        <div className="mb-3">
-          <Alert variant="destructive">
-            <AlertDescription className="flex items-center justify-between gap-2">
-              שגיאה בטעינת נתוני המשתמש (רשת). אפשר להמשיך לעבוד; נסה שוב לטעון נתוני משתמש.
-              <Button size="sm" variant="secondary" onClick={retryUserLoadHook}>
-                <RefreshCcw className="h-4 w-4 ml-2" />
-                נסה שוב
-              </Button>
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
-
       <Card className="shadow-lg flex flex-col h-full" dir="rtl">
         <CardHeader className={`${categoryColors.headerBg} border-b space-y-4`}>
           <div className="flex items-center justify-between">
@@ -3440,42 +3617,6 @@ export default function ItemSelector({
           <div className="flex-grow">
             {renderCategoryEditor()}
           </div>
-
-          {/* תיקון: הצגת סיכום מחושב מכל הפריטים */}
-          {currentCategoryForItems === 'cat_paint_plaster' && paintSummary && (
-            <div className="mt-6 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
-              <h3 className="text-lg font-bold text-blue-900 mb-3">סיכום כולל לקטגוריית צבע וטיח</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-white p-3 rounded-lg border border-blue-200">
-                  <p className="text-xs text-gray-600 mb-1">מחיר ללקוח</p>
-                  <p className="text-lg font-bold text-blue-900">
-                    ₪{paintSummary.totalPrice.toLocaleString('he-IL')}
-                  </p>
-                </div>
-                <div className="bg-white p-3 rounded-lg border border-blue-200">
-                  <p className="text-xs text-gray-600 mb-1">עלות קבלן</p>
-                  <p className="text-lg font-bold text-orange-900">
-                    ₪{paintSummary.totalCost.toLocaleString('he-IL')}
-                  </p>
-                </div>
-                <div className="bg-white p-3 rounded-lg border border-green-200">
-                  <p className="text-xs text-gray-600 mb-1">רווח</p>
-                  <p className="text-lg font-bold text-green-900">
-                    ₪{paintSummary.profit.toLocaleString('he-IL')} ({paintSummary.profitPercent}%)
-                  </p>
-                </div>
-                <div className="bg-white p-3 rounded-lg border border-purple-200">
-                  <p className="text-xs text-gray-600 mb-1">ימי עבודה</p>
-                  <p className="text-lg font-bold text-purple-900">
-                    {paintSummary.totalWorkDays}
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs text-blue-700 mt-2">
-                סיכום זה כולל {paintSummary.itemsCount} פריט/ים (חדרים + פריטים ידניים)
-              </p>
-            </div>
-          )}
         </CardContent>
 
         <CardFooter className="flex justify-between border-t p-4 bg-gray-50/50">
@@ -3530,7 +3671,7 @@ export default function ItemSelector({
         open={showTilingManualDialog}
         onOpenChange={setShowTilingManualDialog}
         onAdd={onAddItemToQuote}
-        defaults={userForData?.tilingUserDefaults || {}}
+        defaults={userForData?.user_metadata?.tilingUserDefaults || {}}
       />
     </>
   );

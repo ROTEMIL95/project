@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Paintbrush, Trash2, PlusCircle, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import PaintSimulatorV2 from './PaintSimulatorV2';
-import { User } from '@/api/entities';
+import { User } from '@/lib/entities';
 
 // Default structure for a new room
 const defaultRoom = {

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Check, Calculator, Plus, Settings, Package, TrendingUp, Loader2 } from 'lucide-react'; // Added Package, TrendingUp, and Loader2
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User } from '@/api/entities';
+import { User } from '@/lib/entities';
 import {
   Table,
   TableBody,
@@ -25,7 +25,7 @@ import { Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-
+import { User } from '@/lib/entities';
 
 import { calculatePanelCosts } from '@/components/costCalculator/PricingService'; // New import for panel calculation
 

@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Trash2, Save, X } from 'lucide-react';
-import { User } from '@/api/entities';
+import { User } from '@/lib/entities';
 
 export default function RoomEstimatesSettings({ isOpen, onClose, onSave }) {
   const [roomEstimates, setRoomEstimates] = useState([]);

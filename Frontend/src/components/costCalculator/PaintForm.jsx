@@ -18,7 +18,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
-import { User as UserEntity } from '@/api/entities';
+import { User as UserEntity } from '@/lib/entities';
+import { useUser } from '@/components/utils/UserContext';
 import { cn } from "@/lib/utils";
 import { AnimatePresence } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -231,6 +232,7 @@ const CategoryHeader = ({ number, title, colorScheme }) => {
 };
 
 export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefaults, presetCategory }) {
+  const { user } = useUser();
   const initialLayersCount = editItem?.layerSettings?.length > 0 ? editItem.layerSettings.length : 3;
   
   const initialLayerSettings = useMemo(() => {
@@ -331,17 +333,15 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
   const isEditMode = !!editItem;
 
   useEffect(() => {
-    const loadCustomTypes = async () => {
+    const loadCustomTypes = () => {
       try {
-        const userData = await UserEntity.me();
-        
-        if (userData.customPaintTypes) {
-          setPaintTypes(userData.customPaintTypes);
+        if (user?.user_metadata?.customPaintTypes) {
+          setPaintTypes(user.user_metadata.customPaintTypes);
         } else {
           setPaintTypes(DEFAULT_PAINT_TYPES);
         }
-        if (userData.customPlasterTypes) {
-          setPlasterTypes(userData.customPlasterTypes);
+        if (user?.user_metadata?.customPlasterTypes) {
+          setPlasterTypes(user.user_metadata.customPlasterTypes);
         } else {
           setPlasterTypes(DEFAULT_PLASTER_TYPES);
         }
@@ -353,17 +353,19 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
         setUserDataLoaded(true);
       }
     };
-    loadCustomTypes();
-  }, []);
+
+    if (user) {
+      loadCustomTypes();
+    }
+  }, [user]);
 
   useEffect(() => {
-    const loadSavedPreferences = async () => {
+    const loadSavedPreferences = () => {
       try {
-        const user = await UserEntity.me();
-        if (user.paintWorkCategoryPreference && !editItem) {
+        if (user?.user_metadata?.paintWorkCategoryPreference && !editItem) {
           setFormData(prev => ({
             ...prev,
-            workCategory: user.paintWorkCategoryPreference
+            workCategory: user.user_metadata.paintWorkCategoryPreference
           }));
         }
       } catch (error) {
@@ -371,8 +373,10 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
       }
     };
 
-    loadSavedPreferences();
-  }, [editItem]);
+    if (user) {
+      loadSavedPreferences();
+    }
+  }, [user, editItem]);
 
   // HIDE legacy "Selected work type" banner that shows "נבחר: ..."
   useEffect(() => {
@@ -404,17 +408,27 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
 
   const handleSavePaintTypes = async (updatedTypes) => {
     try {
-        await UserEntity.updateMyUserData({ customPaintTypes: updatedTypes });
-        setPaintTypes(updatedTypes);
+        if (typeof UserEntity.updateMyUserData === 'function') {
+          await UserEntity.updateMyUserData({ customPaintTypes: updatedTypes });
+          setPaintTypes(updatedTypes);
+        } else {
+          console.log('User.updateMyUserData not available - backend not connected');
+          setPaintTypes(updatedTypes);
+        }
     } catch (error) {
         console.error("Failed to save custom paint types:", error);
     }
   };
-  
+
   const handleSavePlasterTypes = async (updatedTypes) => {
     try {
-        await UserEntity.updateMyUserData({ customPlasterTypes: updatedTypes });
-        setPlasterTypes(updatedTypes);
+        if (typeof UserEntity.updateMyUserData === 'function') {
+          await UserEntity.updateMyUserData({ customPlasterTypes: updatedTypes });
+          setPlasterTypes(updatedTypes);
+        } else {
+          console.log('User.updateMyUserData not available - backend not connected');
+          setPlasterTypes(updatedTypes);
+        }
     } catch (error) {
         console.error("Failed to save custom plaster types:", error);
     }
@@ -434,7 +448,9 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
     const newType = { id: `custom_${Date.now()}`, name };
     const updated = [...paintTypes, newType];
     try {
-      await UserEntity.updateMyUserData({ customPaintTypes: updated });
+      if (typeof UserEntity.updateMyUserData === 'function') {
+        await UserEntity.updateMyUserData({ customPaintTypes: updated });
+      }
     } catch (e) {
       // keep silent - state will still update locally
       console.error("Failed to save custom paint type:", e);
@@ -459,7 +475,9 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
     const newType = { id: `custom_${Date.now()}`, name };
     const updated = [...plasterTypes, newType];
     try {
-      await UserEntity.updateMyUserData({ customPlasterTypes: updated });
+      if (typeof UserEntity.updateMyUserData === 'function') {
+        await UserEntity.updateMyUserData({ customPlasterTypes: updated });
+      }
     } catch (e) {
       console.error("Failed to save custom plaster type:", e);
     }
@@ -485,16 +503,9 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
     });
   }, []);
 
-  const handleWorkCategoryChange = async (value) => {
+  const handleWorkCategoryChange = (value) => {
+    // Just update local state - work category will be saved with the paint item
     setFormData(prev => ({ ...prev, workCategory: value }));
-    
-    try {
-      await UserEntity.updateMyUserData({ 
-        paintWorkCategoryPreference: value 
-      });
-    } catch (error) {
-      console.log('Could not load work category preference:', error);
-    }
   };
   
   const quickMetrics = useMemo(() => {

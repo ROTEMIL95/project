@@ -607,7 +607,7 @@ export default function QuoteSummary({
                         <CardTitle className="text-base font-semibold text-red-800">עלות כוללת לקבלן</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <p className="text-4xl font-bold text-red-700 tracking-tight">{formatPrice(totalContractorCost)} ₪}</p>
+                        <p className="text-4xl font-bold text-red-700 tracking-tight">{formatPrice(totalContractorCost)} ₪</p>
                     </CardContent>
                 </Card>
                 <Card className="bg-green-50 border-green-200 shadow-sm">
