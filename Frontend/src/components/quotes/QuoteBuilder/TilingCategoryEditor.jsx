@@ -1089,7 +1089,7 @@ export default React.forwardRef(function TilingCategoryEditor({
                             {item.workType || "בחר סוג עבודה (אופציונלי)"}
                           </SelectValue>
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent dir="rtl">
                           <SelectItem value={null}>הצג הכל</SelectItem> {/* Option to clear filter */}
                           {availableWorkTypes.map(wt => (
                             <SelectItem key={wt} value={wt}>
@@ -1111,7 +1111,7 @@ export default React.forwardRef(function TilingCategoryEditor({
                             {item.selectedItemData ? formatItemNameWithSize(item) : "בחר פריט מהמחירון..."}
                           </SelectValue>
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent dir="rtl">
                           {filteredSubCategories.length === 0 ? (
                               <SelectItem value="__empty__" disabled>
                                 {item.workType ? `אין פריטים עבור ${item.workType}` : 'אין פריטים זמינים'}

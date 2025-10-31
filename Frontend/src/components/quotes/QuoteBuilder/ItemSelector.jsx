@@ -1319,6 +1319,7 @@ const PaintRoomsManager = React.forwardRef(({
         ];
     });
     const [isSummaryOpen, setIsSummaryOpen] = useState(true);
+    const [isTilingSummaryOpen, setIsTilingSummaryOpen] = useState(true);
     const [preciseWorkDays, setPreciseWorkDays] = useState(false);
     const [preciseBucketCalculation, setPreciseBucketCalculation] = useState(false);
 
@@ -1831,78 +1832,6 @@ const PaintRoomsManager = React.forwardRef(({
                                         <span className="text-sm text-gray-700 group-hover:text-gray-900">ימי עבודה מדויקים</span>
                                     </label>
                                 </div>
-
-                                {(totalMetrics?.materialSummary || []).length > 0 && (
-                                    <div className="mt-4">
-                                        <h4 className="font-semibold text-gray-700 mb-3 text-center flex items-center justify-center gap-2">
-                                            <span className="text-blue-600">🪣</span>
-                                            סיכום חומרים נדרשים
-                                        </h4>
-                                        <div className="grid gap-4">
-                                            {totalMetrics.materialSummary.map((summary, index) => {
-                                                const exactNeeded = summary.exactBucketsNeeded || 0;
-                                                const numPurchased = summary.bucketsToPurchase || 0;
-
-                                                const fills = [];
-                                                let remainingNeeded = exactNeeded;
-                                                for (let i = 0; i < Math.ceil(numPurchased); i++) {
-                                                    if (remainingNeeded >= 1) {
-                                                        fills.push(100);
-                                                        remainingNeeded -= 1;
-                                                    } else if (remainingNeeded > 0) {
-                                                        fills.push(remainingNeeded * 100);
-                                                        remainingNeeded = 0;
-                                                    } else {
-                                                        fills.push(0);
-                                                    }
-                                                }
-
-                                                const sortedFills = [...fills].sort((a, b) => {
-                                                    const isAPartial = a > 0 && a < 100;
-                                                    const isBPartial = b > 0 && b < 100;
-                                                    if (isAPartial && !isBPartial) return -1;
-                                                    if (!isAPartial && isBPartial) return 1;
-                                                    return b - a;
-                                                });
-
-                                                const bucketsToDisplay = sortedFills.slice(0, 3);
-                                                const extraBucketsCount = Math.max(0, Math.ceil(numPurchased) - bucketsToDisplay.length);
-
-                                                return (
-                                                    <div key={summary.itemId || index} className="bg-gray-100 rounded-lg p-4 flex items-center justify-between">
-                                                        <div className="flex-1">
-                                                            <h5 className="font-semibold text-gray-800">{getItemDisplayName(summary)}</h5>
-                                                            <div className="text-sm text-gray-600 mt-1">
-                                                                <span className="text-blue-600">דרושים: {exactNeeded.toFixed(1)} דליים</span>
-                                                                <br />
-                                                                <span className="font-medium">נרכשו (לחישוב): {numPurchased.toFixed(1)} דליים</span>
-                                                            </div>
-                                                            <div className="text-sm text-gray-800 mt-2 font-bold">
-                                                                ₪{formatPrice(summary.totalMaterialCost)}
-                                                                <span className="text-xs text-gray-500 font-normal ml-1">(₪{formatPrice(summary.pricePerBucket)} לדלי)</span>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="flex items-end gap-2 mx-4">
-                                                            {bucketsToDisplay.map((fill, i) => (
-                                                                <div key={i} className="flex flex-col items-center">
-                                                                    <BucketUsageIndicator percentage={fill} />
-                                                                    <span className="text-xs font-medium text-gray-700 mt-1">{fill.toFixed(0)}%</span>
-                                                                </div>
-                                                            ))}
-                                                            {extraBucketsCount > 0 && (
-                                                                <div className="flex flex-col items-center justify-end h-full ml-2">
-                                                                    <span className="font-bold text-gray-700">+{extraBucketsCount}</span>
-                                                                    <span className="text-xs text-gray-500">דליים</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
 
                                 <div className="border-t pt-3">
                                     <h4 className="font-semibold text-gray-700 mb-3 text-center">פירוט עלויות כללי:</h4>
@@ -3576,59 +3505,90 @@ export default function ItemSelector({
             <>
               <HideTilingCatalogAdd />
               <TilingAutoSaveOnAddArea onAddItemToQuote={onAddItemToQuote} />
-              {/* סיכום קטגוריה - מעודכן עם נתונים מלאים */}
+              {/* סיכום קטגוריה - כמו צבע ושפכטל */}
               {tilingCategorySummary.itemCount > 0 && (
-                <div className="bg-gradient-to-br from-orange-50 to-white p-6 rounded-xl border-2 border-orange-200 shadow-sm">
-                  <h3 className="text-lg font-bold text-orange-800 mb-4 flex items-center gap-2">
-                    <Building className="w-5 h-5" />
-                    סיכום קטגוריית ריצוף וחיפוי
-                  </h3>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div className="bg-white p-4 rounded-lg border border-orange-200">
-                      <div className="text-sm text-gray-600 mb-1">סה"כ שטח</div>
-                      <div className="text-2xl font-bold text-orange-700">{tilingCategorySummary.totalArea.toFixed(1)} מ"ר</div>
-                    </div>
-                    
-                    <div className="bg-white p-4 rounded-lg border border-orange-200">
-                      <div className="text-sm text-gray-600 mb-1">פריטים</div>
-                      <div className="text-2xl font-bold text-orange-700">{tilingCategorySummary.itemCount}</div>
-                    </div>
+                <div className="mt-6 p-0">
+                  <Collapsible open={isTilingSummaryOpen} onOpenChange={setIsTilingSummaryOpen}>
+                    <CollapsibleTrigger asChild>
+                      <button className="w-full bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 rounded-lg border-2 border-orange-300 p-3 hover:shadow-md transition-all duration-300 cursor-pointer">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-bold text-gray-800 flex items-center">
+                            <Building className="w-5 h-5 ml-2 text-orange-600" />
+                            סיכום כולל לקטגוריית ריצוף וחיפוי
+                          </h3>
+                          {isTilingSummaryOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </div>
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-3">
+                      <div className="bg-white rounded-lg border-2 border-orange-300 shadow-sm overflow-hidden">
+                        <div className="p-4 space-y-4">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200">
+                              <div className="text-xl font-bold text-blue-800">
+                                ₪{formatPrice(tilingCategorySummary.totalClientPrice || 0)}
+                              </div>
+                              <div className="text-sm text-blue-600 font-medium">מחיר ללקוח</div>
+                              <div className="text-xs text-blue-500">
+                                {tilingCategorySummary.totalArea > 0
+                                  ? `₪${formatPrice(tilingCategorySummary.totalClientPrice / tilingCategorySummary.totalArea)} למ"ר`
+                                  : ''}
+                              </div>
+                            </div>
+                            <div className="bg-gradient-to-br from-orange-50 to-red-100 p-3 rounded-lg border border-orange-200">
+                              <div className="text-xl font-bold text-orange-800">
+                                ₪{formatPrice(tilingCategorySummary.totalContractorCost || 0)}
+                              </div>
+                              <div className="text-sm text-orange-600 font-medium">עלות קבלן</div>
+                              <div className="text-xs text-orange-500">
+                                {tilingCategorySummary.totalArea > 0
+                                  ? `₪${formatPrice(tilingCategorySummary.totalContractorCost / tilingCategorySummary.totalArea)} למ"ר`
+                                  : ''}
+                              </div>
+                            </div>
+                            <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg border border-green-200">
+                              <div className="text-xl font-bold text-green-800">
+                                ₪{formatPrice(tilingCategorySummary.totalProfit || 0)}
+                              </div>
+                              <div className="text-sm text-green-600 font-medium">רווח</div>
+                              <div className="text-xs text-green-500">
+                                {tilingCategorySummary.totalContractorCost > 0
+                                  ? `${((tilingCategorySummary.totalProfit / tilingCategorySummary.totalContractorCost) * 100).toFixed(1)}%`
+                                  : '0%'}
+                                {tilingCategorySummary.totalArea > 0
+                                  ? ` | ₪${formatPrice(tilingCategorySummary.totalProfit / tilingCategorySummary.totalArea)} למ"ר`
+                                  : ''}
+                              </div>
+                            </div>
+                          </div>
 
-                    <div className="bg-white p-4 rounded-lg border border-orange-200">
-                      <div className="text-sm text-gray-600 mb-1">ימי עבודה</div>
-                      <div className="text-2xl font-bold text-orange-700">{tilingCategorySummary.totalWorkDays.toFixed(1)}</div>
-                    </div>
-
-                    <div className="bg-white p-4 rounded-lg border border-orange-200">
-                      <div className="text-sm text-gray-600 mb-1">עלות חומרים</div>
-                      <div className="text-xl font-bold text-orange-700">₪{tilingCategorySummary.totalMaterialCost.toLocaleString()}</div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-red-50 p-4 rounded-lg border-2 border-red-300">
-                      <div className="text-sm text-red-700 font-medium mb-1">עלות קבלן</div>
-                      <div className="text-2xl font-bold text-red-700">₪{tilingCategorySummary.totalContractorCost.toLocaleString()}</div>
-                      <div className="text-xs text-red-600 mt-1">חומרים + עבודה</div>
-                    </div>
-
-                    <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-300">
-                      <div className="text-sm text-blue-700 font-medium mb-1">מחיר ללקוח</div>
-                      <div className="text-2xl font-bold text-blue-700">₪{tilingCategorySummary.totalClientPrice.toLocaleString()}</div>
-                      <div className="text-xs text-blue-600 mt-1">סה"כ למכירה</div>
-                    </div>
-
-                    <div className="bg-green-50 p-4 rounded-lg border-2 border-green-300">
-                      <div className="text-sm text-green-700 font-medium mb-1">רווח צפוי</div>
-                      <div className="text-2xl font-bold text-green-700">₪{tilingCategorySummary.totalProfit.toLocaleString()}</div>
-                      <div className="text-xs text-green-600 mt-1">
-                        {tilingCategorySummary.totalContractorCost > 0 
-                          ? `${((tilingCategorySummary.totalProfit / tilingCategorySummary.totalContractorCost) * 100).toFixed(1)}% רווח`
-                          : '0% רווח'}
+                          <div className="border-t pt-3">
+                            <h4 className="font-semibold text-gray-700 mb-3 text-center">פירוט עלויות כללי:</h4>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              <div className="bg-gray-100 p-2 rounded-lg">
+                                <div className="text-base font-bold text-gray-800">
+                                  ₪{formatPrice(tilingCategorySummary.totalMaterialCost || 0)}
+                                </div>
+                                <div className="text-xs text-gray-500">עלות חומרים</div>
+                              </div>
+                              <div className="bg-gray-100 p-2 rounded-lg">
+                                <div className="text-base font-bold text-gray-800">
+                                  ₪{formatPrice(tilingCategorySummary.totalLaborCost || 0)}
+                                </div>
+                                <div className="text-xs text-gray-500">עלויות עובדים</div>
+                              </div>
+                              <div className="bg-gray-100 p-2 rounded-lg">
+                                <div className="text-base font-bold text-gray-800">
+                                  {(tilingCategorySummary.totalWorkDays || 0).toFixed(1)}
+                                </div>
+                                <div className="text-xs text-gray-500">ימי עבודה</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               )}
             </>

@@ -628,7 +628,7 @@ export default function CostCalculator() {
     const handleSaveTilingDefaults = async (defaults) => {
         try {
             if (typeof User.updateMyUserData === 'function') {
-                await User.updateMyUserData({ tiling_user_defaults: defaults });
+                await User.updateMyUserData({ tilingUserDefaults: defaults });
             } else {
                 console.log('User.updateMyUserData not available - backend not connected');
             }
@@ -647,7 +647,7 @@ export default function CostCalculator() {
             ...partialDefaults,
         };
         if (typeof User.updateMyUserData === 'function') {
-            await User.updateMyUserData({ tiling_user_defaults: merged });
+            await User.updateMyUserData({ tilingUserDefaults: merged });
         } else {
             console.log('User.updateMyUserData not available - backend not connected');
         }
@@ -688,7 +688,7 @@ export default function CostCalculator() {
                 });
 
                 if (typeof User.updateMyUserData === 'function') {
-                    await User.updateMyUserData({ tiling_items: updatedItems });
+                    await User.updateMyUserData({ tilingItems: updatedItems });
                 } else {
                     console.log('User.updateMyUserData not available - backend not connected');
                 }
@@ -704,7 +704,7 @@ export default function CostCalculator() {
             ...partialDefaults,
         };
         if (typeof User.updateMyUserData === 'function') {
-            await User.updateMyUserData({ paint_user_defaults: merged });
+            await User.updateMyUserData({ paintUserDefaults: merged });
         } else {
             console.log('User.updateMyUserData not available - backend not connected');
         }
@@ -740,7 +740,7 @@ export default function CostCalculator() {
                 });
 
                 if (typeof User.updateMyUserData === 'function') {
-                    await User.updateMyUserData({ paint_items: updatedItems });
+                    await User.updateMyUserData({ paintItems: updatedItems });
                 } else {
                     console.log('User.updateMyUserData not available - backend not connected');
                 }
@@ -760,7 +760,7 @@ export default function CostCalculator() {
     const handleSaveRoomEstimates = async (updatedEstimates) => {
         try {
             if (typeof User.updateMyUserData === 'function') {
-                await User.updateMyUserData({ room_estimates: updatedEstimates });
+                await User.updateMyUserData({ roomEstimates: updatedEstimates });
             } else {
                 console.log('User.updateMyUserData not available - backend not connected');
             }
@@ -839,7 +839,7 @@ export default function CostCalculator() {
 
             // Save to user_profile table via backend API
             if (typeof User.updateMyUserData === 'function') {
-                await User.updateMyUserData({ tiling_items: updatedItems });
+                await User.updateMyUserData({ tilingItems: updatedItems });
             } else {
                 console.log('User.updateMyUserData not available - backend not connected');
             }
@@ -914,7 +914,7 @@ export default function CostCalculator() {
 
             // Save to user_profile table via backend API
             if (typeof User.updateMyUserData === 'function') {
-                await User.updateMyUserData({ paint_items: updatedItems });
+                await User.updateMyUserData({ paintItems: updatedItems });
             } else {
                 console.log('User.updateMyUserData not available - backend not connected');
             }
@@ -986,7 +986,7 @@ export default function CostCalculator() {
                 ];
                 if (!userData.user_metadata?.roomEstimates || userData.user_metadata.roomEstimates.length === 0) {
                     if (typeof User.updateMyUserData === 'function') {
-                        await User.updateMyUserData({ room_estimates: defaultRoomEstimates });
+                        await User.updateMyUserData({ roomEstimates: defaultRoomEstimates });
                     } else {
                         console.log('User.updateMyUserData not available - backend not connected');
                     }
@@ -1014,7 +1014,7 @@ export default function CostCalculator() {
                 let currentTilingItems = userData.user_metadata?.tilingItems;
                 if (currentTilingItems == null) {
                     if (typeof User.updateMyUserData === 'function') {
-                        await User.updateMyUserData({ tiling_items: newTilingItemsFromTable });
+                        await User.updateMyUserData({ tilingItems: newTilingItemsFromTable });
                     } else {
                         console.log('User.updateMyUserData not available - backend not connected');
                     }
