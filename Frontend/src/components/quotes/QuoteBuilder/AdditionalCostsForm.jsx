@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, ArrowLeft, ArrowRight, Calculator, Edit2, Lock } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { User } from '@/lib/entities';
+import useSafeUser from "@/components/utils/useSafeUser";
 
 const formatPrice = (price) => {
     if (typeof price !== 'number' || isNaN(price)) return '0';
@@ -20,6 +20,7 @@ const defaultCosts = [
 ];
 
 export default function AdditionalCostsForm({ projectComplexities = {}, onUpdateProjectComplexities, onBack, onNext }) {
+    const { user, loading: userLoading } = useSafeUser();
     const [userDefaults, setUserDefaults] = useState(null);
     const [loadingDefaults, setLoadingDefaults] = useState(true);
     
@@ -67,26 +68,22 @@ export default function AdditionalCostsForm({ projectComplexities = {}, onUpdate
 
     const [additionalCosts, setAdditionalCosts] = useState([]);
 
-    // טעינת ברירות מחדל מהמשתמש
+    // 🆕 Load defaults from useSafeUser
     useEffect(() => {
-        const loadDefaults = async () => {
-            try {
-                setLoadingDefaults(true);
-                const user = await User.me();
-                const defaults = user?.additionalCostDefaults || {
+        if (!userLoading) {
+            if (user && user.user_metadata) {
+                const defaults = user.user_metadata.additionalCostDefaults || {
                     profitPercent: 20,
                     fixedCosts: []
                 };
                 setUserDefaults(defaults);
-            } catch (error) {
-                console.error("Error loading user defaults:", error);
+                console.log('[AdditionalCostsForm] Loaded defaults from useSafeUser:', defaults);
+            } else {
                 setUserDefaults({ profitPercent: 20, fixedCosts: [] });
-            } finally {
-                setLoadingDefaults(false);
             }
-        };
-        loadDefaults();
-    }, []);
+            setLoadingDefaults(false);
+        }
+    }, [user, userLoading]);
 
     // אתחול העלויות לאחר טעינת ברירות המחדל
     useEffect(() => {

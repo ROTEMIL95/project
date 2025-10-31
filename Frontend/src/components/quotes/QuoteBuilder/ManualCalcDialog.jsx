@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User } from "@/lib/entities";
 import { Badge } from "@/components/ui/badge";
 import { Paintbrush, Layers, Ruler, Trash2, FileText } from "lucide-react";
+import useSafeUser from "@/components/utils/useSafeUser";
 
 export default function ManualCalcDialog() {
   const [open, setOpen] = React.useState(false);
@@ -39,20 +39,23 @@ export default function ManualCalcDialog() {
     desiredProfitPercent: 30,
   });
 
+  // 🆕 Use useSafeUser hook to get current user data
+  const { user } = useSafeUser();
+
+  // 🆕 Load defaults from user whenever user changes or dialog opens
   React.useEffect(() => {
-    (async () => {
-      try {
-        const me = await User.me();
-        const d = me?.paintUserDefaults || {};
-        setDefaults({
-          workerDailyCost: Number(d.workerDailyCost ?? 0),
-          desiredProfitPercent: Number(d.desiredProfitPercent ?? 30),
-        });
-      } catch (e) {
-        // keep defaults
-      }
-    })();
-  }, []);
+    if (user && user.user_metadata) {
+      const d = user.user_metadata.paintUserDefaults || {};
+      setDefaults({
+        workerDailyCost: Number(d.workerDailyCost ?? 0),
+        desiredProfitPercent: Number(d.desiredProfitPercent ?? 30),
+      });
+      console.log('[ManualCalcDialog] Loaded defaults from useSafeUser:', {
+        workerDailyCost: Number(d.workerDailyCost ?? 0),
+        desiredProfitPercent: Number(d.desiredProfitPercent ?? 30)
+      });
+    }
+  }, [user, open]);
 
   // פתיחה מבחוץ (תמיכה בפרה-פיל חדש: walls/ceiling)
   React.useEffect(() => {

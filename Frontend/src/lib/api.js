@@ -1,7 +1,9 @@
 import { supabase } from './supabase';
 
 // API base URL from environment variable
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Production: https://project-b88e.onrender.com
+// Development: http://localhost:8000
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://project-b88e.onrender.com';
 
 /**
  * API Client for FastAPI Backend

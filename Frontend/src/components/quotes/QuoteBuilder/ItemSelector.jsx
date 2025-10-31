@@ -1468,24 +1468,33 @@ const PaintRoomsManager = React.forwardRef(({
             item.categoryId === categoryId && item.source === 'manual_calc'
         );
 
-        let manualMaterialCostSum = 0; // Track manual material costs separately
+        // Track manual item costs separately for proper calculation
+        let manualTotalCost = 0;
+        let manualTotalPrice = 0;
+        let manualWorkDays = 0;
+        let manualMaterialCost = 0;
+        let manualLaborCost = 0;
+        let manualQuantity = 0;
 
         stagedPaintItems.forEach(item => {
-            baseTotalCostRaw += Number(item.totalCost) || 0;
-            baseTotalSellingPriceRaw += Number(item.totalPrice) || 0;
-            sumExactWorkDays += Number(item.workDuration) || 0;
-            sumExactLaborCosts += Number(item.laborCost) || 0;
-
-            // 🆕 Add manual item quantity/area to total for accurate per-sqm calculations
-            totalQuantity += Number(item.quantity) || 0;
-
-            // 🆕 Track material costs from manual items for breakdown display
-            manualMaterialCostSum += Number(item.materialCost) || 0;
-
-            // Note: Manual items don't have bucket calculations or separate paint/plaster breakdown
+            // Manual items have totalCost already calculated (materialCost + laborCost)
+            // We track them separately to avoid double-counting when adding to component sums
+            manualTotalCost += Number(item.totalCost) || 0;
+            manualTotalPrice += Number(item.totalPrice) || 0;
+            manualWorkDays += Number(item.workDuration) || 0;
+            manualMaterialCost += Number(item.materialCost) || 0;
+            manualLaborCost += Number(item.laborCost) || 0;
+            manualQuantity += Number(item.quantity) || 0;
         });
 
-        let finalMaterialCost = 0;
+        // Add manual item values to catalog item values for base calculations
+        baseTotalCostRaw += manualTotalCost;
+        baseTotalSellingPriceRaw += manualTotalPrice;
+        sumExactWorkDays += manualWorkDays;
+        totalQuantity += manualQuantity;
+
+        let catalogMaterialCost = 0;
+        let catalogLaborCost = 0;
         const materialSummary = [];
 
         // Calculate material costs from catalog items (bucket-based)
@@ -1496,7 +1505,7 @@ const PaintRoomsManager = React.forwardRef(({
 
             const cost = bucketsToPurchase * material.pricePerBucket;
 
-            finalMaterialCost += cost;
+            catalogMaterialCost += cost;
 
             materialSummary.push({
                 ...material,
@@ -1505,23 +1514,40 @@ const PaintRoomsManager = React.forwardRef(({
             });
         });
 
-        // 🆕 Add manual item material costs to the total
-        finalMaterialCost += manualMaterialCostSum;
+        // Calculate catalog labor costs from catalog rooms only
+        rooms.forEach(room => {
+            if (room.paintCalculatedMetrics) {
+                catalogLaborCost += Number(room.paintCalculatedMetrics.laborCost) || 0;
+            }
+            if (room.plasterCalculatedMetrics) {
+                catalogLaborCost += Number(room.plasterCalculatedMetrics.laborCost) || 0;
+            }
+        });
 
-        let finalWorkDaysValue;
-        let finalLaborCostValue;
+        // 🆕 Total material and labor costs = catalog + manual
+        const finalMaterialCost = catalogMaterialCost + manualMaterialCost;
+        const finalLaborCost = catalogLaborCost + manualLaborCost;
 
-        if (sumExactWorkDays > 0) {
-            finalWorkDaysValue = preciseWorkDays ? sumExactWorkDays : Math.ceil(sumExactWorkDays);
-            // 🆕 Use actual labor costs instead of recalculating with average rate
-            // This preserves the exact labor costs from both catalog and manual items
-            finalLaborCostValue = sumExactLaborCosts;
-        } else {
-            finalWorkDaysValue = sumExactWorkDays;
-            finalLaborCostValue = sumExactLaborCosts;
+        // Debug logging for labor cost calculation
+        if (stagedPaintItems.length > 0 || manualLaborCost > 0) {
+            console.log('[PaintRoomsManager] Labor Cost Calculation:', {
+                catalogLaborCost,
+                manualLaborCost,
+                finalLaborCost,
+                manualItemsCount: stagedPaintItems.length,
+                roomsCount: rooms.length
+            });
         }
 
-        const sumNonMaterialCosts = finalLaborCostValue + sumOtherCosts;
+        // Work days calculation
+        let finalWorkDaysValue;
+        if (sumExactWorkDays > 0) {
+            finalWorkDaysValue = preciseWorkDays ? sumExactWorkDays : Math.ceil(sumExactWorkDays);
+        } else {
+            finalWorkDaysValue = sumExactWorkDays;
+        }
+
+        const sumNonMaterialCosts = finalLaborCost + sumOtherCosts;
         const finalCalculatedTotalCost = finalMaterialCost + sumNonMaterialCosts;
 
 
@@ -1542,7 +1568,7 @@ const PaintRoomsManager = React.forwardRef(({
             profitPercent: finalProfitPercent,
             totalWorkDays: finalWorkDaysValue,
             unroundedWorkDays: sumExactWorkDays,
-            totalLaborCost: Math.round(finalLaborCostValue),
+            totalLaborCost: Math.round(finalLaborCost),
             totalQuantity: totalQuantity,
             pricePerSqM: Math.round(pricePerSqM),
             costPerSqM: Math.round(costPerSqM),
@@ -1880,7 +1906,7 @@ const PaintRoomsManager = React.forwardRef(({
 
                                 <div className="border-t pt-3">
                                     <h4 className="font-semibold text-gray-700 mb-3 text-center">פירוט עלויות כללי:</h4>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
+                                    <div className="grid grid-cols-3 gap-2 text-center">
                                         <div className="bg-gray-100 p-2 rounded-lg">
                                             <div className="text-base font-bold text-gray-800">
                                                 ₪{formatPrice(totalMetrics?.finalMaterialCost || 0)}
@@ -1898,12 +1924,6 @@ const PaintRoomsManager = React.forwardRef(({
                                                 {(totalMetrics?.totalWorkDays || 0).toFixed(1)}
                                             </div>
                                             <div className="text-xs text-gray-500">ימי עבודה</div>
-                                        </div>
-                                        <div className="bg-gray-100 p-2 rounded-lg">
-                                            <div className="text-base font-bold text-gray-800">
-                                                ₪{formatPrice(totalMetrics?.totalFixedCost || 0)}
-                                            </div>
-                                            <div className="text-xs text-gray-500">עלויות קבועות</div>
                                         </div>
                                     </div>
                                 </div>
@@ -2305,7 +2325,7 @@ const ElectricalItemManager = React.forwardRef(({
       const unitCost = Number(item.unitCost || catalogItem.unitCost || 0);
       const profitPercent = Number(item.profitPercent || user?.electricalDefaults?.profitPercent || 0);
 
-      const totalCost = quantity * unitCost;
+      let totalCost = quantity * unitCost;
       let totalPrice = quantity * unitPrice;
 
       if (unitPrice === 0 && unitCost > 0 && profitPercent > 0) {
