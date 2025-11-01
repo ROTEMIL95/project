@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +24,7 @@ export default function AdditionalCostsForm({ projectComplexities = {}, onUpdate
     const [userDefaults, setUserDefaults] = useState(null);
     const [loadingDefaults, setLoadingDefaults] = useState(true);
     
-    const initializeCosts = () => {
+    const initializeCosts = useCallback(() => {
         const existingCosts = projectComplexities.additionalCostDetails || [];
         
         // טען ברירות מחדל מהמשתמש אם קיימות
@@ -64,7 +64,7 @@ export default function AdditionalCostsForm({ projectComplexities = {}, onUpdate
         const customCosts = existingCosts.filter(c => !defaultCosts.some(dc => dc.id === c.id));
         
         return [...updatedCosts, ...customCosts.map(c => ({...c, isEditing: false}))];
-    };
+    }, [userDefaults, projectComplexities.additionalCostDetails]);
 
     const [additionalCosts, setAdditionalCosts] = useState([]);
 
@@ -90,20 +90,30 @@ export default function AdditionalCostsForm({ projectComplexities = {}, onUpdate
         if (!loadingDefaults && userDefaults) {
             setAdditionalCosts(initializeCosts());
         }
-    }, [loadingDefaults, userDefaults, projectComplexities.additionalCostDetails]);
+    }, [loadingDefaults, userDefaults, initializeCosts]);
+
+    // ✅ Track previous costs to prevent infinite loop
+    const prevCostsRef = React.useRef(null);
 
     useEffect(() => {
         if (onUpdateProjectComplexities && additionalCosts.length > 0) {
             const costsToSave = additionalCosts.map(({ isEditing, ...rest }) => rest);
             const totalAdditionalCost = costsToSave.reduce((sum, cost) => sum + (cost.cost || 0), 0);
 
-            onUpdateProjectComplexities(prevComplexities => ({
-                ...prevComplexities,
-                additionalCostDetails: costsToSave,
-                totalAdditionalCost: totalAdditionalCost 
-            }));
+            // ✅ Only update if costs have actually changed (deep comparison)
+            const costsJson = JSON.stringify(costsToSave);
+            if (prevCostsRef.current !== costsJson) {
+                prevCostsRef.current = costsJson;
+
+                onUpdateProjectComplexities(prevComplexities => ({
+                    ...prevComplexities,
+                    additionalCostDetails: costsToSave,
+                    totalAdditionalCost: totalAdditionalCost
+                }));
+            }
         }
-    }, [additionalCosts, onUpdateProjectComplexities]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [additionalCosts]);
 
     const handleUpdateCost = (index, field, value) => {
         const newCosts = [...additionalCosts];

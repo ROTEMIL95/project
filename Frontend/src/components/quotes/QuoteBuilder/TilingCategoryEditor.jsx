@@ -120,19 +120,27 @@ const calculateTilingMetrics = (item, tilingItemData, userDefaults) => {
   const totalMaterialCost = Math.round(costOfTilesWithWastage + costOfBlackMaterial);
 
 
-  // Labor Cost Calculation - MODIFIED with proper complexity handling
-  let baseWorkDays = 0;
+  // Labor Cost Calculation - MODIFIED with proper complexity handling and separate tracking
+  let quantityWorkDays = 0;
+  let panelWorkDays = 0;
+
   if (quantity > 0) {
-    baseWorkDays += quantity / dailyOutput;
+    quantityWorkDays = quantity / dailyOutput;
   }
   if (panelQuantity > 0) {
-    baseWorkDays += panelQuantity / panelWorkCapacity;
+    panelWorkDays = panelQuantity / panelWorkCapacity;
   }
+
+  const baseWorkDays = quantityWorkDays + panelWorkDays;
 
   // Apply complexity multiplier correctly to work days
   const totalWorkDays = baseWorkDays * (1 + complexityMultiplier);
   const baseLaborCost = baseWorkDays * laborCostPerDay;
   const totalLaborCost = totalWorkDays * laborCostPerDay;
+
+  // Separate labor costs for display
+  const quantityLaborCost = quantityWorkDays * laborCostPerDay;
+  const panelLaborCost = panelWorkDays * laborCostPerDay;
 
   // Total Contractor Cost
   const fixedProjectCost = parseFloat(safeTilingItemData.fixedProjectCost || safeUserDefaults.fixedProjectCost) || 0;
@@ -156,7 +164,12 @@ const calculateTilingMetrics = (item, tilingItemData, userDefaults) => {
     fixedProjectCost: fixedProjectCost || 0,
     baseLaborCost: baseLaborCost || 0, // Keep for complexity diff calculation
     baseWorkDays: baseWorkDays || 0, // Added to return base work days for complexity calculation
-    costOfBlackMaterial: costOfBlackMaterial // Return specifically for additionalCost
+    costOfBlackMaterial: costOfBlackMaterial, // Return specifically for additionalCost
+    // ✅ NEW: Separate metrics for regular tiling vs panel work
+    quantityWorkDays: quantityWorkDays || 0,
+    panelWorkDays: panelWorkDays || 0,
+    quantityLaborCost: quantityLaborCost || 0,
+    panelLaborCost: panelLaborCost || 0
   };
 };
 
@@ -801,7 +814,13 @@ export default React.forwardRef(function TilingCategoryEditor({
         totalArea: quantity, // totalArea is quantity only, as per pricePerMeter calculation
         totalMaterialCost: calculatedResult.totalMaterialCost,
         totalFixedCost: calculatedResult.fixedProjectCost,
-        costOfBlackMaterial: calculatedResult.costOfBlackMaterial
+        costOfBlackMaterial: calculatedResult.costOfBlackMaterial,
+        // ✅ NEW: Include separate metrics for display
+        quantityWorkDays: calculatedResult.quantityWorkDays,
+        panelWorkDays: calculatedResult.panelWorkDays,
+        quantityLaborCost: calculatedResult.quantityLaborCost,
+        panelLaborCost: calculatedResult.panelLaborCost,
+        panelArea: panelQuantity
       };
 
       // Calculate complexity addition based on the difference between total labor cost and base labor cost
@@ -1198,6 +1217,85 @@ export default React.forwardRef(function TilingCategoryEditor({
 
                     </div>
                   </div>
+
+                  {/* Visual Breakdown for Panel Calculations */}
+                  {itemMetrics && (item.panelQuantity > 0 || item.quantity > 0) && (
+                    <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
+                      <div className="flex items-center justify-center gap-2 mb-3">
+                        <Calculator className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-semibold text-blue-800">פירוט חישוב עבודה</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-3 flex-wrap">
+                        {/* Regular Tiling Section */}
+                        {item.quantity > 0 && (
+                          <div className="flex-1 min-w-[200px] p-3 bg-white rounded-lg border border-blue-300 shadow-sm">
+                            <div className="text-xs font-medium text-gray-600 mb-2 text-center">ריצוף רגיל</div>
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-600">שטח:</span>
+                                <span className="font-semibold text-gray-800">{itemMetrics.totalArea.toFixed(1)} מ"ר</span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-600">ימי עבודה:</span>
+                                <span className="font-semibold text-gray-800">{itemMetrics.quantityWorkDays.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-600">עלות עובדים:</span>
+                                <span className="font-semibold text-blue-700">₪{formatPrice(itemMetrics.quantityLaborCost)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Plus Symbol */}
+                        {item.quantity > 0 && item.panelQuantity > 0 && (
+                          <div className="flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                              <Plus className="w-4 h-4 text-blue-600" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Panel Work Section */}
+                        {item.panelQuantity > 0 && (
+                          <div className="flex-1 min-w-[200px] p-3 bg-white rounded-lg border border-indigo-300 shadow-sm">
+                            <div className="text-xs font-medium text-gray-600 mb-2 text-center">עבודת פאנל</div>
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-600">שטח פאנל:</span>
+                                <span className="font-semibold text-gray-800">{itemMetrics.panelArea.toFixed(1)} מ"ר</span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-600">ימי עבודה:</span>
+                                <span className="font-semibold text-gray-800">{itemMetrics.panelWorkDays.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-600">עלות עובדים:</span>
+                                <span className="font-semibold text-indigo-700">₪{formatPrice(itemMetrics.panelLaborCost)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Total Summary */}
+                      {item.quantity > 0 && item.panelQuantity > 0 && (
+                        <div className="mt-3 pt-3 border-t border-blue-200">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-semibold text-gray-700">סה"כ עבודה:</span>
+                            <div className="flex items-center gap-4">
+                              <Badge variant="outline" className="bg-white border-blue-400 text-blue-700">
+                                {(itemMetrics.quantityWorkDays + itemMetrics.panelWorkDays).toFixed(2)} ימים
+                              </Badge>
+                              <Badge variant="outline" className="bg-white border-blue-400 text-blue-700 font-bold">
+                                ₪{formatPrice(itemMetrics.quantityLaborCost + itemMetrics.panelLaborCost)}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Individual Item Summary - always display, itemMetrics will be zeroed if quantities are zero or no item selected */}
                   {itemMetrics &&

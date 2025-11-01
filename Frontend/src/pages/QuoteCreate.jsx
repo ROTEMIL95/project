@@ -1209,7 +1209,8 @@ export default function QuoteCreate() {
         // Set new states from loaded quote or user defaults
         setCategoryCommitments(existingQuote.categoryCommitments || userLoadedData?.categoryCommitments || {});
         setTilingWorkTypes(existingQuote.tilingWorkTypes || userLoadedData?.tilingOptions?.workTypes || []);
-        setUserTilingItems(existingQuote.userTilingItems || userLoadedData?.tilingItems || []);
+        // ✅ Load from snake_case database column, fallback to camelCase for backward compatibility
+        setUserTilingItems(existingQuote.tiling_items || existingQuote.userTilingItems || userLoadedData?.tilingItems || []);
 
       } else {
         console.warn("No existing quote found for ID:", quoteId);
@@ -1423,7 +1424,7 @@ export default function QuoteCreate() {
         paymentTerms: paymentTerms || [],
         categoryCommitments: user?.user_metadata?.categoryCommitments || {},
         tilingWorkTypes: tilingWorkTypes, // New state
-        userTilingItems: userTilingItems, // New state
+        tiling_items: userTilingItems, // ✅ Use snake_case for database column
       };
 
       let savedQuote;
