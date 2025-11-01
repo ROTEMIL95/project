@@ -339,7 +339,6 @@ function PersistedStep3({
 
           <ItemSelector
             ref={itemSelectorRef}
-            key={`cat-${effectiveCategoryId}`}
             selectedItems={selectedItems}
             setSelectedItems={setSelectedItems}
             onAddItemToQuote={onAddItemToQuote}

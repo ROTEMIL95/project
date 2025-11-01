@@ -241,7 +241,7 @@ export default React.forwardRef(function PaintRoomsManager({
   useImperativeHandle(ref, () => ({
     saveData: () => {
       if (rooms.length === 0) {
-        return [];
+        return { quoteItems: [], rawRooms: [] };  // ✅ Return object format even when empty
       }
 
       // We need to ensure plaster metrics are up-to-date right before saving,
@@ -299,7 +299,16 @@ export default React.forwardRef(function PaintRoomsManager({
         onUpdateCategoryData(categoryId, detailedItems);
       }
 
-      return detailedItems;
+      console.log('[PaintRoomsManager] Saving data:', {
+        quoteItemsCount: detailedItems.length,
+        rawRoomsCount: roomsWithUpdatedPlasterMetrics.length
+      });
+
+      // ✅ Return object with both quote items AND raw rooms for restoration
+      return {
+        quoteItems: detailedItems,
+        rawRooms: roomsWithUpdatedPlasterMetrics
+      };
     }
   }));
 
