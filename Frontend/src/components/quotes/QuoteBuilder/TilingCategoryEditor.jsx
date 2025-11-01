@@ -444,6 +444,10 @@ export default React.forwardRef(function TilingCategoryEditor({
   onCategoryTimingChange,
   tilingWorkTypes = [],
   userTilingItems = [],
+  stagedManualItems = [],      // ✅ ADD: Manual items prop
+  setStagedManualItems,         // ✅ ADD: Manual items setter
+  initialRooms = [],            // ✅ ADD: For restoration
+  existingCategoryData,         // ✅ ADD: Existing category data
 }, ref) {
   const [tilingItems, setTilingItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -459,6 +463,17 @@ export default React.forwardRef(function TilingCategoryEditor({
   const [activeItemIdForForm, setActiveItemIdForForm] = useState(null);
   const [showManualDialog, setShowManualDialog] = useState(false);
 
+  // ✅ Restore localItems from initialRooms when returning to category
+  const [hasInitializedFromProp, setHasInitializedFromProp] = useState(false);
+
+  useEffect(() => {
+    if (initialRooms && initialRooms.length > 0 && !hasInitializedFromProp) {
+      console.log('[TilingCategoryEditor] Restoring items from initialRooms:', initialRooms.length);
+      setLocalItems(initialRooms);
+      setHasInitializedFromProp(true);
+    }
+  }, [initialRooms, hasInitializedFromProp]);
+
   // Helper: toggle inline editor below a specific available item
   const toggleInlineFormFor = useCallback((catalogItemId) => {
     setActiveItemIdForForm((prev) => prev === catalogItemId ? null : catalogItemId);
@@ -473,8 +488,7 @@ export default React.forwardRef(function TilingCategoryEditor({
   // This memo now holds all subcategories, filtering will be applied when rendering the Select component
   // MODIFIED: Include 'availableSizes' in the subCategory object for display in SelectItem
   const allSubCategories = useMemo(() => {
-    return tilingItems.filter((item) => item.id && (item.tileName || item.itemName || item.name)).
-    map((item) => ({
+    return tilingItems.filter((item) => item.id && (item.tileName || item.itemName || item.name)).map((item) => ({
       id: item.id,
       name: item.tileName || item.itemName || item.name,
       tileName: item.tileName || item.itemName || item.name,
@@ -953,7 +967,11 @@ export default React.forwardRef(function TilingCategoryEditor({
     console.log("✅ TilingCategoryEditor: Processed items ready for selectedItems:", processedItemsForQuote);
     console.log("📝 TilingCategoryEditor: Total items processed:", processedItemsForQuote.length);
 
-    return processedItemsForQuote;
+    // ✅ Return object with both quoteItems and rawRooms for restoration
+    return {
+      quoteItems: processedItemsForQuote,
+      rawRooms: localItems
+    };
   }, [localItems, calculatedItemsMetrics, currentCategorySummaryMetrics, categoryId]);
 
   // For proper ref exposure, this component needs to be wrapped with React.forwardRef.

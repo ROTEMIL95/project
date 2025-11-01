@@ -2654,63 +2654,52 @@ const TilingCategoryEditorLocalWrapper = React.forwardRef(({
         saveData: () => {
             // Get items from TilingCategoryEditorComponent's internal state
             let catalogItems = [];
+            let rawRooms = [];
+            
             if (tilingEditorInternalRef.current && typeof tilingEditorInternalRef.current.saveData === 'function') {
-                catalogItems = tilingEditorInternalRef.current.saveData();
+                const savedData = tilingEditorInternalRef.current.saveData();
+                // Handle both old array format and new object format
+                if (Array.isArray(savedData)) {
+                    catalogItems = savedData;
+                } else if (savedData && typeof savedData === 'object') {
+                    catalogItems = Array.isArray(savedData.quoteItems) ? savedData.quoteItems : [];
+                    rawRooms = Array.isArray(savedData.rawRooms) ? savedData.rawRooms : [];
+                }
             }
 
             // Get manual items for tiling category
-            const manualItems = stagedManualItems.filter(item =>
-                item.categoryId === categoryId &&
-                (item.source === 'tiling_manual' || item.source === 'tiling_area_autosave' || item.source === 'manual_calc')
-            );
+            const manualItems = Array.isArray(stagedManualItems) 
+                ? stagedManualItems.filter(item =>
+                    item.categoryId === categoryId &&
+                    (item.source === 'tiling_manual' || item.source === 'tiling_area_autosave' || item.source === 'manual_calc')
+                  )
+                : [];
 
-            // Consolidate into ONE summary item if there are items
-            let quoteItems;
-            if (catalogItems.length > 0 || manualItems.length > 0) {
-                // Calculate totals from catalog items
-                const catalogTotalCost = catalogItems.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
-                const catalogTotalPrice = catalogItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
-                const catalogTotalWorkDays = catalogItems.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
-                const catalogTotalQuantity = catalogItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+            console.log('[TilingCategoryEditorLocalWrapper] saveData called:', {
+                catalogItemsCount: catalogItems.length,
+                manualItemsCount: manualItems.length,
+                catalogItems: catalogItems,
+                manualItems: manualItems
+            });
 
-                // Add manual items totals
-                const manualTotalCost = manualItems.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
-                const manualTotalPrice = manualItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
-                const manualTotalWorkDays = manualItems.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
+            // Return ALL items (catalog + manual) individually, not consolidated
+            const allItems = [...catalogItems, ...manualItems];
 
-                // Create consolidated summary item
-                const consolidatedItem = {
-                    id: `cat_tiling_summary_${Date.now()}`,
-                    categoryId: categoryId,
-                    categoryName: 'ריצוף וחיפוי',
-                    name: 'סיכום ריצוף וחיפוי',
-                    source: 'tiling_category_summary',
-                    totalCost: catalogTotalCost + manualTotalCost,
-                    totalPrice: catalogTotalPrice + manualTotalPrice,
-                    totalProfit: (catalogTotalPrice + manualTotalPrice) - (catalogTotalCost + manualTotalCost),
-                    workDuration: catalogTotalWorkDays + manualTotalWorkDays,
-                    quantity: catalogTotalQuantity,
-                    unit: 'מ"ר',
-                    // Store detailed breakdown for reference
-                    detailedBreakdown: [...catalogItems, ...manualItems],
-                    catalogItemsCount: catalogItems.length,
-                    manualItemsCount: manualItems.length,
-                };
-
-                quoteItems = [consolidatedItem];
-            } else {
-                quoteItems = [];
-            }
-
-            // Clear staged manual items for this category
+            // Clear staged manual items for this category after including them
             if (setStagedManualItems && manualItems.length > 0) {
-                setStagedManualItems(prev => prev.filter(item =>
-                    item.categoryId !== categoryId ||
-                    !(item.source === 'tiling_manual' || item.source === 'tiling_area_autosave' || item.source === 'manual_calc')
-                ));
+                setStagedManualItems(prev => Array.isArray(prev) 
+                    ? prev.filter(item =>
+                        item.categoryId !== categoryId ||
+                        !(item.source === 'tiling_manual' || item.source === 'tiling_area_autosave' || item.source === 'manual_calc')
+                      )
+                    : []
+                );
             }
 
-            return quoteItems;
+            return {
+                quoteItems: allItems,
+                rawRooms: rawRooms
+            };
         }
     }), [categoryId, stagedManualItems, setStagedManualItems]);
 
@@ -2887,6 +2876,9 @@ const ItemSelector = React.forwardRef(({
 
   // עדכון הקריאה לדיאלוג הריצוף הידני
   const [showTilingManualDialog, setShowTilingManualDialog] = useState(false);
+
+  // State for tiling summary collapsible
+  const [isTilingSummaryOpen, setIsTilingSummaryOpen] = useState(true);
 
   // CHANGED: State for showing/hiding dates section - default to FALSE (closed)
   const [showDates, setShowDates] = React.useState(false);
@@ -3079,16 +3071,28 @@ const ItemSelector = React.forwardRef(({
 
     if (categoryIdToSave === 'cat_tiling') {
         if (tilingEditorRef.current && typeof tilingEditorRef.current.saveData === 'function') {
-            itemsFromCurrentCategoryComponent = tilingEditorRef.current.saveData();
-            categorySpecificDataForMap = { items: itemsFromCurrentCategoryComponent };
+            const savedTilingData = tilingEditorRef.current.saveData(); // Returns { quoteItems, rawRooms }
+            itemsFromCurrentCategoryComponent = savedTilingData?.quoteItems || [];
+            categorySpecificDataForMap = {
+                rooms: savedTilingData?.rawRooms || [],
+                items: savedTilingData?.quoteItems || []
+            };
+            
+            console.log('[ItemSelector] Saved tiling data:', {
+                quoteItemsCount: itemsFromCurrentCategoryComponent.length,
+                roomsCount: categorySpecificDataForMap.rooms.length,
+                items: itemsFromCurrentCategoryComponent
+            });
+        } else {
+            console.warn('[ItemSelector] tilingEditorRef.current.saveData not available');
         }
     } else if (categoryIdToSave === 'cat_paint_plaster') {
         if (paintRoomsRef.current && typeof paintRoomsRef.current.saveData === 'function') {
             const savedPaintData = paintRoomsRef.current.saveData(); // Returns { quoteItems, rawRooms }
-            itemsFromCurrentCategoryComponent = savedPaintData.quoteItems;
+            itemsFromCurrentCategoryComponent = savedPaintData?.quoteItems || [];
             categorySpecificDataForMap = {
-                rooms: savedPaintData.rawRooms,
-                items: savedPaintData.quoteItems
+                rooms: savedPaintData?.rawRooms || [],
+                items: savedPaintData?.quoteItems || []
             };
         }
     } else if (categoryIdToSave === 'cat_demolition') {
@@ -3103,21 +3107,24 @@ const ItemSelector = React.forwardRef(({
         }
     }
 
-    // Update global selectedItems: remove old items for this category, add new ones
-    setSelectedItems(prevItems => {
-        const otherCategoryItems = prevItems.filter(item => item.categoryId !== categoryIdToSave);
-        return [...otherCategoryItems, ...itemsFromCurrentCategoryComponent];
-    });
-
-    // 🆕 Extract staged manual items for this category BEFORE updating the map
+    // 🆕 Extract staged manual items for this category BEFORE updating selectedItems
     const stagedItemsForCategory = (stagedManualItems || []).filter(item =>
         item.categoryId === categoryIdToSave
     );
 
     console.log('[ItemSelector] Saving category data:', {
         categoryId: categoryIdToSave,
+        itemsFromComponent: Array.isArray(itemsFromCurrentCategoryComponent) ? itemsFromCurrentCategoryComponent.length : 0,
         stagedManualItems: stagedItemsForCategory.length,
         categoryData: categorySpecificDataForMap
+    });
+
+    // Update global selectedItems: remove old items for this category, add new ones + staged manual items
+    setSelectedItems(prevItems => {
+        const otherCategoryItems = prevItems.filter(item => item.categoryId !== categoryIdToSave);
+        const itemsToAdd = Array.isArray(itemsFromCurrentCategoryComponent) ? itemsFromCurrentCategoryComponent : [];
+        // ✅ Include staged manual items in selectedItems
+        return [...otherCategoryItems, ...itemsToAdd, ...stagedItemsForCategory];
     });
 
     // Update categoryDataMap
@@ -3141,7 +3148,7 @@ const ItemSelector = React.forwardRef(({
         });
     }
 
-  }, [selectedItems, setSelectedItems, setCategoryDataMap, categoryTimings, setProcessedCategories,
+  }, [setSelectedItems, setCategoryDataMap, categoryTimings, setProcessedCategories,
       tilingEditorRef, paintRoomsRef, demolitionManagerRef, electricalManagerRef, stagedManualItems
   ]);
 
@@ -3165,11 +3172,6 @@ const ItemSelector = React.forwardRef(({
     if (currentCategoryForItems && prevCategoryRef.current !== currentCategoryForItems) {
       const existingData = categoryDataMap[currentCategoryForItems];
 
-      console.log('[ItemSelector] Category switched to:', currentCategoryForItems, {
-        from: prevCategoryRef.current,
-        hasSavedItems: !!existingData?.stagedManualItems,
-        count: existingData?.stagedManualItems?.length || 0
-      });
 
       if (existingData?.stagedManualItems && existingData.stagedManualItems.length > 0) {
         // Restore saved items for this category, keeping items from other categories
@@ -3178,12 +3180,10 @@ const ItemSelector = React.forwardRef(({
           const otherCategories = prev.filter(item => item.categoryId !== currentCategoryForItems);
           return [...otherCategories, ...existingData.stagedManualItems];
         });
-        console.log('[ItemSelector] Restored staged manual items:', existingData.stagedManualItems);
       } else {
         // No saved items for this category - just filter out items for current category
         // This ensures when switching to a fresh category, we don't show other category's items
         setStagedManualItems(prev => prev.filter(item => item.categoryId !== currentCategoryForItems));
-        console.log('[ItemSelector] No saved items for category, filtered to show only current category items');
       }
 
       // Update previous category tracker
@@ -3300,7 +3300,10 @@ const ItemSelector = React.forwardRef(({
         categorySpecificProps = {
             onUpdateCategoryData: handleUpdateItems,
             existingCategoryData: existingCategoryData,
+            initialRooms: existingCategoryData?.rooms || [], // ✅ For restoration
             user: userForData,
+            userTilingItems: userTilingItems, // ✅ Pass tiling items
+            tilingWorkTypes: tilingWorkTypes, // ✅ Pass work types
             projectComplexities: projectComplexities,
             selectedItems: selectedItems,
             setSelectedItems: setSelectedItems,
@@ -3310,8 +3313,6 @@ const ItemSelector = React.forwardRef(({
             setProcessedCategories: setProcessedCategories,
             selectedCategories: selectedCategories,
             AVAILABLE_CATEGORIES: AVAILABLE_CATEGORIES,
-            userTilingItems: userTilingItems,
-            tilingWorkTypes: tilingWorkTypes,
             userDefaults: userForData?.user_metadata?.tilingUserDefaults || {},
             stagedManualItems: stagedManualItems, // 🆕 Pass staged manual items
             setStagedManualItems: setStagedManualItems, // 🆕 Pass setState function
@@ -3797,7 +3798,39 @@ const ItemSelector = React.forwardRef(({
       <TilingManualItemDialog
         open={showTilingManualDialog}
         onOpenChange={setShowTilingManualDialog}
-        onAdd={onAddItemToQuote}
+        onSaved={(savedItem) => {
+          console.log('[TilingManualItemDialog] Saved item:', savedItem);
+          
+          // Calculate profit and other missing fields
+          const totalCost = Number(savedItem.totalCost) || 0;
+          const totalPrice = Number(savedItem.totalPrice) || 0;
+          const profit = totalPrice - totalCost;
+          
+          // Estimate material cost as 60% of total cost, labor as 40%
+          const estimatedMaterialCost = totalCost * 0.6;
+          const estimatedLaborCost = totalCost * 0.4;
+          
+          // Estimate work days based on quantity (assuming 20 sqm per day for tiling)
+          const quantity = Number(savedItem.quantity) || 0;
+          const estimatedWorkDays = quantity > 0 ? quantity / 20 : 0;
+          
+          // Add to stagedManualItems with proper source and all required fields
+          const itemWithMetadata = {
+            ...savedItem,
+            categoryId: 'cat_tiling',
+            source: 'tiling_manual',
+            id: savedItem.id || `tiling_manual_${Date.now()}`,
+            // Add missing fields for summary calculation
+            profit: profit,
+            workDuration: savedItem.workDays || estimatedWorkDays,
+            materialCost: savedItem.materialCostPerUnit ? (savedItem.materialCostPerUnit * quantity) : estimatedMaterialCost,
+            laborCost: savedItem.materialCostPerUnit ? (totalCost - (savedItem.materialCostPerUnit * quantity)) : estimatedLaborCost,
+          };
+          
+          console.log('[TilingManualItemDialog] Item with metadata:', itemWithMetadata);
+          setStagedManualItems(prev => [...prev, itemWithMetadata]);
+          setShowTilingManualDialog(false);
+        }}
         defaults={userForData?.user_metadata?.tilingUserDefaults || {}}
       />
     </>

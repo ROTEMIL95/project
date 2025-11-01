@@ -358,8 +358,8 @@ function PersistedStep3({
             generalStartDate={generalStartDate}
             generalEndDate={generalEndDate}
             // NEW PROPS
-            tilingWorkTypes={tilingWorkTypes}
-            userTilingItems={userTilingItems}
+            tilingWorkTypes={user?.user_metadata?.tilingWorkTypes || tilingWorkTypes}
+            userTilingItems={user?.user_metadata?.tilingItems || userTilingItems}
             user={user}
             stagedManualItems={stagedManualItems}
             setStagedManualItems={setStagedManualItems}
@@ -1464,6 +1464,11 @@ export default function QuoteCreate() {
   ]);
 
   const handleSaveQuote = async (isDraft = false) => {
+    // Save current step data first
+    if (currentStep === 3) {
+      await saveItemsFromCurrentStep();
+    }
+
     if (selectedItems.length === 0 && !isDraft) {
       alert("לא ניתן לשלוח הצעת מחיר ללא פריטים. אנא הוסף פריטים או שמור כטיוטה.");
       return;
@@ -1709,25 +1714,33 @@ export default function QuoteCreate() {
     }
   };
 
-  const saveItemsFromCurrentStep = useCallback(() => {
-    if (currentStep === 3 && currentCategoryForItems) {
-    }
-  }, [currentStep, currentCategoryForItems]);
-
-  const navigateToStep = (targetStep) => {
-
+  const saveItemsFromCurrentStep = useCallback(async () => {
     if (currentStep === 3) {
-      saveItemsFromCurrentStep();
+      // Save current category data via ItemSelector ref
+      if (itemSelectorRef.current && typeof itemSelectorRef.current.saveCurrentCategoryData === 'function') {
+        console.log('[QuoteCreate] Saving Step 3 data before navigation');
+        try {
+          await itemSelectorRef.current.saveCurrentCategoryData();
+          console.log('[QuoteCreate] Step 3 data saved successfully');
+        } catch (error) {
+          console.error('[QuoteCreate] Error saving Step 3 data:', error);
+        }
+      }
+    }
+  }, [currentStep]);
+
+  const navigateToStep = async (targetStep) => {
+    // Save current step data before navigating
+    if (currentStep === 3) {
+      await saveItemsFromCurrentStep();
     }
 
     if (targetStep === 3) {
       if (selectedCategories.length > 0) {
         if (!currentCategoryForItems || !selectedCategories.includes(currentCategoryForItems)) {
-
           setCurrentCategoryForItems(selectedCategories[0]);
         }
       } else {
-
         setCurrentCategoryForItems(null);
       }
     }
@@ -2030,8 +2043,14 @@ export default function QuoteCreate() {
           <AdditionalCostsForm
             projectComplexities={projectComplexities}
             onUpdateProjectComplexities={setProjectComplexities}
-            onBack={() => setCurrentStep(3)}
-            onNext={() => setCurrentStep(5)}
+            onBack={async () => {
+              await saveItemsFromCurrentStep();
+              setCurrentStep(3);
+            }}
+            onNext={async () => {
+              await saveItemsFromCurrentStep();
+              setCurrentStep(5);
+            }}
           />
         );
       case 5:
@@ -2507,7 +2526,10 @@ export default function QuoteCreate() {
           categoryTimings={categoryTimings}
           onCategoryTimingChange={handleCategoryTimingChange}
           onAddItemToQuote={handleAddItemToQuote}
-          onProceedToAdditionalCosts={() => setCurrentStep(4)}
+          onProceedToAdditionalCosts={async () => {
+            await saveItemsFromCurrentStep();
+            setCurrentStep(4);
+          }}
           projectComplexities={projectComplexities}
           onUpdateRoomBreakdown={handleUpdateRoomBreakdown}
           generalStartDate={projectInfo.generalStartDate}

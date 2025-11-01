@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User } from '@/lib/entities';
+import { useUser } from '@/components/utils/UserContext';
 import { 
   Home, 
   Calculator, 
@@ -62,6 +62,7 @@ const getRoomIcon = (roomType) => {
 };
 
 export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, workType = '' }) {
+  const { user } = useUser();
   const [roomEstimatesData, setRoomEstimatesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [calculatedArea, setCalculatedArea] = useState(0);
@@ -80,14 +81,13 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
       setTotalWallArea(0);
       setTotalCeilingArea(0);
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   const loadRoomEstimatesData = async () => {
     try {
       setLoading(true);
-      const user = await User.me();
-      if (user && user.roomEstimates) {
-        setRoomEstimatesData(user.roomEstimates);
+      if (user && user.user_metadata?.roomEstimates) {
+        setRoomEstimatesData(user.user_metadata.roomEstimates);
       } else {
         // Fallback to default data
         setRoomEstimatesData([
