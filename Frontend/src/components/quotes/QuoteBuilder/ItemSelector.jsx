@@ -32,6 +32,7 @@ import TilingAutoSaveOnAddArea from "./TilingAutoSaveOnAddArea";
 
 import PaintSimulatorV2 from "./PaintSimulatorV2";
 import CategoryFloatingAddButton from './CategoryFloatingAddButton';
+import { calculateExactPaintMetrics } from './utils/paintCalculations';
 
 
 // Global PAINT_TYPES constant
@@ -155,139 +156,6 @@ const calculatePaintMetrics = ({
 
     // Return exact metrics directly, no need for remapping from totalPrice/profit
     return simpleMetrics;
-};
-
-/**
- * Calculates detailed paint/plaster metrics based on quantity, layers, and item properties.
- * Can optionally round the total buckets needed for material cost.
- * @param {number} quantity - The total area in square meters.
- * @param {number} layers - The number of layers.
- * @param {object} paintItem - The paint/plaster item object with properties like bucketPrice, coverage, etc.
- * @param {boolean} [roundBuckets=false] - Whether to round up the total buckets needed for material cost.
- * @returns {object|null} - An object containing calculated metrics or null if inputs are invalid.
-*/
-export const calculateExactPaintMetrics = (quantity, layers, paintItem, roundBuckets = false) => {
-  if (!paintItem || quantity <= 0) {
-    return {
-        materialCost: 0, laborCost: 0, otherCosts: 0, equipmentCost: 0,
-        totalCost: 0, costPerMeter: 0, totalSellingPrice: 0, sellingPricePerMeter: 0,
-        totalProfit: 0, profitPercentage: 0, totalWorkDays: 0, totalBucketsNeeded: 0,
-        originalBucketsNeeded: 0, quantity: 0, itemId: paintItem?.id,
-        itemName: paintItem?.itemName || paintItem?.paintName || getItemDisplayName(paintItem) || 'פריט לא מזוהה',
-        bucketPrice: 0,
-        bucketCapacity: paintItem?.bucketCapacity || 1
-    };
-  }
-
-  const qty = Number(quantity);
-  const numLayers = Number(layers);
-
-  if (numLayers === 0) {
-    const equipmentCost = Number(paintItem.equipmentCost || 0);
-    const cleaningCostPerMeter = Number(paintItem.cleaningCostPerMeter || 0);
-    const preparationCostPerMeter = Number(paintItem.preparationCostPerMeter || 0);
-    const otherCosts = (qty * cleaningCostPerMeter) + (qty * preparationCostPerMeter);
-    const totalCost = otherCosts + equipmentCost;
-    const profitPercent = Number(paintItem.desiredProfitPercent || 0);
-    const totalSellingPrice = totalCost * (1 + (profitPercent / 100));
-
-    return {
-        materialCost: 0,
-        laborCost: 0,
-        otherCosts: otherCosts,
-        equipmentCost: equipmentCost,
-        totalCost,
-        costPerMeter: qty > 0 ? totalCost / qty : 0,
-        totalSellingPrice,
-        sellingPricePerMeter: qty > 0 ? totalSellingPrice / qty : 0,
-        totalProfit: totalSellingPrice - totalCost,
-        profitPercentage: profitPercent,
-        totalWorkDays: 0,
-        totalBucketsNeeded: 0,
-        originalBucketsNeeded: 0,
-        quantity: qty,
-        itemId: paintItem.id,
-        itemName: paintItem.itemName || paintItem.paintName || getItemDisplayName(paintItem) || 'פריט לא מזוהה',
-        bucketPrice: 0,
-        bucketCapacity: paintItem.bucketCapacity || 1
-    };
-  }
-
-  // Base data from paint item
-  const bucketPrice = Number(paintItem.bucketPrice || 0);
-  const baseCoverage = Number(paintItem.coverage || 0);
-  const workerDailyCost = Number(paintItem.workerDailyCost || 0);
-  const baseDailyOutput = Number(paintItem.dailyOutput || 0);
-  const equipmentCost = Number(paintItem.equipmentCost || 0);
-  const cleaningCostPerMeter = Number(paintItem.cleaningCostPerMeter || 0);
-  const preparationCostPerMeter = Number(paintItem.preparationCostPerMeter || 0);
-  const profitPercent = Number(paintItem.desiredProfitPercent || 0);
-
-  // Layer settings
-  const layerSettings = paintItem.layerSettings || [];
-
-  let exactTotalBucketsNeeded = 0;
-  let totalWorkDays = 0;
-
-  // Calculate for each layer
-  for (let layer = 1; layer <= numLayers; layer++) {
-    // Coverage for this layer
-    let layerCoverage = baseCoverage;
-    if (layer > 1 && layerSettings[layer - 1]) {
-      const coverageAdjustment = layerSettings[layer - 1].coverage || 0;
-      layerCoverage = baseCoverage * (1 + coverageAdjustment / 100);
-    }
-
-    // Daily output for this layer
-    let layerDailyOutput = baseDailyOutput;
-    if (layer > 1 && layerSettings[layer - 1]) {
-      const outputAdjustment = layerSettings[layer - 1].dailyOutput || 0;
-      layerDailyOutput = baseDailyOutput * (1 + outputAdjustment / 100);
-    }
-
-    // Calculate buckets and work days for this layer
-    const bucketsForLayer = layerCoverage > 0 ? qty / layerCoverage : 0;
-    const workDaysForLayer = layerDailyOutput > 0 ? qty / layerDailyOutput : 0;
-
-    exactTotalBucketsNeeded += bucketsForLayer;
-    totalWorkDays += workDaysForLayer;
-  }
-
-  // Apply rounding to buckets if requested for cost calculation
-  const finalBucketsForCost = roundBuckets ? Math.ceil(exactTotalBucketsNeeded) : exactTotalBucketsNeeded;
-
-  // Cost calculations
-  const materialCost = finalBucketsForCost * bucketPrice;
-  const laborCost = totalWorkDays * workerDailyCost;
-  const otherCosts = (qty * cleaningCostPerMeter) + (qty * preparationCostPerMeter) + equipmentCost;
-  const totalCost = materialCost + laborCost + otherCosts;
-
-  // Pricing calculation
-  const totalSellingPrice = totalCost * (1 + (profitPercent / 100));
-  const sellingPricePerMeter = qty > 0 ? totalSellingPrice / qty : 0;
-  const totalProfit = totalSellingPrice - totalCost;
-  const costPerMeter = qty > 0 ? totalCost / qty : 0;
-
-  return {
-    materialCost,
-    laborCost,
-    otherCosts,
-    equipmentCost,
-    totalCost,
-    costPerMeter,
-    totalSellingPrice,
-    sellingPricePerMeter,
-    totalProfit,
-    profitPercentage: profitPercent,
-    totalWorkDays,
-    totalBucketsNeeded: finalBucketsForCost,
-    originalBucketsNeeded: exactTotalBucketsNeeded,
-    quantity: qty,
-    itemId: paintItem.id,
-    itemName: paintItem.itemName || paintItem.paintName || getItemDisplayName(paintItem) || 'פריט לא מזוהה',
-    bucketPrice: bucketPrice,
-    bucketCapacity: paintItem.bucketCapacity || 1
-  };
 };
 
 const formatPrice = (price) => {
@@ -1148,7 +1016,7 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
                                                 );
                                             } else {
                                                 return (
-                                                    <span className="text-sm text-gray-500 italic">(אופציונלי)</span>
+                                                    <span className="text-sm text-gray-500 italic">מורכבות (אופציונלי)</span>
                                                 );
                                             }
                                         })()}
@@ -1175,12 +1043,12 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
                                                         value={room.paintComplexity || 'none'}
                                                         onValueChange={(value) => handleRoomUpdate('paintComplexity', value)}
                                                     >
-                                                        <SelectTrigger className="w-full">
+                                                        <SelectTrigger dir="rtl" className="w-full">
                                                             <SelectValue placeholder="בחר רמת מורכבות" />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {complexityOptions.map(option => (
-                                                                <SelectItem key={option.value} value={option.value}>
+                                                                <SelectItem dir="rtl" key={option.value} value={option.value}>
                                                                     <div className="flex justify-between items-center w-full">
                                                                         <span>{option.label}</span>
                                                                         {option.percentage > 0 && (
@@ -1439,15 +1307,22 @@ const PaintRoomsManager = React.forwardRef(({
                 if (itemMetrics && (itemMetrics.totalBucketsNeeded > 0 || itemMetrics.originalBucketsNeeded > 0)) {
                     const materialKey = itemMetrics.itemId;
                     if (!rawMaterialAggregates[materialKey]) {
+                        // Find the paint item to get symbol and name
+                        const paintItem = paintItems.find(p => p.id === itemMetrics.itemId);
+
                         rawMaterialAggregates[materialKey] = {
                             itemId: itemMetrics.itemId,
                             itemName: itemMetrics.itemName || getItemDisplayName(itemMetrics),
+                            name: paintItem?.itemName || paintItem?.paintName || itemMetrics.itemName || getItemDisplayName(itemMetrics),
+                            symbol: paintItem?.symbol || '🎨',
                             pricePerBucket: itemMetrics.bucketPrice || 0,
                             exactBucketsNeeded: 0,
+                            preciseBuckets: 0,
                             bucketCapacity: itemMetrics.bucketCapacity || 1,
                         };
                     }
                     rawMaterialAggregates[materialKey].exactBucketsNeeded += Number(itemMetrics.originalBucketsNeeded) || 0;
+                    rawMaterialAggregates[materialKey].preciseBuckets += Number(itemMetrics.originalBucketsNeeded) || 0;
                 }
             };
 
@@ -1508,6 +1383,9 @@ const PaintRoomsManager = React.forwardRef(({
 
             catalogMaterialCost += cost;
 
+            // Add totalCost to material for display
+            material.totalCost = cost;
+
             materialSummary.push({
                 ...material,
                 bucketsToPurchase,
@@ -1529,16 +1407,6 @@ const PaintRoomsManager = React.forwardRef(({
         const finalMaterialCost = catalogMaterialCost + manualMaterialCost;
         const finalLaborCost = catalogLaborCost + manualLaborCost;
 
-        // Debug logging for labor cost calculation
-        if (stagedPaintItems.length > 0 || manualLaborCost > 0) {
-            console.log('[PaintRoomsManager] Labor Cost Calculation:', {
-                catalogLaborCost,
-                manualLaborCost,
-                finalLaborCost,
-                manualItemsCount: stagedPaintItems.length,
-                roomsCount: rooms.length
-            });
-        }
 
         // Work days calculation
         let finalWorkDaysValue;
@@ -1577,6 +1445,7 @@ const PaintRoomsManager = React.forwardRef(({
             finalMaterialCost: Math.round(finalMaterialCost),
             totalFixedCost: Math.round(sumEquipmentCost),
             materialSummary: materialSummary,
+            materialAggregates: rawMaterialAggregates, // ✅ Add material aggregates with symbols
 
             paintMetrics: {
                 totalPrice: Math.round(totalPaintPrice),
@@ -1833,7 +1702,226 @@ const PaintRoomsManager = React.forwardRef(({
                                     </label>
                                 </div>
 
-                                <div className="border-t pt-3">
+                                {/* Bucket/Material Breakdown Section with Visual Indicators */}
+                                {(totalMetrics?.materialSummary || []).length > 0 && (
+                                    <div className="mt-4">
+                                        <h4 className="font-semibold text-gray-700 mb-3 text-center flex items-center justify-center gap-2">
+                                            <span className="text-blue-600">🪣</span>
+                                            סיכום חומרים נדרשים
+                                        </h4>
+                                        <div className="grid gap-4">
+                                            {totalMetrics.materialSummary.map((summary, index) => {
+                                                const exactNeeded = summary.exactBucketsNeeded || 0;
+                                                const numPurchased = summary.bucketsToPurchase || 0;
+
+                                                // Calculate fill percentages for each bucket
+                                                const fills = [];
+                                                let remainingNeeded = exactNeeded;
+                                                for (let i = 0; i < Math.ceil(numPurchased); i++) {
+                                                    if (remainingNeeded >= 1) {
+                                                        fills.push(100);
+                                                        remainingNeeded -= 1;
+                                                    } else if (remainingNeeded > 0) {
+                                                        fills.push(remainingNeeded * 100);
+                                                        remainingNeeded = 0;
+                                                    } else {
+                                                        fills.push(0);
+                                                    }
+                                                }
+
+                                                // Sort fills: partial buckets first, then full, then empty
+                                                const sortedFills = [...fills].sort((a, b) => {
+                                                    const isAPartial = a > 0 && a < 100;
+                                                    const isBPartial = b > 0 && b < 100;
+                                                    if (isAPartial && !isBPartial) return -1;
+                                                    if (!isAPartial && isBPartial) return 1;
+                                                    return b - a;
+                                                });
+
+                                                // Display up to 3 buckets, show count for extras
+                                                const bucketsToDisplay = sortedFills.slice(0, 3);
+                                                const extraBucketsCount = Math.max(0, Math.ceil(numPurchased) - bucketsToDisplay.length);
+
+                                                return (
+                                                    <div key={summary.itemId || index} className="bg-gray-100 rounded-lg p-4 flex items-center justify-between">
+                                                        <div className="flex-1">
+                                                            <h5 className="font-semibold text-gray-800">{getItemDisplayName(summary)}</h5>
+                                                            <div className="text-sm text-gray-600 mt-1">
+                                                                <span className="text-blue-600">דרושים: {exactNeeded.toFixed(1)} דליים</span>
+                                                                <br />
+                                                                <span className="font-medium">נרכשו (לחישוב): {numPurchased.toFixed(1)} דליים</span>
+                                                            </div>
+                                                            <div className="text-sm text-gray-800 mt-2 font-bold">
+                                                                ₪{formatPrice(summary.totalMaterialCost)}
+                                                                <span className="text-xs text-gray-500 font-normal ml-1">(₪{formatPrice(summary.pricePerBucket)} לדלי)</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-end gap-2 mx-4">
+                                                            {bucketsToDisplay.map((fill, i) => (
+                                                                <div key={i} className="flex flex-col items-center">
+                                                                    <BucketUsageIndicator percentage={fill} />
+                                                                    <span className="text-xs font-medium text-gray-700 mt-1">{fill.toFixed(0)}%</span>
+                                                                </div>
+                                                            ))}
+                                                            {extraBucketsCount > 0 && (
+                                                                <div className="flex flex-col items-center justify-end h-full ml-2">
+                                                                    <span className="font-bold text-gray-700">+{extraBucketsCount}</span>
+                                                                    <span className="text-xs text-gray-500">דליים</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Manual Items Details Section */}
+                                {(() => {
+                                    const stagedPaintItems = (stagedManualItems || []).filter(item =>
+                                        item.categoryId === categoryId && item.source === 'manual_calc'
+                                    );
+
+                                    if (stagedPaintItems.length === 0) return null;
+
+                                    const handleEditManualItem = (item) => {
+                                        if (typeof window.__b44OpenManualCalc === 'function') {
+                                            // Build prefill object from manualFormSnapshot
+                                            const snapshot = item.manualFormSnapshot || {};
+                                            const prefill = {
+                                                workType: snapshot.workType || item.manualMeta?.type || 'paint',
+                                                description: snapshot.description || '',
+                                                wallsEnabled: snapshot.walls?.enabled ?? true,
+                                                wallsType: snapshot.walls?.manualType || '',
+                                                wallsLayers: snapshot.walls?.layers || 0,
+                                                wallsArea: snapshot.walls?.area || 0,
+                                                ceilingEnabled: snapshot.ceiling?.enabled ?? false,
+                                                ceilingType: snapshot.ceiling?.manualType || '',
+                                                ceilingLayers: snapshot.ceiling?.layers || 0,
+                                                ceilingArea: snapshot.ceiling?.area || 0,
+                                                materialCost: snapshot.materialCost || 0,
+                                                workDays: snapshot.workDays || 0,
+                                                workTimeMode: snapshot.workTimeMode || 'days',
+                                                workHours: snapshot.workHours || 0,
+                                            };
+
+                                            const context = {
+                                                editingItemId: item.id, // Mark as editing
+                                            };
+
+                                            window.__b44OpenManualCalc(prefill.workType, prefill, context);
+                                        }
+                                    };
+
+                                    return (
+                                        <div className="mt-4 border-t pt-4">
+                                            <h4 className="font-semibold text-gray-700 mb-3 text-center flex items-center justify-center gap-2">
+                                                <span className="text-purple-600">✏️</span>
+                                                פריטים ידניים
+                                            </h4>
+                                            <div className="space-y-3">
+                                                {stagedPaintItems.map((item, index) => {
+                                                    const walls = item.manualMeta?.walls || {};
+                                                    const ceiling = item.manualMeta?.ceiling || {};
+
+                                                    return (
+                                                        <div key={item.id || index} className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-4 border-2 border-purple-200 relative">
+                                                            {/* Edit Button */}
+                                                            <button
+                                                                onClick={() => handleEditManualItem(item)}
+                                                                className="absolute top-3 left-3 p-1.5 rounded-md bg-white/80 hover:bg-white border border-purple-300 hover:border-purple-400 text-purple-700 hover:text-purple-900 transition-all shadow-sm hover:shadow-md"
+                                                                title="ערוך פריט"
+                                                            >
+                                                                <Edit className="w-4 h-4" />
+                                                            </button>
+
+                                                            {/* Description */}
+                                                            <div className="mb-3 pb-2 border-b border-purple-200 pr-10">
+                                                                <h5 className="font-semibold text-gray-800 text-sm">{item.description}</h5>
+                                                            </div>
+
+                                                            {/* Areas Breakdown */}
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                                                                {walls.enabled && (
+                                                                    <div className="bg-white/60 rounded p-2 text-xs">
+                                                                        <div className="font-semibold text-gray-700 mb-1">קירות:</div>
+                                                                        <div className="text-gray-600 space-y-0.5">
+                                                                            <div>שטח: {walls.area} מ"ר</div>
+                                                                            <div>שכבות: {walls.layers || 0}</div>
+                                                                            {walls.manualType && <div>סוג: {walls.manualType}</div>}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {ceiling.enabled && (
+                                                                    <div className="bg-white/60 rounded p-2 text-xs">
+                                                                        <div className="font-semibold text-gray-700 mb-1">תקרה:</div>
+                                                                        <div className="text-gray-600 space-y-0.5">
+                                                                            <div>שטח: {ceiling.area} מ"ר</div>
+                                                                            <div>שכבות: {ceiling.layers || 0}</div>
+                                                                            {ceiling.manualType && <div>סוג: {ceiling.manualType}</div>}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Cost Breakdown */}
+                                                            <div className="grid grid-cols-3 gap-2 mb-2">
+                                                                <div className="bg-white/80 rounded p-2 text-center">
+                                                                    <div className="text-xs text-gray-600 mb-1">עלות חומרים</div>
+                                                                    <div className="text-sm font-bold text-gray-800">
+                                                                        ₪{formatPrice(item.materialCost || 0)}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="bg-white/80 rounded p-2 text-center">
+                                                                    <div className="text-xs text-gray-600 mb-1">עלות עבודה</div>
+                                                                    <div className="text-sm font-bold text-gray-800">
+                                                                        ₪{formatPrice(item.laborCost || 0)}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="bg-white/80 rounded p-2 text-center">
+                                                                    <div className="text-xs text-gray-600 mb-1">ימי עבודה</div>
+                                                                    <div className="text-sm font-bold text-gray-800">
+                                                                        {(item.workDuration || 0).toFixed(1)}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Summary Row */}
+                                                            <div className="grid grid-cols-3 gap-2">
+                                                                <div className="bg-gradient-to-br from-blue-100 to-blue-200 rounded p-2 text-center border border-blue-300">
+                                                                    <div className="text-xs text-blue-700 mb-1">מחיר ללקוח</div>
+                                                                    <div className="text-base font-bold text-blue-900">
+                                                                        ₪{formatPrice(item.totalPrice || 0)}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="bg-gradient-to-br from-orange-100 to-orange-200 rounded p-2 text-center border border-orange-300">
+                                                                    <div className="text-xs text-orange-700 mb-1">עלות קבלן</div>
+                                                                    <div className="text-base font-bold text-orange-900">
+                                                                        ₪{formatPrice(item.totalCost || 0)}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="bg-gradient-to-br from-green-100 to-green-200 rounded p-2 text-center border border-green-300">
+                                                                    <div className="text-xs text-green-700 mb-1">רווח</div>
+                                                                    <div className="text-base font-bold text-green-900">
+                                                                        ₪{formatPrice(item.profit || 0)}
+                                                                        <div className="text-[10px] text-green-700">
+                                                                            ({(item.profitPercent || 0).toFixed(1)}%)
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* General Cost Breakdown - Moved to Bottom */}
+                                <div className="border-t pt-3 mt-4">
                                     <h4 className="font-semibold text-gray-700 mb-3 text-center">פירוט עלויות כללי:</h4>
                                     <div className="grid grid-cols-3 gap-2 text-center">
                                         <div className="bg-gray-100 p-2 rounded-lg">
@@ -2761,7 +2849,7 @@ class ErrorBoundary extends React.Component {
 
 
 // --- Main ItemSelector Component ---
-export default function ItemSelector({
+const ItemSelector = React.forwardRef(({
   selectedItems,
   setSelectedItems,
   onAddItemToQuote,
@@ -2785,7 +2873,7 @@ export default function ItemSelector({
   user, // ✅ Receive user from parent QuoteCreate
   stagedManualItems = [], // 🆕 Staged manual items for consolidation
   setStagedManualItems, // 🆕 Function to update staged manual items
-}) {
+}, ref) => {
   // Use user from parent instead of loading separately
   const userForData = user;
   const isUserLoadingHook = !user;
@@ -3021,12 +3109,24 @@ export default function ItemSelector({
         return [...otherCategoryItems, ...itemsFromCurrentCategoryComponent];
     });
 
+    // 🆕 Extract staged manual items for this category BEFORE updating the map
+    const stagedItemsForCategory = (stagedManualItems || []).filter(item =>
+        item.categoryId === categoryIdToSave
+    );
+
+    console.log('[ItemSelector] Saving category data:', {
+        categoryId: categoryIdToSave,
+        stagedManualItems: stagedItemsForCategory.length,
+        categoryData: categorySpecificDataForMap
+    });
+
     // Update categoryDataMap
     setCategoryDataMap(prev => ({
         ...prev,
         [categoryIdToSave]: {
             categoryId: categoryIdToSave,
             ...categorySpecificDataForMap,
+            stagedManualItems: stagedItemsForCategory, // ✅ Save staged manual items
             timing: categoryTimings[categoryIdToSave] || null,
         }
     }));
@@ -3042,8 +3142,54 @@ export default function ItemSelector({
     }
 
   }, [selectedItems, setSelectedItems, setCategoryDataMap, categoryTimings, setProcessedCategories,
-      tilingEditorRef, paintRoomsRef, demolitionManagerRef, electricalManagerRef
+      tilingEditorRef, paintRoomsRef, demolitionManagerRef, electricalManagerRef, stagedManualItems
   ]);
+
+  // 🆕 Expose saveCurrentCategoryData to parent via ref for CategoryStepper
+  useImperativeHandle(ref, () => ({
+    saveCurrentCategoryData: async () => {
+      console.log('[ItemSelector] saveCurrentCategoryData called via ref for category:', currentCategoryForItems);
+      if (currentCategoryForItems) {
+        await saveCurrentCategoryData(currentCategoryForItems);
+        console.log('[ItemSelector] Data saved for category:', currentCategoryForItems);
+      }
+    }
+  }), [currentCategoryForItems, saveCurrentCategoryData]);
+
+  // ✅ Restore staged manual items when switching to a category
+  // Track previous category to detect actual category switches
+  const prevCategoryRef = useRef(null);
+
+  useEffect(() => {
+    // Only restore when category actually CHANGES (not on every categoryDataMap update)
+    if (currentCategoryForItems && prevCategoryRef.current !== currentCategoryForItems) {
+      const existingData = categoryDataMap[currentCategoryForItems];
+
+      console.log('[ItemSelector] Category switched to:', currentCategoryForItems, {
+        from: prevCategoryRef.current,
+        hasSavedItems: !!existingData?.stagedManualItems,
+        count: existingData?.stagedManualItems?.length || 0
+      });
+
+      if (existingData?.stagedManualItems && existingData.stagedManualItems.length > 0) {
+        // Restore saved items for this category, keeping items from other categories
+        setStagedManualItems(prev => {
+          // Remove old items for current category, add back saved items
+          const otherCategories = prev.filter(item => item.categoryId !== currentCategoryForItems);
+          return [...otherCategories, ...existingData.stagedManualItems];
+        });
+        console.log('[ItemSelector] Restored staged manual items:', existingData.stagedManualItems);
+      } else {
+        // No saved items for this category - just filter out items for current category
+        // This ensures when switching to a fresh category, we don't show other category's items
+        setStagedManualItems(prev => prev.filter(item => item.categoryId !== currentCategoryForItems));
+        console.log('[ItemSelector] No saved items for category, filtered to show only current category items');
+      }
+
+      // Update previous category tracker
+      prevCategoryRef.current = currentCategoryForItems;
+    }
+  }, [currentCategoryForItems, categoryDataMap, setStagedManualItems]);
 
   // Create stable reference for paint items to prevent unnecessary re-renders
   const userPaintItems = useMemo(() =>
@@ -3176,6 +3322,7 @@ export default function ItemSelector({
         categorySpecificProps = {
             onUpdateCategoryData: handleUpdateItems,
             existingCategoryData: existingCategoryData,
+            initialRooms: existingCategoryData?.rooms || [], // ✅ Connect existingCategoryData.rooms to initialRooms
             user: userForData,
             projectComplexities: projectComplexities,
             onUpdateRoomBreakdown: onUpdateRoomBreakdown,
@@ -3655,4 +3802,9 @@ export default function ItemSelector({
       />
     </>
   );
-}
+});
+
+// Set display name for debugging
+ItemSelector.displayName = 'ItemSelector';
+
+export default ItemSelector;

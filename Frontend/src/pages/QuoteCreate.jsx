@@ -217,6 +217,7 @@ function PersistedStep3({
   user,
   stagedManualItems,
   setStagedManualItems,
+  itemSelectorRef, // 🆕 Ref to ItemSelector
 }) {
   // compute effective category
   const effectiveCategoryId = selectedCategories.includes(currentCategoryForItems)
@@ -337,6 +338,7 @@ function PersistedStep3({
           )}
 
           <ItemSelector
+            ref={itemSelectorRef}
             key={`cat-${effectiveCategoryId}`}
             selectedItems={selectedItems}
             setSelectedItems={setSelectedItems}
@@ -455,6 +457,8 @@ export default function QuoteCreate() {
   const [tilingWorkTypes, setTilingWorkTypes] = useState([]); // New state, previously useMemo
   const [userTilingItems, setUserTilingItems] = useState([]); // New state, previously from user object
 
+  // 🆕 Ref to ItemSelector for saving data when switching categories via CategoryStepper
+  const itemSelectorRef = useRef(null);
 
   // Expose roomBreakdowns as a stable reference for hooks dependencies
   const roomBreakdowns = projectComplexities?.roomBreakdowns;
@@ -534,8 +538,21 @@ export default function QuoteCreate() {
 
     if (isManualItem) {
       // Stage manual items for consolidation when category is saved
-      setStagedManualItems(prev => [...prev, ...itemsToAdd]);
-      console.log('Manual items staged for consolidation:', itemsToAdd);
+      setStagedManualItems(prev => {
+        // Check if we're editing an existing item (has an ID that matches an existing staged item)
+        const firstItemId = itemsToAdd[0]?.id;
+        const isEditing = firstItemId && prev.some(item => item.id === firstItemId);
+
+        if (isEditing) {
+          // Replace the existing item with the edited version
+          console.log('Replacing edited manual item:', firstItemId);
+          return prev.map(item => item.id === firstItemId ? itemsToAdd[0] : item);
+        } else {
+          // Add new manual items
+          console.log('Manual items staged for consolidation:', itemsToAdd);
+          return [...prev, ...itemsToAdd];
+        }
+      });
       return; // Don't add to selectedItems yet
     }
 
@@ -1833,11 +1850,10 @@ export default function QuoteCreate() {
                     value={projectInfo.projectType}
                     onValueChange={(value) => handleProjectInfoChange('projectType', value)}
                   >
-                    <SelectTrigger id="projectType" className="text-sm h-9">
+                    <SelectTrigger id="projectType" className="text-sm h-9" dir="rtl" >
                       <SelectValue placeholder="בחר סוג נכס" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="דירה">דירה</SelectItem>
+                    <SelectContent dir="rtl">                      <SelectItem value="דירה">דירה</SelectItem>
                       <SelectItem value="בית פרטי">בית פרטי</SelectItem>
                       <SelectItem value="משרד">משרד</SelectItem>
                       <SelectItem value="עסק">עסק</SelectItem>
@@ -2451,7 +2467,11 @@ export default function QuoteCreate() {
             <CategoryStepper
               categories={getOrderedSelectedCategories()}
               currentId={currentCategoryForItems}
-              onSelect={(catId) => {
+              onSelect={async (catId) => {
+                // ✅ Save current category data before switching
+                if (itemSelectorRef.current && itemSelectorRef.current.saveCurrentCategoryData) {
+                  await itemSelectorRef.current.saveCurrentCategoryData();
+                }
                 setCurrentCategoryForItems(catId);
               }}
             />
@@ -2498,6 +2518,7 @@ export default function QuoteCreate() {
           user={user}
           stagedManualItems={stagedManualItems}
           setStagedManualItems={setStagedManualItems}
+          itemSelectorRef={itemSelectorRef}
         />
 
         <FloatingCart

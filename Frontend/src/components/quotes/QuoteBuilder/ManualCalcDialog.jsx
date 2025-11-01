@@ -210,7 +210,9 @@ export default function ManualCalcDialog() {
   const handleSave = () => {
     if (!canSave) return;
 
-    const nowId = `manual_${form.workType}_${Date.now()}`;
+    // Use existing ID if editing, otherwise create new ID
+    const isEditing = ctxRef.current?.editingItemId;
+    const nowId = isEditing || `manual_${form.workType}_${Date.now()}`;
     const description = buildDescription();
 
     // Price split by areas (for table rows)
@@ -457,7 +459,7 @@ export default function ManualCalcDialog() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="flex items-center gap-1"><Layers className="w-3.5 h-3.5" /> מספר שכבות (קירות)</Label>
+                  <Label className="flex items-center gap-1"><Layers className="w-3.5 h-3.5" dir="rtl" /> מספר שכבות (קירות)</Label>
                   <Select
                     value={form.wallsLayers}
                     onValueChange={(v) => setForm((f) => ({ ...f, wallsLayers: v }))}

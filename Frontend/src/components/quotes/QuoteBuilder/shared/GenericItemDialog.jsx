@@ -191,13 +191,13 @@ export default function GenericItemDialog({
   // Standard Dialog component
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={config.dialog.maxWidth} dir="rtl">
+      <DialogContent className={`${config.dialog.maxWidth} p-6 md:p-8`} dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl">{preset ? config.dialog.titlePreset : config.dialog.title}</DialogTitle>
           <DialogDescription>{config.dialog.description}</DialogDescription>
         </DialogHeader>
         <DialogFieldsRenderer config={config} formData={formData} setFormData={setFormData} calc={calc} fmt={fmt} />
-        <DialogFooter className="pt-4 border-t">
+        <DialogFooter className="pt-4 border-t gap-3">
           <Button variant="outline" onClick={() => onOpenChange(false)}>ביטול</Button>
           <Button onClick={handleSave} className={getButtonClasses(config)}>
             {item ? 'שמור' : 'הוסף'}

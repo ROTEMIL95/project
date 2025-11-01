@@ -93,7 +93,12 @@ export default React.forwardRef(function PaintRoomsManager({
     if (initialRooms && initialRooms.length > 0) {
       // Deep compare to prevent unnecessary state updates and potential infinite loops
       // if parent passes a new array reference but with identical content
-      if (!hasInitializedFromProp.current || JSON.stringify(initialRooms) !== JSON.stringify(rooms)) {
+      const initialRoomsJson = JSON.stringify(initialRooms);
+      const currentRoomsJson = JSON.stringify(rooms);
+
+      if (!hasInitializedFromProp.current || initialRoomsJson !== currentRoomsJson) {
+        console.log('[PaintRoomsManager] Loading rooms from initialRooms:', initialRooms.length);
+
         setRooms(initialRooms.map(room => {
           const roomWithDefaults = {
             ...defaultRoom, // Ensure default structure (including new metrics fields)
@@ -112,8 +117,13 @@ export default React.forwardRef(function PaintRoomsManager({
       }
     } else if (rooms.length === 0 && !hasInitializedFromProp.current) {
       // If no project data and no rooms currently, add an initial default room
+      console.log('[PaintRoomsManager] No initialRooms, creating default room');
       setRooms([{ ...defaultRoom, id: `room-${Date.now()}-0` }]);
       hasInitializedFromProp.current = true; // Mark as initialized to prevent re-adding
+    } else if (initialRooms && initialRooms.length === 0 && rooms.length > 0) {
+      // ✅ If switching to a category with no saved rooms, reset to default empty state
+      console.log('[PaintRoomsManager] Switching to category with no rooms, resetting');
+      setRooms([{ ...defaultRoom, id: `room-${Date.now()}-0` }]);
     }
   }, [initialRooms, rooms, calculatePlasterMetrics]); // `rooms` is intentionally not a dependency here to avoid infinite loops, but `calculatePlasterMetrics` should be
 
