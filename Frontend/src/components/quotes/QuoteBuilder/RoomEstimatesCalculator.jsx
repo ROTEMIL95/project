@@ -33,12 +33,32 @@ import {
   Building // New import
 } from 'lucide-react';
 
-// הוספת מקדמי מורכבות קבועים לשימוש מיידי
+// הוספת מקדמי מורכבות קבועים לשימוש מיידי - ייעודי לחישוב חדרים
 const COMPLEXITY_OPTIONS = [
-  { id: 'easy', label: 'קל', factor: 1.0 },
-  { id: 'medium', label: 'בינוני', factor: 1.10 },
-  { id: 'hard', label: 'קשה', factor: 1.25 },
-  { id: 'very_hard', label: 'קשה מאוד', factor: 1.50 },
+  {
+    id: 'standard',
+    label: 'רגיל',
+    factor: 1.0,
+    description: 'חדר רגיל, תקרות סטנדרטיות, גישה טובה'
+  },
+  {
+    id: 'moderate',
+    label: 'בינוני',
+    factor: 1.15,
+    description: 'תקרה גבוהה מעט, מעט פינות, גישה סבירה'
+  },
+  {
+    id: 'complex',
+    label: 'מורכב',
+    factor: 1.30,
+    description: 'תקרה גבוהה, פינות רבות, גישה מוגבלת'
+  },
+  {
+    id: 'very_complex',
+    label: 'מורכב מאוד',
+    factor: 1.50,
+    description: 'תקרה גבוהה מאוד, פרטים רבים, גישה קשה'
+  },
 ];
 
 // פונקציה לקביעת האייקון המתאים לכל סוג חלל
@@ -264,7 +284,7 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-6 md:p-8" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-gray-800 flex items-center gap-3">
             <div className="p-2 bg-indigo-100 rounded-lg">
@@ -301,38 +321,127 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
               </Card>
             )}
 
-            {/* בחירת חללים */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {roomEstimatesData.map(room => {
-                const selectedRoom = selectedRooms.find(r => r.id === room.id);
-                const isSelected = !!selectedRoom;
-                
-                const currentComplexity = selectedRoom?.difficultyData?.id || COMPLEXITY_OPTIONS[0].id;
+            {/* טבלת סיכום חדרים נבחרים */}
+            {selectedRooms.length > 0 && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base text-blue-800 flex items-center gap-2">
+                    <Building className="h-5 w-5" />
+                    חדרים נבחרים ({selectedRooms.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    {selectedRooms.map(selectedRoom => {
+                      const roomData = roomEstimatesData.find(r => r.id === selectedRoom.id);
+                      if (!roomData) return null;
 
-                return (
-                  <Card 
-                    key={room.id} 
-                    className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-                      isSelected 
-                        ? 'border-2 border-indigo-400 bg-indigo-50/50 shadow-sm' 
-                        : 'border border-gray-200 hover:border-indigo-300'
+                      const complexityFactor = selectedRoom.difficultyData?.factor || 1.0;
+                      const wallArea = roomData.wallAreaSqM * complexityFactor * selectedRoom.quantity;
+                      const ceilingArea = selectedRoom.includeCeiling
+                        ? roomData.ceilingAreaSqM * complexityFactor * selectedRoom.quantity
+                        : 0;
+
+                      return (
+                        <div key={selectedRoom.id} className="flex justify-between items-center text-sm p-3 bg-white rounded border border-blue-200 hover:border-blue-300 transition-colors">
+                          <div className="flex items-center gap-3">
+                            {getRoomIcon(roomData.roomType)}
+                            <div className="flex flex-col">
+                              <span className="font-medium text-gray-800">{roomData.roomType}</span>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <Badge variant="outline" className="text-xs h-5">
+                                  כמות: {selectedRoom.quantity}
+                                </Badge>
+                                <Badge variant="outline" className="text-xs h-5 bg-purple-50 border-purple-200">
+                                  {selectedRoom.difficultyData?.label || 'רגיל'} (×{complexityFactor.toFixed(2)})
+                                </Badge>
+                                {selectedRoom.includeCeiling && (
+                                  <Badge variant="outline" className="text-xs h-5 bg-yellow-50 border-yellow-200">
+                                    + תקרה
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs">
+                            <span className="text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded">
+                              {wallArea.toFixed(1)} מ"ר קירות
+                            </span>
+                            {ceilingArea > 0 && (
+                              <span className="text-purple-600 font-semibold bg-purple-50 px-2 py-1 rounded">
+                                + {ceilingArea.toFixed(1)} מ"ר תקרה
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* בחירת חללים */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <Home className="h-4 w-4" />
+                בחר סוגי חדרים לחישוב
+                {selectedRooms.length > 0 && (
+                  <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                    {selectedRooms.length} נבחרו
+                  </span>
+                )}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {/* Show selected rooms first */}
+                {roomEstimatesData
+                  .sort((a, b) => {
+                    const aSelected = selectedRooms.find(r => r.id === a.id);
+                    const bSelected = selectedRooms.find(r => r.id === b.id);
+                    if (aSelected && !bSelected) return -1;
+                    if (!aSelected && bSelected) return 1;
+                    return 0;
+                  })
+                  .map(room => {
+                    const selectedRoom = selectedRooms.find(r => r.id === room.id);
+                    const isSelected = !!selectedRoom;
+
+                    const currentComplexity = selectedRoom?.difficultyData?.id || COMPLEXITY_OPTIONS[0].id;
+
+                    return (
+                  <Card
+                    key={room.id}
+                    className={`cursor-pointer transition-all duration-200 ${
+                      isSelected
+                        ? 'border-2 border-indigo-500 bg-gradient-to-br from-indigo-50 via-indigo-50/70 to-white shadow-lg ring-2 ring-indigo-200 ring-offset-1'
+                        : 'border border-gray-200 hover:border-indigo-300 hover:shadow-md'
                     }`}
                     onClick={() => toggleRoomSelection(room.id)}
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                          {getRoomIcon(room.roomType)} {/* Using the new helper function */}
+                        <CardTitle className={`text-base font-semibold flex items-center gap-2 ${
+                          isSelected ? 'text-indigo-800' : 'text-gray-800'
+                        }`}>
+                          {getRoomIcon(room.roomType)}
                           {room.roomType}
+                          {isSelected && (
+                            <Badge className="bg-indigo-500 text-white text-xs h-5 px-2">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              נבחר
+                            </Badge>
+                          )}
                         </CardTitle>
-                        <input 
-                          type="checkbox" 
-                          checked={!!isSelected} 
+                        <input
+                          type="checkbox"
+                          checked={!!isSelected}
                           readOnly
-                          className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2"
+                          className={`w-5 h-5 rounded focus:ring-indigo-500 focus:ring-2 ${
+                            isSelected ? 'text-indigo-600 bg-indigo-100 border-indigo-400' : 'text-indigo-600 bg-gray-100 border-gray-300'
+                          }`}
                         />
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className={`text-xs mt-1 ${isSelected ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}>
                         קירות: {room.wallAreaSqM} מ"ר • תקרה: {room.ceilingAreaSqM} מ"ר
                       </div>
                     </CardHeader>
@@ -397,24 +506,46 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
                           <Select
                             value={currentComplexity}
                             onValueChange={(value) => updateRoomComplexity(room.id, value)}
+                            dir="rtl"
                           >
-                            <SelectTrigger className="h-8 text-sm">
+                            <SelectTrigger className="h-8 text-sm bg-white" dir="rtl">
                               <SelectValue placeholder="בחר מורכבות" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent 
+                              className="z-[9999] bg-white" 
+                              position="popper" 
+                              sideOffset={5}
+                              align="start"
+                              avoidCollisions={true}
+                              dir="rtl"
+                            >
                               {COMPLEXITY_OPTIONS.map(o => (
-                                <SelectItem key={o.id} value={o.id}>
-                                  {o.label} (x{(o.factor).toFixed(2)})
+                                <SelectItem key={o.id} value={o.id} className="cursor-pointer text-right" dir="rtl">
+                                  <div className="flex flex-col items-start py-1 text-right w-full" dir="rtl">
+                                    <div className="flex items-center gap-2 w-full justify-start">
+                                      <span className="font-medium">{o.label}</span>
+                                      <span className="text-xs text-gray-500">(×{o.factor.toFixed(2)})</span>
+                                    </div>
+                                    {o.description && (
+                                      <span className="text-xs text-gray-500 mt-0.5 leading-tight text-right">{o.description}</span>
+                                    )}
+                                  </div>
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
 
-                        {/* תוצאה לחalל זה */}
-                        <div className="text-xs bg-gray-50 p-2 rounded border-t">
-                          <div className="flex justify-between text-gray-600">
-                            <span>קירות לאחר מקדם מורכבות:</span>
+                        {/* תוצאה לחדר זה */}
+                        <div className="text-xs bg-gradient-to-l from-indigo-50 to-white p-3 rounded border border-indigo-200">
+                          <div className="flex justify-between items-center mb-2 pb-2 border-b border-indigo-100">
+                            <span className="font-semibold text-gray-700">חישוב לחדר זה:</span>
+                            <Badge variant="outline" className="text-xs bg-white border-indigo-300">
+                              {selectedRoom?.difficultyData?.label || 'רגיל'}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between text-gray-600 mb-1">
+                            <span>קירות (בסיס: {room.wallAreaSqM} מ"ר):</span>
                             <span className="font-mono font-semibold text-blue-600">
                               {(() => {
                                 const complexityFactor = selectedRoom?.difficultyData?.factor || COMPLEXITY_OPTIONS[0].factor;
@@ -424,7 +555,7 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
                           </div>
                           {selectedRoom?.includeCeiling && (
                             <div className="flex justify-between text-gray-600">
-                              <span>תקרה לאחר מקדם מורכבות:</span>
+                              <span>תקרה (בסיס: {room.ceilingAreaSqM} מ"ר):</span>
                               <span className="font-mono font-semibold text-purple-600">
                                 {((room.ceilingAreaSqM * (selectedRoom?.difficultyData?.factor || COMPLEXITY_OPTIONS[0].factor)) * (selectedRoom?.quantity || 1)).toFixed(1)} מ"ר
                               </span>
@@ -436,6 +567,7 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
                   </Card>
                 );
               })}
+              </div>
             </div>
           </div>
         )}
