@@ -77,7 +77,7 @@ export default function SentQuotes() {
     const [searchQuery, setSearchQuery] = useState('');
     const [deleteAlert, setDeleteAlert] = useState({ isOpen: false, quote: null });
     const [statusFilter, setStatusFilter] = useState('הכל');
-    const [sortConfig, setSortConfig] = useState({ key: 'created_date', direction: 'descending' });
+    const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'descending' });
     const { user } = useUser();
     const [confettiTriggerId, setConfettiTriggerId] = useState(null);
     const [hoveredLegendItem, setHoveredLegendItem] = useState(null);
@@ -449,7 +449,7 @@ export default function SentQuotes() {
 
             let matchesDate = true;
             if (dateFilter.type !== 'all') {
-                const quoteDate = new Date(quote.created_date);
+                const quoteDate = new Date(quote.createdAt);
                 let currentFromDate, currentToDate;
 
                 if (dateFilter.type === 'custom') {
@@ -527,9 +527,9 @@ export default function SentQuotes() {
                     const bCost = b.estimatedCost || 0;
                     const bProfit = (b.finalAmount || 0) - bCost;
                     bValue = bCost > 0 ? (bProfit / bCost) * 100 : 0;
-                } else if (sortConfig.key === 'created_date') {
-                    aValue = new Date(a.created_date);
-                    bValue = new Date(b.created_date);
+                } else if (sortConfig.key === 'createdAt') {
+                    aValue = new Date(a.createdAt);
+                    bValue = new Date(b.createdAt);
                 } else {
                     aValue = a[sortConfig.key] || '';
                     bValue = b[sortConfig.key] || '';
@@ -1004,7 +1004,7 @@ export default function SentQuotes() {
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
                                         <th className="px-3 py-2 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider"><Button variant="ghost" className="p-0 h-auto hover:bg-transparent" onClick={() => requestSort('projectName')}>פרויקט / לקוח{getSortIndicator('projectName')}</Button></th>
-                                        <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><Button variant="ghost" className="p-0 h-auto hover:bg-transparent" onClick={() => requestSort('created_date')}>תאריך{getSortIndicator('created_date')}</Button></th>
+                                        <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><Button variant="ghost" className="p-0 h-auto hover:bg-transparent" onClick={() => requestSort('createdAt')}>תאריך{getSortIndicator('createdAt')}</Button></th>
                                         <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><Button variant="ghost" className="p-0 h-auto hover:bg-transparent" onClick={() => requestSort('status')}>סטטוס{getSortIndicator('status')}</Button></th>
                                         <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><Button variant="ghost" className="p-0 h-auto hover:bg-transparent" onClick={() => requestSort('finalAmount')}>סכום{getSortIndicator('finalAmount')}</Button></th>
                                         <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><Button variant="ghost" className="p-0 h-auto hover:bg-transparent" onClick={() => requestSort('estimatedCost')}>עלות{getSortIndicator('estimatedCost')}</Button></th>
@@ -1044,7 +1044,7 @@ export default function SentQuotes() {
                                                 <div className="text-gray-500 text-xs truncate max-w-48">{quote.clientName}</div>
                                             </td>
                                             <td className="px-3 py-3 text-center text-xs text-gray-600">
-                                                {format(new Date(quote.created_date), 'dd/MM/yy', { locale: he })}
+                                                {quote.createdAt ? format(new Date(quote.createdAt), 'dd/MM/yy', { locale: he }) : '-'}
                                             </td>
                                             <td className="px-3 py-3 text-center relative">
                                                 {confettiTriggerId === quote.id && <ConfettiBurst onComplete={() => setConfettiTriggerId(null)} />}

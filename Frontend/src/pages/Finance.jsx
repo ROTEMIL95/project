@@ -121,7 +121,7 @@ export default function Finance() {
     const [isFiltersOpen, setIsFiltersOpen] = useState(false);
     const [activeChart, setActiveChart] = useState(null);
 
-    const [sortConfig, setSortConfig] = useState({ key: 'closingDate', direction: 'desc' });
+    const [sortConfig, setSortConfig] = useState({ key: 'transactionDate', direction: 'desc' });
 
     // Navigation hook
     const navigate = useNavigate();
@@ -131,12 +131,9 @@ export default function Finance() {
             setLoading(true);
             setError(null);
             try {
-                const user = await User.me();
-                setCurrentUser(user);
-
-                if (user && user.email) {
-                    await loadTransactions(user);
-                    await loadQuotes(user);
+                if (currentUser && currentUser.email) {
+                    await loadTransactions(currentUser);
+                    await loadQuotes(currentUser);
                 } else {
                     throw new Error("User not authenticated or email missing.");
                 }
@@ -148,15 +145,15 @@ export default function Finance() {
             }
         };
         fetchInitialData();
-    }, []);
+    }, [currentUser]);
 
     const loadTransactions = async (user) => {
-        if (!user || !user.email) {
+        if (!user || !user.id) {
             setTransactions([]);
             return;
         }
         try {
-            const data = await FinancialTransaction.filter({ created_by: user.email }, '-closingDate');
+            const data = await FinancialTransaction.filter({ user_id: user.id });
             setTransactions(data);
         } catch (err) {
             console.error("Failed to fetch financial transactions:", err);
@@ -215,9 +212,9 @@ export default function Finance() {
         }
 
         return transactionsList.filter(transaction => {
-            const transactionDate = new Date(transaction.closingDate);
+            const transactionDate = new Date(transaction.transactionDate);
             if (isNaN(transactionDate.getTime())) {
-                console.warn(`Invalid closingDate for transaction ID: ${transaction.id}, Date: ${transaction.closingDate}`);
+                console.warn(`Invalid transactionDate for transaction ID: ${transaction.id}, Date: ${transaction.transactionDate}`);
                 return false;
             }
             return isWithinInterval(transactionDate, { start: startDate, end: endDate });
@@ -381,9 +378,9 @@ export default function Finance() {
                     bValue = (b.revenue || 0) - (b.estimatedCost || 0);
                 }
                 
-                if (sortConfig.key === 'closingDate') {
-                    aValue = new Date(a.closingDate);
-                    bValue = new Date(b.closingDate);
+                if (sortConfig.key === 'transactionDate') {
+                    aValue = new Date(a.transactionDate);
+                    bValue = new Date(b.transactionDate);
                 }
 
                 if (typeof aValue === 'string' && typeof bValue === 'string' && 
@@ -877,7 +874,7 @@ export default function Finance() {
             הכנסות: t.revenue,
             עלויות: t.estimatedCost,
             רווח: calculateTotalProfitForTransaction(t),
-            date: t.closingDate,
+            date: t.transactionDate,
             quoteId: t.quoteId,
         };
     }).reverse();
@@ -1368,8 +1365,8 @@ export default function Finance() {
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-gray-50">
-                                    <TableHead className="font-semibold cursor-pointer hover:bg-gray-100" onClick={() => requestSort('closingDate')}>
-                                        <div className="flex items-center gap-2">תאריך סגירה {getSortIcon('closingDate')}</div>
+                                    <TableHead className="font-semibold cursor-pointer hover:bg-gray-100" onClick={() => requestSort('transactionDate')}>
+                                        <div className="flex items-center gap-2">תאריך עסקה {getSortIcon('transactionDate')}</div>
                                     </TableHead>
                                     <TableHead className="font-semibold cursor-pointer hover:bg-gray-100" onClick={() => requestSort('clientName')}>
                                         <div className="flex items-center gap-2">לקוח {getSortIcon('clientName')}</div>
@@ -1427,7 +1424,7 @@ export default function Finance() {
                                     return (
                                         <TableRow key={transaction.id} className={cn(isEditing ? 'bg-indigo-100' : getRowClass(profitPercent), 'transition-colors duration-200')}>
                                             <TableCell className="font-medium">
-                                                {format(new Date(transaction.closingDate), 'dd/MM/yyyy', { locale: he })}
+                                                {transaction.transactionDate ? format(new Date(transaction.transactionDate), 'dd/MM/yyyy', { locale: he }) : '-'}
                                             </TableCell>
                                             <TableCell className="text-gray-700">{transaction.clientName}</TableCell>
                                             <TableCell className="text-emerald-600 font-semibold">

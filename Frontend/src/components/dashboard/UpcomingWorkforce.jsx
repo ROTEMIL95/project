@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Quote, User } from '@/lib/entities';
+import { Quote } from '@/lib/entities';
+import { useUser } from '@/components/utils/UserContext';
 import { Users, Calendar, Clock, AlertTriangle, Package, ShoppingCart, DollarSign, Lightbulb, Landmark } from 'lucide-react'; // Added Landmark
 import { format, differenceInDays, addWeeks, addDays } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -86,15 +87,15 @@ const calculateCategoryDetails = (categoryItems, userPriceList) => {
 };
 
 export default function UpcomingWorkforce() {
+  const { user } = useUser();
   const [upcomingWork, setUpcomingWork] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUpcomingWork = async () => {
       try {
-        const user = await User.me();
         if (user && user.email) {
-          const { paintItems: userPaintItems = [], tilingItems: userTilingItems = [] } = user;
+          const { paintItems: userPaintItems = [], tilingItems: userTilingItems = [] } = user.user_metadata || {};
           
           const userPriceLists = {
             'cat_paint_plaster': userPaintItems,
@@ -102,7 +103,7 @@ export default function UpcomingWorkforce() {
           };
 
           const approvedQuotes = await Quote.filter({ 
-            created_by: user.email, 
+            user_id: user.id, 
             status: 'אושר' 
           });
 
@@ -256,7 +257,7 @@ export default function UpcomingWorkforce() {
     };
 
     fetchUpcomingWork();
-  }, []);
+  }, [user]);
 
   if (loading) {
     return (

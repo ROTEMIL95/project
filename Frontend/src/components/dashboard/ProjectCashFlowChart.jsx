@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Quote } from '@/lib/entities';
-import { User } from '@/lib/entities';
+import { useUser } from '@/components/utils/UserContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, Filter, BarChart3, Calendar, Users } from 'lucide-react';
 import { addDays, addWeeks, format, startOfMonth, differenceInDays, isWithinInterval, startOfDay, addMonths } from 'date-fns';
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 
 export default function ProjectCashFlowChart() {
+  const { user } = useUser();
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [chartType, setChartType] = useState('line');
@@ -31,13 +32,12 @@ export default function ProjectCashFlowChart() {
     const calculateProjectCashFlow = async () => {
       try {
         setLoading(true); // הפעל טעינה בכל ריענון
-        const user = await User.me();
-        if (!user || !user.email) {
+        if (!user || !user.id) {
           setLoading(false);
           return;
         }
 
-        let quotesQuery = { created_by: user.email };
+        let quotesQuery = { user_id: user.id };
         
         // פילטר לפי סטטוס
         if (statusFilter === 'approved') {
@@ -285,9 +285,9 @@ export default function ProjectCashFlowChart() {
 
     // ניקוי המאזין לפני ריצה מחדש או כשהרכיב יורד
     return () => {
-        window.removeEventListener('focus', calculateProjectCashFlow);
+      window.removeEventListener('focus', calculateProjectCashFlow);
     };
-  }, [timeFilter, projectFilter, statusFilter]);
+  }, [user, timeFilter, projectFilter, statusFilter]);
 
   const formatCurrency = (value) => {
     if (Math.abs(value) >= 1000000) return `${(value / 1000000).toFixed(1)}M`;

@@ -148,7 +148,7 @@ export default function RecentQuotes({ user }) {
 
           {/* Quotes List */}
           {recentQuotes.map((quote) => {
-            const profit = (quote.total_price || 0) - (quote.total_cost || 0);
+            const profit = (quote.totalPrice || 0) - (quote.totalCost || 0);
             return (
               <div key={quote.id} className="p-3 rounded-lg hover:bg-gray-50/70 transition-colors border md:border-0 md:grid md:grid-cols-12 md:gap-4 md:items-center">
                 {/* Project Name (Mobile + Desktop) */}
@@ -161,7 +161,7 @@ export default function RecentQuotes({ user }) {
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm md:hidden border-t pt-3 mt-3">
                   <div>
                     <p className="text-xs text-gray-500">תאריך</p>
-                    <p className="font-medium">{format(new Date(quote.created_at), 'dd/MM/yy', { locale: he })}</p>
+                    <p className="font-medium">{quote.createdAt ? format(new Date(quote.createdAt), 'dd/MM/yy', { locale: he }) : '-'}</p>
                   </div>
                   <div className="text-left">
                     <p className="text-xs text-gray-500">סטטוס</p>
@@ -169,7 +169,7 @@ export default function RecentQuotes({ user }) {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">סכום</p>
-                    <p className="font-bold text-indigo-600">{formatCurrency(quote.total_price || 0)}</p>
+                    <p className="font-bold text-indigo-600">{formatCurrency(quote.totalPrice || 0)}</p>
                   </div>
                   <div className="text-left">
                     <p className="text-xs text-gray-500">רווח</p>
@@ -179,13 +179,13 @@ export default function RecentQuotes({ user }) {
 
                 {/* Desktop Details */}
                 <div className="hidden md:block col-span-2 text-center text-sm font-medium text-gray-700">
-                  {format(new Date(quote.created_at), 'dd/MM/yy', { locale: he })}
+                  {quote.createdAt ? format(new Date(quote.createdAt), 'dd/MM/yy', { locale: he }) : '-'}
                 </div>
                 <div className="hidden md:flex col-span-2 justify-center">
                   {getStatusBadge(quote.status || 'טיוטה')}
                 </div>
                 <div className="hidden md:block col-span-2 text-center text-sm font-bold text-indigo-600">
-                  {formatCurrency(quote.total_price || 0)}
+                  {formatCurrency(quote.totalPrice || 0)}
                 </div>
                 <div className={`hidden md:block col-span-1 text-center text-sm font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(profit)}

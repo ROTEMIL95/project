@@ -1,5 +1,47 @@
 import { supabase } from '@/lib/supabase';
 
+// Helper function to convert camelCase to snake_case
+const toSnakeCase = (str) => {
+  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+};
+
+// Helper function to convert snake_case to camelCase
+const toCamelCase = (str) => {
+  return str.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+};
+
+// Helper function to convert object keys from camelCase to snake_case
+const convertKeysToSnakeCase = (obj) => {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(item => convertKeysToSnakeCase(item));
+  
+  const converted = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const snakeKey = toSnakeCase(key);
+    converted[snakeKey] = typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? convertKeysToSnakeCase(value)
+      : value;
+  }
+  return converted;
+};
+
+// Helper function to convert object keys from snake_case to camelCase
+const convertKeysToCamelCase = (obj) => {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(item => convertKeysToCamelCase(item));
+  
+  const converted = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const camelKey = toCamelCase(key);
+    converted[camelKey] = typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? convertKeysToCamelCase(value)
+      : value;
+  }
+  return converted;
+};
+
 // Entity type definitions
 export class Category {
   static fromJSON(json) {
@@ -73,7 +115,8 @@ export class Quote {
         throw error;
       }
 
-      return data || [];
+      // Convert snake_case keys back to camelCase for frontend
+      return (data || []).map(quote => convertKeysToCamelCase(quote));
     } catch (error) {
       console.error("Quote.filter error:", error);
       return [];
@@ -93,7 +136,8 @@ export class Quote {
         throw error;
       }
 
-      return data;
+      // Convert snake_case keys back to camelCase for frontend
+      return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
       console.error("Quote.getById error:", error);
       return null;
@@ -102,9 +146,12 @@ export class Quote {
 
   static async create(quoteData) {
     try {
+      // Convert camelCase keys to snake_case for database
+      const snakeCaseData = convertKeysToSnakeCase(quoteData);
+      
       const { data, error } = await supabase
         .from('quotes')
-        .insert([quoteData])
+        .insert([snakeCaseData])
         .select()
         .single();
 
@@ -113,7 +160,8 @@ export class Quote {
         throw error;
       }
 
-      return data;
+      // Convert snake_case keys back to camelCase for frontend
+      return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
       console.error("Quote.create error:", error);
       throw error;
@@ -122,9 +170,12 @@ export class Quote {
 
   static async update(id, updates) {
     try {
+      // Convert camelCase keys to snake_case for database
+      const snakeCaseUpdates = convertKeysToSnakeCase(updates);
+      
       const { data, error } = await supabase
         .from('quotes')
-        .update(updates)
+        .update(snakeCaseUpdates)
         .eq('id', id)
         .select()
         .single();
@@ -134,7 +185,8 @@ export class Quote {
         throw error;
       }
 
-      return data;
+      // Convert snake_case keys back to camelCase for frontend
+      return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
       console.error("Quote.update error:", error);
       throw error;
@@ -200,6 +252,133 @@ export class ProjectCosts {
 export class FinancialTransaction {
   static fromJSON(json) {
     return json;
+  }
+
+  static async filter(filters = {}) {
+    try {
+      let query = supabase
+        .from('financial_transactions')
+        .select('*');
+
+      // Apply filters
+      if (filters.user_id) {
+        query = query.eq('user_id', filters.user_id);
+      }
+      if (filters.type) {
+        query = query.eq('type', filters.type);
+      }
+      if (filters.quote_id) {
+        query = query.eq('quote_id', filters.quote_id);
+      }
+      if (filters.project_id) {
+        query = query.eq('project_id', filters.project_id);
+      }
+
+      // Order by transaction_date descending
+      query = query.order('transaction_date', { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching financial transactions:", error);
+        throw error;
+      }
+
+      // Convert snake_case keys back to camelCase for frontend
+      return (data || []).map(transaction => convertKeysToCamelCase(transaction));
+    } catch (error) {
+      console.error("FinancialTransaction.filter error:", error);
+      return [];
+    }
+  }
+
+  static async getById(id) {
+    try {
+      const { data, error } = await supabase
+        .from('financial_transactions')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching financial transaction:", error);
+        throw error;
+      }
+
+      // Convert snake_case keys back to camelCase for frontend
+      return data ? convertKeysToCamelCase(data) : null;
+    } catch (error) {
+      console.error("FinancialTransaction.getById error:", error);
+      return null;
+    }
+  }
+
+  static async create(transactionData) {
+    try {
+      // Convert camelCase keys to snake_case for database
+      const snakeCaseData = convertKeysToSnakeCase(transactionData);
+      
+      const { data, error } = await supabase
+        .from('financial_transactions')
+        .insert([snakeCaseData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating financial transaction:", error);
+        throw error;
+      }
+
+      // Convert snake_case keys back to camelCase for frontend
+      return data ? convertKeysToCamelCase(data) : null;
+    } catch (error) {
+      console.error("FinancialTransaction.create error:", error);
+      throw error;
+    }
+  }
+
+  static async update(id, updates) {
+    try {
+      // Convert camelCase keys to snake_case for database
+      const snakeCaseUpdates = convertKeysToSnakeCase(updates);
+      
+      const { data, error } = await supabase
+        .from('financial_transactions')
+        .update(snakeCaseUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error updating financial transaction:", error);
+        throw error;
+      }
+
+      // Convert snake_case keys back to camelCase for frontend
+      return data ? convertKeysToCamelCase(data) : null;
+    } catch (error) {
+      console.error("FinancialTransaction.update error:", error);
+      throw error;
+    }
+  }
+
+  static async delete(id) {
+    try {
+      const { error } = await supabase
+        .from('financial_transactions')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error("Error deleting financial transaction:", error);
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("FinancialTransaction.delete error:", error);
+      return false;
+    }
   }
 }
 
