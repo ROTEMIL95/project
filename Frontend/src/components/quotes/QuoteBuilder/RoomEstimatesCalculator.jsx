@@ -20,6 +20,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from '@/components/utils/UserContext';
+import { supabase } from '@/lib/supabase';
 import { 
   Home, 
   Calculator, 
@@ -30,7 +31,12 @@ import {
   Sofa, // New import
   ChefHat, // New import
   Bath, // New import
-  Building // New import
+  Building, // New import
+  DollarSign, // New import for price summary
+  Settings, // New import for edit mode
+  Trash2, // New import for delete button
+  Save, // New import for save button
+  X // New import for cancel button
 } from 'lucide-react';
 
 // הוספת מקדמי מורכבות קבועים לשימוש מיידי - ייעודי לחישוב חדרים
@@ -81,7 +87,7 @@ const getRoomIcon = (roomType) => {
   return <Building className="h-4 w-4 text-gray-500" />;
 };
 
-export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, workType = '', initialRoomData }) {
+export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, workType = '', initialRoomData, paintItemData, plasterItemData, userDefaults }) {
   const { user } = useUser();
   const [roomEstimatesData, setRoomEstimatesData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -91,6 +97,16 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
   const [selectedRooms, setSelectedRooms] = useState([]); 
   const [totalWallArea, setTotalWallArea] = useState(0);
   const [totalCeilingArea, setTotalCeilingArea] = useState(0);
+  
+  // Edit mode states
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingRoomId, setEditingRoomId] = useState(null);
+  const [showAddRoomDialog, setShowAddRoomDialog] = useState(false);
+  const [newRoom, setNewRoom] = useState({
+    roomType: '',
+    wallAreaSqM: 0,
+    ceilingAreaSqM: 0
+  });
 
   // Helper function to transform difficulty data from different formats to standard format
   const transformDifficultyData = useCallback((data) => {
@@ -186,6 +202,8 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
     let finalTotalWallArea = 0;
     let finalTotalCeilingArea = 0;
     
+    console.log('🔢 [RoomEstimatesCalculator] Calculating areas for selected rooms:', selectedRooms);
+    
     selectedRooms.forEach(selectedRoom => {
       const roomData = roomEstimatesData.find(room => room.id === selectedRoom.id);
       if (roomData) {
@@ -197,11 +215,19 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
         
         finalTotalWallArea += wallArea * quantity;
         
+        console.log(`🔢 Room: ${roomData.roomType}, includeCeiling: ${includeCeiling}, ceilingAreaSqM: ${roomData.ceilingAreaSqM}`);
+        
         if (includeCeiling && roomData.ceilingAreaSqM) {
-          finalTotalCeilingArea += (roomData.ceilingAreaSqM * complexityFactor) * quantity;
+          const ceilingContribution = (roomData.ceilingAreaSqM * complexityFactor) * quantity;
+          finalTotalCeilingArea += ceilingContribution;
+          console.log(`✅ Adding ceiling: ${ceilingContribution} sqm`);
+        } else {
+          console.log(`❌ Ceiling not included or no ceiling area`);
         }
       }
     });
+    
+    console.log(`🔢 Final totals - Wall: ${finalTotalWallArea}, Ceiling: ${finalTotalCeilingArea}, Total: ${finalTotalWallArea + finalTotalCeilingArea}`);
     
     setTotalWallArea(Math.max(0, finalTotalWallArea));
     setTotalCeilingArea(Math.max(0, finalTotalCeilingArea));
@@ -211,6 +237,33 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
   useEffect(() => {
     calculateRoomTypeArea();
   }, [selectedRooms, calculateRoomTypeArea]);
+
+  // Calculate estimated price based on selected paint/plaster item
+  const calculateEstimatedPrice = useCallback(() => {
+    if (!paintItemData && !plasterItemData) return null;
+
+    const itemData = workType === 'paint' ? paintItemData : plasterItemData;
+    if (!itemData) return null;
+
+    // Get pricing from item data
+    const pricePerSqM = itemData.pricePerSqM || itemData.unitPrice || 0;
+    const costPerSqM = itemData.costPerSqM || itemData.unitCost || 0;
+
+    // Calculate totals
+    const totalPrice = calculatedArea * pricePerSqM;
+    const totalCost = calculatedArea * costPerSqM;
+    const profit = totalPrice - totalCost;
+    const profitPercent = totalCost > 0 ? (profit / totalCost) * 100 : 0;
+
+    return {
+      totalPrice: Math.round(totalPrice),
+      totalCost: Math.round(totalCost),
+      profit: Math.round(profit),
+      profitPercent: Math.round(profitPercent),
+      pricePerSqM,
+      costPerSqM
+    };
+  }, [calculatedArea, paintItemData, plasterItemData, workType]);
 
   const toggleRoomSelection = (roomId) => {
     setSelectedRooms(prev => {
@@ -223,7 +276,7 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
           id: roomId,
           quantity: 1,
           difficultyData: COMPLEXITY_OPTIONS[0], // Default to 'easy' complexity
-          includeCeiling: false,
+          includeCeiling: true, // Changed to true - include ceiling by default
           name: roomData?.roomType || roomId
         }];
       }
@@ -244,13 +297,89 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
   };
 
   const toggleCeiling = (roomId) => {
-    setSelectedRooms(prev => prev.map(room => 
-      room.id === roomId ? { ...room, includeCeiling: !room.includeCeiling } : room
+    console.log('🔄 [toggleCeiling] Toggling ceiling for room:', roomId);
+    setSelectedRooms(prev => {
+      const updated = prev.map(room => {
+        if (room.id === roomId) {
+          const newValue = !room.includeCeiling;
+          console.log(`🔄 Room ${roomId}: includeCeiling changed from ${room.includeCeiling} to ${newValue}`);
+          return { ...room, includeCeiling: newValue };
+        }
+        return room;
+      });
+      console.log('🔄 Updated selectedRooms:', updated);
+      return updated;
+    });
+  };
+
+  // Edit mode functions
+  const handleAddNewRoom = () => {
+    setNewRoom({
+      roomType: '',
+      wallAreaSqM: 0,
+      ceilingAreaSqM: 0
+    });
+    setShowAddRoomDialog(true);
+  };
+
+  const handleSaveNewRoom = () => {
+    if (!newRoom.roomType.trim()) {
+      alert('נא להזין שם חדר');
+      return;
+    }
+
+    setRoomEstimatesData(prev => [...prev, {
+      id: `custom_room_${Date.now()}`,
+      roomType: newRoom.roomType,
+      wallAreaSqM: Number(newRoom.wallAreaSqM) || 0,
+      ceilingAreaSqM: Number(newRoom.ceilingAreaSqM) || 0
+    }]);
+
+    setShowAddRoomDialog(false);
+    setNewRoom({
+      roomType: '',
+      wallAreaSqM: 0,
+      ceilingAreaSqM: 0
+    });
+  };
+
+  const handleDeleteRoom = (roomId) => {
+    if (confirm('האם אתה בטוח שברצונך למחוק חדר זה?')) {
+      setRoomEstimatesData(prev => prev.filter(r => r.id !== roomId));
+      setSelectedRooms(prev => prev.filter(r => r.id !== roomId));
+    }
+  };
+
+  const handleUpdateRoomField = (roomId, field, value) => {
+    setRoomEstimatesData(prev => prev.map(r => 
+      r.id === roomId ? { ...r, [field]: value } : r
     ));
+  };
+
+  const handleSaveRoomEstimates = async () => {
+    try {
+      // Save to user metadata
+      await supabase.auth.updateUser({
+        data: {
+          ...user.user_metadata,
+          roomEstimates: roomEstimatesData
+        }
+      });
+      alert('הגדרות החדרים נשמרו בהצלחה!');
+      setIsEditMode(false);
+    } catch (error) {
+      console.error('Error saving room estimates:', error);
+      alert('שגיאה בשמירת הגדרות החדרים');
+    }
   };
 
   const handleConfirm = () => {
     if (calculatedArea > 0) {
+      // Get pricing data
+      const itemData = workType === 'paint' ? paintItemData : plasterItemData;
+      const pricePerSqM = itemData?.pricePerSqM || itemData?.unitPrice || 0;
+      const costPerSqM = itemData?.costPerSqM || itemData?.unitCost || 0;
+
       const detailedCalculation = {
         totalArea: calculatedArea,
         wallSqM: totalWallArea, 
@@ -263,6 +392,16 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
 
             let wallArea = roomData.wallAreaSqM * complexityFactor;
             let ceilingArea = roomData.ceilingAreaSqM * complexityFactor;
+            
+            // Calculate total area for this room
+            const roomTotalWallArea = wallArea * quantity;
+            const roomTotalCeilingArea = selectedRoom.includeCeiling ? ceilingArea * quantity : 0;
+            const roomTotalArea = roomTotalWallArea + roomTotalCeilingArea;
+            
+            // Calculate price for this room
+            const roomTotalPrice = roomTotalArea * pricePerSqM;
+            const roomTotalCost = roomTotalArea * costPerSqM;
+            const roomProfit = roomTotalPrice - roomTotalCost;
 
             return {
               id: selectedRoom.id, // Include room ID for restoration
@@ -270,8 +409,15 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
               quantity: quantity,
               includeCeiling: selectedRoom.includeCeiling || false,
               difficultyData: selectedRoom.difficultyData, // Include complexity data
-              wallArea: wallArea * quantity,
-              ceilingArea: selectedRoom.includeCeiling ? ceilingArea * quantity : 0
+              wallArea: roomTotalWallArea,
+              ceilingArea: roomTotalCeilingArea,
+              totalArea: roomTotalArea,
+              // Price information
+              pricePerSqM: pricePerSqM,
+              costPerSqM: costPerSqM,
+              totalPrice: Math.round(roomTotalPrice),
+              totalCost: Math.round(roomTotalCost),
+              profit: Math.round(roomProfit)
             };
           }
           return null;
@@ -286,12 +432,46 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-6 md:p-8" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-            <div className="p-2 bg-indigo-100 rounded-lg">
-              <Calculator className="h-6 w-6 text-indigo-600" />
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <Calculator className="h-6 w-6 text-indigo-600" />
+              </div>
+              חישוב כמות מתקדם - שטח {workType === 'paint' ? 'קירות' : 'טיח'}
+            </DialogTitle>
+            <div className="flex items-center gap-2">
+              {isEditMode ? (
+                <>
+                  <Button
+                    onClick={handleSaveRoomEstimates}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Save className="h-4 w-4 ml-2" />
+                    שמור הגדרות
+                  </Button>
+                  <Button
+                    onClick={() => setIsEditMode(false)}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <X className="h-4 w-4 ml-2" />
+                    ביטול
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={() => setIsEditMode(true)}
+                  size="sm"
+                  variant="outline"
+                  className="text-gray-600 hover:text-indigo-600"
+                >
+                  <Settings className="h-4 w-4 ml-2" />
+                  ערוך חדרים
+                </Button>
+              )}
             </div>
-            חישוב כמות מתקדם - שטח {workType === 'paint' ? 'קירות' : 'טיח'}
-          </DialogTitle>
+          </div>
         </DialogHeader>
 
         {loading ? (
@@ -303,22 +483,80 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
           <div className="space-y-6">
             {/* סיכום כללי */}
             {calculatedArea > 0 && (
-              <Card className="bg-gradient-to-l from-green-50 to-emerald-50 border-green-200">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-green-600" />
-                      <span className="font-semibold text-green-800">סה"כ שטח מחושב</span>
-                    </div>
-                    <div className="text-left">
-                      <div className="text-2xl font-bold text-green-700">{calculatedArea.toFixed(1)} מ"ר</div>
-                      <div className="text-sm text-green-600">
-                        קירות: {totalWallArea.toFixed(1)} • תקרה: {totalCeilingArea.toFixed(1)}
+              <>
+                <Card className="bg-gradient-to-l from-green-50 to-emerald-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <span className="font-semibold text-green-800">סה"כ שטח מחושב</span>
+                      </div>
+                      <div className="text-left">
+                        <div className="text-2xl font-bold text-green-700">{calculatedArea.toFixed(1)} מ"ר</div>
+                        <div className="text-sm text-green-600">
+                          קירות: {totalWallArea.toFixed(1)} • תקרה: {totalCeilingArea.toFixed(1)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+
+                {/* Price Summary */}
+                {(() => {
+                  const priceData = calculateEstimatedPrice();
+                  if (priceData) {
+                    return (
+                      <Card className="bg-gradient-to-l from-blue-50 to-indigo-50 border-blue-200">
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
+                              <DollarSign className="h-5 w-5 text-blue-600" />
+                              <span className="font-semibold text-blue-800">אומדן מחיר</span>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-white/60 rounded-lg p-3 border border-blue-100">
+                                <div className="text-xs text-gray-600 mb-1">מחיר ללקוח</div>
+                                <div className="text-xl font-bold text-blue-700">
+                                  ₪{priceData.totalPrice.toLocaleString()}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  ₪{priceData.pricePerSqM.toFixed(2)} למ"ר
+                                </div>
+                              </div>
+                              
+                              <div className="bg-white/60 rounded-lg p-3 border border-orange-100">
+                                <div className="text-xs text-gray-600 mb-1">עלות קבלן</div>
+                                <div className="text-xl font-bold text-orange-700">
+                                  ₪{priceData.totalCost.toLocaleString()}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  ₪{priceData.costPerSqM.toFixed(2)} למ"ר
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="bg-gradient-to-l from-green-100 to-emerald-100 rounded-lg p-3 border border-green-200">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-green-800">רווח משוער</span>
+                                <div className="text-left">
+                                  <div className="text-lg font-bold text-green-700">
+                                    ₪{priceData.profit.toLocaleString()}
+                                  </div>
+                                  <div className="text-xs text-green-600">
+                                    {priceData.profitPercent}% רווחיות
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+                  return null;
+                })()}
+              </>
             )}
 
             {/* טבלת סיכום חדרים נבחרים */}
@@ -341,37 +579,61 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
                       const ceilingArea = selectedRoom.includeCeiling
                         ? roomData.ceilingAreaSqM * complexityFactor * selectedRoom.quantity
                         : 0;
+                      
+                      // Calculate price for this room
+                      const itemData = workType === 'paint' ? paintItemData : plasterItemData;
+                      const pricePerSqM = itemData?.pricePerSqM || itemData?.unitPrice || 0;
+                      const costPerSqM = itemData?.costPerSqM || itemData?.unitCost || 0;
+                      const roomTotalArea = wallArea + ceilingArea;
+                      const roomPrice = roomTotalArea * pricePerSqM;
+                      const roomCost = roomTotalArea * costPerSqM;
 
                       return (
-                        <div key={selectedRoom.id} className="flex justify-between items-center text-sm p-3 bg-white rounded border border-blue-200 hover:border-blue-300 transition-colors">
-                          <div className="flex items-center gap-3">
-                            {getRoomIcon(roomData.roomType)}
-                            <div className="flex flex-col">
-                              <span className="font-medium text-gray-800">{roomData.roomType}</span>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <Badge variant="outline" className="text-xs h-5">
-                                  כמות: {selectedRoom.quantity}
-                                </Badge>
-                                <Badge variant="outline" className="text-xs h-5 bg-purple-50 border-purple-200">
-                                  {selectedRoom.difficultyData?.label || 'רגיל'} (×{complexityFactor.toFixed(2)})
-                                </Badge>
-                                {selectedRoom.includeCeiling && (
-                                  <Badge variant="outline" className="text-xs h-5 bg-yellow-50 border-yellow-200">
-                                    + תקרה
+                        <div key={selectedRoom.id} className="flex flex-col gap-2 text-sm p-3 bg-white rounded border border-blue-200 hover:border-blue-300 transition-colors">
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3">
+                              {getRoomIcon(roomData.roomType)}
+                              <div className="flex flex-col">
+                                <span className="font-medium text-gray-800">{roomData.roomType}</span>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <Badge variant="outline" className="text-xs h-5">
+                                    כמות: {selectedRoom.quantity}
                                   </Badge>
-                                )}
+                                  <Badge variant="outline" className="text-xs h-5 bg-purple-50 border-purple-200">
+                                    {selectedRoom.difficultyData?.label || 'רגיל'} (×{complexityFactor.toFixed(2)})
+                                  </Badge>
+                                  {selectedRoom.includeCeiling && (
+                                    <Badge variant="outline" className="text-xs h-5 bg-yellow-50 border-yellow-200">
+                                      + תקרה
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs">
-                            <span className="text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded">
-                              {wallArea.toFixed(1)} מ"ר קירות
-                            </span>
-                            {ceilingArea > 0 && (
-                              <span className="text-purple-600 font-semibold bg-purple-50 px-2 py-1 rounded">
-                                + {ceilingArea.toFixed(1)} מ"ר תקרה
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-base font-bold text-indigo-700">
+                                ₪{Math.round(roomPrice).toLocaleString()}
                               </span>
-                            )}
+                              <span className="text-xs text-gray-500">
+                                {roomTotalArea.toFixed(1)} מ"ר × ₪{pricePerSqM.toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs pt-2 border-t border-blue-100">
+                            <div className="flex items-center gap-3">
+                              <span className="text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded">
+                                {wallArea.toFixed(1)} מ"ר קירות
+                              </span>
+                              {ceilingArea > 0 && (
+                                <span className="text-purple-600 font-semibold bg-purple-50 px-2 py-1 rounded">
+                                  + {ceilingArea.toFixed(1)} מ"ר תקרה
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-600">עלות: ₪{Math.round(roomCost).toLocaleString()}</span>
+                              <span className="text-green-600 font-semibold">רווח: ₪{Math.round(roomPrice - roomCost).toLocaleString()}</span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -383,15 +645,27 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
 
             {/* בחירת חללים */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <Home className="h-4 w-4" />
-                בחר סוגי חדרים לחישוב
-                {selectedRooms.length > 0 && (
-                  <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
-                    {selectedRooms.length} נבחרו
-                  </span>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Home className="h-4 w-4" />
+                  בחר סוגי חדרים לחישוב
+                  {selectedRooms.length > 0 && (
+                    <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                      {selectedRooms.length} נבחרו
+                    </span>
+                  )}
+                </h3>
+                {isEditMode && (
+                  <Button
+                    onClick={handleAddNewRoom}
+                    size="sm"
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    <Plus className="h-4 w-4 ml-2" />
+                    הוסף חדר
+                  </Button>
                 )}
-              </h3>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {/* Show selected rooms first */}
                 {roomEstimatesData
@@ -411,42 +685,93 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
                     return (
                   <Card
                     key={room.id}
-                    className={`cursor-pointer transition-all duration-200 ${
+                    className={`transition-all duration-200 ${
                       isSelected
                         ? 'border-2 border-indigo-500 bg-gradient-to-br from-indigo-50 via-indigo-50/70 to-white shadow-lg ring-2 ring-indigo-200 ring-offset-1'
                         : 'border border-gray-200 hover:border-indigo-300 hover:shadow-md'
-                    }`}
-                    onClick={() => toggleRoomSelection(room.id)}
+                    } ${!isEditMode ? 'cursor-pointer' : ''}`}
+                    onClick={!isEditMode ? () => toggleRoomSelection(room.id) : undefined}
                   >
                     <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className={`text-base font-semibold flex items-center gap-2 ${
-                          isSelected ? 'text-indigo-800' : 'text-gray-800'
-                        }`}>
-                          {getRoomIcon(room.roomType)}
-                          {room.roomType}
-                          {isSelected && (
-                            <Badge className="bg-indigo-500 text-white text-xs h-5 px-2">
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              נבחר
-                            </Badge>
-                          )}
-                        </CardTitle>
-                        <input
-                          type="checkbox"
-                          checked={!!isSelected}
-                          readOnly
-                          className={`w-5 h-5 rounded focus:ring-indigo-500 focus:ring-2 ${
-                            isSelected ? 'text-indigo-600 bg-indigo-100 border-indigo-400' : 'text-indigo-600 bg-gray-100 border-gray-300'
-                          }`}
-                        />
-                      </div>
-                      <div className={`text-xs mt-1 ${isSelected ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}>
-                        קירות: {room.wallAreaSqM} מ"ר • תקרה: {room.ceilingAreaSqM} מ"ר
-                      </div>
+                      {isEditMode ? (
+                        <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-1">
+                              {getRoomIcon(room.roomType)}
+                              <Input
+                                value={room.roomType}
+                                onChange={(e) => handleUpdateRoomField(room.id, 'roomType', e.target.value)}
+                                className="h-8 text-sm font-semibold flex-1"
+                                dir="rtl"
+                                placeholder="שם החדר"
+                              />
+                            </div>
+                            <Button
+                              onClick={() => handleDeleteRoom(room.id)}
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600 mb-1 block">שטח קירות (מ"ר)</Label>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={room.wallAreaSqM}
+                                onChange={(e) => handleUpdateRoomField(room.id, 'wallAreaSqM', Number(e.target.value) || 0)}
+                                className="h-8 text-sm"
+                                dir="rtl"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600 mb-1 block">שטח תקרה (מ"ר)</Label>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={room.ceilingAreaSqM}
+                                onChange={(e) => handleUpdateRoomField(room.id, 'ceilingAreaSqM', Number(e.target.value) || 0)}
+                                className="h-8 text-sm"
+                                dir="rtl"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <CardTitle className={`text-base font-semibold flex items-center gap-2 ${
+                              isSelected ? 'text-indigo-800' : 'text-gray-800'
+                            }`}>
+                              {getRoomIcon(room.roomType)}
+                              {room.roomType}
+                              {isSelected && (
+                                <Badge className="bg-indigo-500 text-white text-xs h-5 px-2">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  נבחר
+                                </Badge>
+                              )}
+                            </CardTitle>
+                            <input
+                              type="checkbox"
+                              checked={!!isSelected}
+                              readOnly
+                              className={`w-5 h-5 rounded focus:ring-indigo-500 focus:ring-2 ${
+                                isSelected ? 'text-indigo-600 bg-indigo-100 border-indigo-400' : 'text-indigo-600 bg-gray-100 border-gray-300'
+                              }`}
+                            />
+                          </div>
+                          <div className={`text-xs mt-1 ${isSelected ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}>
+                            קירות: {room.wallAreaSqM} מ"ר • תקרה: {room.ceilingAreaSqM} מ"ר
+                          </div>
+                        </>
+                      )}
                     </CardHeader>
                     
-                    {isSelected && (
+                    {isSelected && !isEditMode && (
                       <CardContent className="pt-0 space-y-3" onClick={e => e.stopPropagation()}>
                         {/* שורה עליונה: כמות ותקרה */}
                         <div className="grid grid-cols-2 gap-3">
@@ -585,6 +910,87 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Add Room Dialog */}
+      {showAddRoomDialog && (
+        <Dialog open={showAddRoomDialog} onOpenChange={setShowAddRoomDialog}>
+          <DialogContent className="max-w-md p-6" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-gray-800">
+                הוסף חדר חדש
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="roomType" className="text-sm font-medium text-gray-700">
+                  שם החדר
+                </Label>
+                <Input
+                  id="roomType"
+                  value={newRoom.roomType}
+                  onChange={(e) => setNewRoom({ ...newRoom, roomType: e.target.value })}
+                  placeholder="לדוגמה: סלון, חדר שינה, מטבח..."
+                  className="mt-1"
+                  dir="rtl"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="wallArea" className="text-sm font-medium text-gray-700">
+                  שטח קירות (מ"ר)
+                </Label>
+                <Input
+                  id="wallArea"
+                  type="number"
+                  step="0.1"
+                  value={newRoom.wallAreaSqM}
+                  onChange={(e) => setNewRoom({ ...newRoom, wallAreaSqM: e.target.value })}
+                  placeholder="0.0"
+                  className="mt-1"
+                  dir="rtl"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="ceilingArea" className="text-sm font-medium text-gray-700">
+                  שטח תקרה (מ"ר)
+                </Label>
+                <Input
+                  id="ceilingArea"
+                  type="number"
+                  step="0.1"
+                  value={newRoom.ceilingAreaSqM}
+                  onChange={(e) => setNewRoom({ ...newRoom, ceilingAreaSqM: e.target.value })}
+                  placeholder="0.0"
+                  className="mt-1"
+                  dir="rtl"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => {
+                setShowAddRoomDialog(false);
+                setNewRoom({
+                  roomType: '',
+                  wallAreaSqM: 0,
+                  ceilingAreaSqM: 0
+                });
+              }}>
+                ביטול
+              </Button>
+              <Button 
+                onClick={handleSaveNewRoom}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
+                <Save className="h-4 w-4 ml-2" />
+                שמור
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 }

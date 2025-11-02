@@ -212,9 +212,21 @@ const COMPLEXITY_LEVELS = [
 ];
 
 const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => {
-    const candidateRooms = (Array.isArray(item?.detailedRoomsData) && item.detailedRoomsData.length > 0)
-        ? item.detailedRoomsData
-        : (Array.isArray(item?.detailedBreakdown) && item.detailedBreakdown.length > 0 ? item.detailedBreakdown : []);
+    // Extract room breakdown data - handle both old and new structures
+    let candidateRooms = [];
+    
+    if (Array.isArray(item?.detailedRoomsData) && item.detailedRoomsData.length > 0) {
+        // New structure: rooms array with roomBreakdown inside each room
+        candidateRooms = item.detailedRoomsData.flatMap(room => {
+            if (Array.isArray(room?.roomBreakdown) && room.roomBreakdown.length > 0) {
+                return room.roomBreakdown;
+            }
+            return [];
+        });
+    } else if (Array.isArray(item?.detailedBreakdown) && item.detailedBreakdown.length > 0) {
+        // Old structure: flat array of items
+        candidateRooms = item.detailedBreakdown;
+    }
 
     const roomsRaw = (Array.isArray(fallbackRooms) && fallbackRooms.length > (candidateRooms?.length || 0))
         ? fallbackRooms

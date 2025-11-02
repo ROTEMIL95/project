@@ -27,6 +27,45 @@ const getProfitBadgeClass = (profitPercent) => {
     return "bg-green-100 text-green-800";
 };
 
+// Default demolition items that will be seeded for new users
+const DEFAULT_DEMOLITION_ITEMS = [
+    {
+        id: 'default_demo_1',
+        name: 'פירוק קיר גבס',
+        description: 'פירוק קיר גבס רגיל כולל סילוק פסולת',
+        unit: "מ'ר",
+        hoursPerUnit: 0.5
+    },
+    {
+        id: 'default_demo_2',
+        name: 'פירוק ריצוף קרמיקה',
+        description: 'פירוק ריצוף קרמיקה/גרניט כולל פסולת',
+        unit: "מ'ר",
+        hoursPerUnit: 1.2
+    },
+    {
+        id: 'default_demo_3',
+        name: 'פירוק חיפוי קירות',
+        description: 'פירוק חיפוי קרמיקה מקירות כולל פסולת',
+        unit: "מ'ר",
+        hoursPerUnit: 1.5
+    },
+    {
+        id: 'default_demo_4',
+        name: 'פירוק דלת פנים',
+        description: 'פירוק דלת פנים כולל משקוף',
+        unit: 'יחידה',
+        hoursPerUnit: 1.0
+    },
+    {
+        id: 'default_demo_5',
+        name: 'פירוק ארון מטבח',
+        description: 'פירוק ארון מטבח כולל משטח עבודה',
+        unit: 'מטר רץ',
+        hoursPerUnit: 2.0
+    }
+];
+
 // Default Settings Component
 const DefaultSettingsCard = ({ settings, onUpdate, isLoading, onAddItem }) => {
     const [localSettings, setLocalSettings] = useState({
@@ -312,7 +351,33 @@ export default function DemolitionCalculator() {
             setLoading(true);
             try {
                 const defaults = user.user_metadata?.demolitionDefaults || { laborCostPerDay: 1000, profitPercent: 40 };
-                const items = user.user_metadata?.demolitionItems || [];
+                let items = user.user_metadata?.demolitionItems || [];
+
+                // Seed default items if user has none
+                if (items.length === 0) {
+                    console.log('📦 [DemolitionCalculator] User has no demolition items, seeding defaults...');
+
+                    // Use hardcoded defaults with unique IDs
+                    const seededItems = DEFAULT_DEMOLITION_ITEMS.map(item => ({
+                        ...item,
+                        id: `demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    }));
+
+                    try {
+                        // Save seeded items to user metadata
+                        await supabase.auth.updateUser({
+                            data: {
+                                ...user.user_metadata,
+                                demolitionItems: seededItems
+                            }
+                        });
+
+                        items = seededItems;
+                        console.log(`✅ [DemolitionCalculator] Seeded ${seededItems.length} demolition items for user`);
+                    } catch (seedError) {
+                        console.error('Error seeding demolition items:', seedError);
+                    }
+                }
 
                 const itemsWithMetrics = items.map(item => calculateItemMetrics(item, defaults));
 

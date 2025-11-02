@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { User } from '@/lib/entities';
 import { useUser } from '@/components/utils/UserContext';
+import { supabase } from '@/lib/supabase';
 import {
   Calculator,
   Search,
@@ -67,6 +68,114 @@ const PAINT_TYPES = [
   { id: 'effects', name: 'אפקטים' },
   { id: 'tambourflex', name: 'טמבורפלקס' },
   { id: 'poksi', name: 'פוקסי' }
+];
+
+// Default tiling items for new users - these will be copied from admin's catalog
+// or seeded if admin catalog is empty
+const DEFAULT_TILING_ITEMS = [
+  {
+    id: 'default_til_1',
+    category: 'tiling',
+    tileName: 'גרניט פורצלן 60x60 איכותי',
+    itemType: 'אריח',
+    size: '60x60',
+    workType: 'ריצוף',
+    materialCost: 80,
+    laborCost: 40,
+    additionalCost: 10,
+    customerPrice: 0,
+    quality: 'איכותי',
+    complexityValue: 1,
+    pricingMethod: 'percentage',
+    desiredProfitPercent: 35,
+    isActive: true,
+  },
+  {
+    id: 'default_til_2',
+    category: 'tiling',
+    tileName: 'קרמיקה לקיר 30x60',
+    itemType: 'אריח',
+    size: '30x60',
+    workType: 'חיפוי קירות',
+    materialCost: 60,
+    laborCost: 50,
+    additionalCost: 8,
+    customerPrice: 0,
+    quality: 'איכותי',
+    complexityValue: 1,
+    pricingMethod: 'percentage',
+    desiredProfitPercent: 40,
+    isActive: true,
+  },
+  {
+    id: 'default_til_3',
+    category: 'tiling',
+    tileName: 'פורצלן גדול 120x60 פרמיום',
+    itemType: 'אריח',
+    size: '120x60',
+    workType: 'ריצוף',
+    materialCost: 150,
+    laborCost: 60,
+    additionalCost: 15,
+    customerPrice: 0,
+    quality: 'פרמיום',
+    complexityValue: 1.2,
+    pricingMethod: 'percentage',
+    desiredProfitPercent: 30,
+    isActive: true,
+  },
+];
+
+// Default paint items for new users
+const DEFAULT_PAINT_ITEMS = [
+  {
+    id: 'default_pnt_1',
+    category: 'paint_plaster',
+    itemName: 'צבע אקרילי לקירות פנים',
+    paintName: 'אקרילי סטנדרט',
+    paintType: 'acrylic',
+    workCategory: 'paint',
+    bucketPrice: 180,
+    coverage: 40,
+    workerDailyCost: 400,
+    dailyOutput: 60,
+    equipmentCost: 5,
+    pricingMethod: 'percentage',
+    desiredProfitPercent: 45,
+    isActive: true,
+  },
+  {
+    id: 'default_pnt_2',
+    category: 'paint_plaster',
+    itemName: 'סופרקריל לתקרה',
+    paintName: 'סופרקריל איכותי',
+    paintType: 'supercryl',
+    workCategory: 'paint',
+    bucketPrice: 220,
+    coverage: 35,
+    workerDailyCost: 400,
+    dailyOutput: 50,
+    equipmentCost: 5,
+    pricingMethod: 'percentage',
+    desiredProfitPercent: 50,
+    isActive: true,
+  },
+  {
+    id: 'default_pnt_3',
+    category: 'paint_plaster',
+    itemName: 'טיח גמר חיצוני',
+    paintName: 'טיח אקרילי',
+    workCategory: 'plaster',
+    plasterType: 'אקרילי',
+    bucketPrice: 250,
+    coverage: 20,
+    workerDailyCost: 450,
+    dailyOutput: 30,
+    equipmentCost: 10,
+    pricingMethod: 'percentage',
+    desiredProfitPercent: 40,
+    isActive: true,
+  },
 ];
 
 // TilingForm component definition
@@ -566,30 +675,76 @@ export default function Catalog() {
   };
 
   useEffect(() => {
-    if (userLoading) return;
+    const loadAndSeedCatalog = async () => {
+      if (userLoading) return;
 
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      let allItems = [];
-
-      if (user.tilingItems) {
-        allItems = [...allItems, ...user.tilingItems];
+      if (!user) {
+        setLoading(false);
+        return;
       }
 
-      if (user.paintItems) {
-        allItems = [...allItems, ...user.paintItems];
-      }
+      try {
+        let allItems = [];
 
-      setItems(allItems);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error loading user data:", error);
-      setLoading(false);
-    }
+        // Handle tiling items - seed defaults if user has none
+        if (user.tilingItems && user.tilingItems.length > 0) {
+          // User has existing tiling items
+          allItems = [...allItems, ...user.tilingItems];
+        } else {
+          // User has no tiling items - seed with hardcoded defaults
+          console.log('📦 [Catalog] User has no tiling items, seeding defaults...');
+
+          try {
+            // Use hardcoded defaults with unique IDs
+            const seededTiling = DEFAULT_TILING_ITEMS.map(item => ({
+              ...item,
+              id: `til_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            }));
+
+            allItems = [...allItems, ...seededTiling];
+            // Save to user profile
+            await User.updateMyUserData({ tilingItems: seededTiling });
+            console.log(`✅ [Catalog] Seeded ${seededTiling.length} tiling items for user`);
+          } catch (seedError) {
+            console.error('Error seeding tiling items:', seedError);
+            // Continue without tiling items
+          }
+        }
+
+        // Handle paint items - seed defaults if user has none
+        if (user.paintItems && user.paintItems.length > 0) {
+          // User has existing paint items
+          allItems = [...allItems, ...user.paintItems];
+        } else {
+          // User has no paint items - seed with hardcoded defaults
+          console.log('📦 [Catalog] User has no paint items, seeding defaults...');
+
+          try {
+            // Use hardcoded defaults with unique IDs
+            const seededPaint = DEFAULT_PAINT_ITEMS.map(item => ({
+              ...item,
+              id: `pnt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            }));
+
+            allItems = [...allItems, ...seededPaint];
+            // Save to user profile
+            await User.updateMyUserData({ paintItems: seededPaint });
+            console.log(`✅ [Catalog] Seeded ${seededPaint.length} paint items for user`);
+          } catch (seedError) {
+            console.error('Error seeding paint items:', seedError);
+            // Continue without paint items
+          }
+        }
+
+        setItems(allItems);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading user data:", error);
+        setLoading(false);
+      }
+    };
+
+    loadAndSeedCatalog();
   }, [user, userLoading]);
 
   const handleEditItem = (item) => {

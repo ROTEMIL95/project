@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/components/utils/UserContext';
 import { UploadFile } from '@/api/integrations';
-import { FileSignature, Save, Printer, FileText, Loader2, PlusCircle, Trash2, AlertCircle, CheckCircle, DollarSign, Building, Image as ImageIcon, Upload, X, Settings, User as UserIcon, Phone, Share2, Globe, Facebook, Instagram, Paintbrush, Lightbulb, Wrench, Hammer } from 'lucide-react';
+import { FileSignature, Save, Printer, FileText, Loader2, PlusCircle, Trash2, AlertCircle, CheckCircle, DollarSign, Building, Image as ImageIcon, Upload, X, Settings, User as UserIcon, Phone, Share2, Globe, Facebook, Instagram, Paintbrush, Lightbulb, Wrench, Hammer, AlertTriangle } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -118,7 +118,7 @@ export default function ContractAgreementPage() {
     facebookUrl: '',
     instagramUrl: ''
   });
-  
+
   const [commitments, setCommitments] = useState({
     cat_paint_plaster: "",
     cat_tiling: "",
@@ -131,6 +131,7 @@ export default function ContractAgreementPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef(null);
   const { user, loading: userLoading } = useUser();
 
@@ -414,6 +415,85 @@ export default function ContractAgreementPage() {
       alert("שגיאה בהעלאת הלוגו.");
     } finally {
       setIsUploadingLogo(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmation = window.prompt(
+      'מחיקת חשבון היא פעולה בלתי הפיכה!\n\n' +
+      'כל הנתונים שלך (פרויקטים, הצעות מחיר, מחירונים) יימחקו לצמיתות.\n\n' +
+      'כדי לאשר את המחיקה, אנא הקלד את המילה "מחק" (באנגלית: DELETE):',
+      ''
+    );
+
+    if (confirmation !== 'DELETE' && confirmation !== 'מחק') {
+      if (confirmation !== null) {
+        alert('המחיקה בוטלה - הטקסט שהוקלד לא תואם.');
+      }
+      return;
+    }
+
+    const finalConfirm = window.confirm(
+      '⚠️ אישור אחרון ⚠️\n\n' +
+      'האם אתה בטוח לחלוטין שברצונך למחוק את החשבון?\n\n' +
+      'פעולה זו תמחק:\n' +
+      '• את כל הפרויקטים שלך\n' +
+      '• את כל הצעות המחיר\n' +
+      '• את המחירונים\n' +
+      '• את פרטי החברה\n' +
+      '• את החשבון לצמיתות\n\n' +
+      'לחץ "אישור" למחיקה סופית או "ביטול" לביטול.'
+    );
+
+    if (!finalConfirm) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      console.log('🗑️ Starting account deletion process for user:', user.id);
+
+      // Step 1: Delete user profile and all associated data
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('Error deleting user profile:', profileError);
+        throw new Error('שגיאה במחיקת נתוני המשתמש');
+      }
+
+      console.log('✅ User profile deleted successfully');
+
+      // Step 2: Call edge function to delete auth user
+      // Note: This requires a database function or edge function with proper permissions
+      const { data: deleteData, error: rpcError } = await supabase.rpc('delete_current_user');
+
+      if (rpcError) {
+        console.error('Error calling delete_current_user RPC:', rpcError);
+        // If RPC doesn't exist, try to sign out and inform user
+        console.log('⚠️ RPC function not available, signing out user');
+        await supabase.auth.signOut();
+        alert(
+          'הנתונים שלך נמחקו בהצלחה.\n\n' +
+          'כדי למחוק את החשבון לחלוטין, אנא פנה לתמיכה הטכנית או השתמש באפשרות "שכחתי סיסמה" במסך ההתחברות לקבלת קישור לאיפוס החשבון.'
+        );
+        navigate('/login');
+        return;
+      }
+
+      console.log('✅ Auth user deleted successfully');
+
+      // Step 3: Sign out and redirect
+      await supabase.auth.signOut();
+      alert('החשבון והנתונים נמחקו בהצלחה. תודה שהשתמשת במערכת!');
+      navigate('/login');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert(`שגיאה במחיקת החשבון: ${error.message}\n\nאנא נסה שוב או פנה לתמיכה הטכנית.`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1027,6 +1107,71 @@ export default function ContractAgreementPage() {
                 ההתחייבויות שתכתוב כאן יופיעו בחוזה הסופי שיישלח ללקוח. וודא שהן ברורות ומפורטות.
               </AlertDescription>
             </Alert>
+        </div>
+
+        <Separator className="my-8" />
+
+        {/* Danger Zone - Delete Account Section */}
+        <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-xl p-6 border-2 border-red-300 mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-red-600 rounded-lg">
+              <AlertTriangle className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-red-800">אזור מסוכן</h3>
+              <p className="text-red-600 font-medium">פעולות בלתי הפיכות</p>
+            </div>
+          </div>
+
+          <Alert variant="destructive" className="mb-4 bg-red-100 border-red-300">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle className="text-red-900 font-bold">אזהרה!</AlertTitle>
+            <AlertDescription className="text-red-800">
+              מחיקת החשבון תמחק לצמיתות את כל הנתונים שלך: פרויקטים, הצעות מחיר, מחירונים, פרטי חברה והגדרות. פעולה זו היא בלתי הפיכה!
+            </AlertDescription>
+          </Alert>
+
+          <Card className="bg-white border-red-200 shadow-lg">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg text-red-800">
+                <Trash2 className="w-5 h-5" />
+                מחיקת חשבון
+              </CardTitle>
+              <CardDescription className="text-red-700">
+                לאחר המחיקה לא ניתן יהיה לשחזר את הנתונים
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <p className="text-sm text-gray-700 font-medium">מה יימחק:</p>
+                <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 mr-4">
+                  <li>כל הפרויקטים והצעות המחיר</li>
+                  <li>כל המחירונים האישיים (צבע, ריצוף, הריסה, חשמל, אינסטלציה, בינוי)</li>
+                  <li>פרטי החברה והלוגו</li>
+                  <li>תבניות חוזה והתחייבויות</li>
+                  <li>החשבון המשתמש לצמיתות</li>
+                </ul>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteAccount}
+                  disabled={isDeleting}
+                  className="mt-4 bg-red-600 hover:bg-red-700 text-white font-bold"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      מוחק חשבון...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="ml-2 h-4 w-4" />
+                      מחק חשבון לצמיתות
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
       </CardContent>
