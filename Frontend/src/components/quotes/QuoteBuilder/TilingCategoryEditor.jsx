@@ -1121,7 +1121,7 @@ export default React.forwardRef(function TilingCategoryEditor({
                         value={item.workType || ''} // Handle null/undefined by defaulting to empty string
                         onValueChange={(value) => handleItemUpdate(item.id, 'workType', value)}>
 
-                        <SelectTrigger className="border-2 border-gray-300">
+                        <SelectTrigger className="border-2 border-gray-300" dir="rtl">
                           <SelectValue placeholder="בחר סוג עבודה (אופציונלי)">
                             {item.workType || "בחר סוג עבודה (אופציונלי)"}
                           </SelectValue>
@@ -1143,7 +1143,7 @@ export default React.forwardRef(function TilingCategoryEditor({
                         value={item.subCategory || ''}
                         onValueChange={(value) => handleItemUpdate(item.id, 'subCategory', value)}>
 
-                        <SelectTrigger className={cn('border-2', !item.subCategory ? 'border-red-300' : 'border-green-300')}>
+                        <SelectTrigger className={cn('border-2', !item.subCategory ? 'border-red-300' : 'border-green-300')}  dir="rtl">
                           <SelectValue placeholder="בחר פריט מהמחירון...">
                             {item.selectedItemData ? formatItemNameWithSize(item) : "בחר פריט מהמחירון..."}
                           </SelectValue>

@@ -61,7 +61,7 @@ const getRoomIcon = (roomType) => {
   return <Building className="h-4 w-4 text-gray-500" />;
 };
 
-export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, workType = '' }) {
+export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, workType = '', initialRoomData }) {
   const { user } = useUser();
   const [roomEstimatesData, setRoomEstimatesData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -72,16 +72,64 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
   const [totalWallArea, setTotalWallArea] = useState(0);
   const [totalCeilingArea, setTotalCeilingArea] = useState(0);
 
+  // Helper function to transform difficulty data from different formats to standard format
+  const transformDifficultyData = useCallback((data) => {
+    if (!data) return COMPLEXITY_OPTIONS[0];
+
+    // If already in correct format with id and factor
+    if (data.id && data.factor !== undefined) {
+      return data;
+    }
+
+    // Transform from old format using 'multiplier' instead of 'factor'
+    if (data.multiplier !== undefined) {
+      const option = COMPLEXITY_OPTIONS.find(o => Math.abs(o.factor - data.multiplier) < 0.01);
+      return option || COMPLEXITY_OPTIONS[0];
+    }
+
+    // Transform from label-only format
+    if (data.label) {
+      const option = COMPLEXITY_OPTIONS.find(o => o.label === data.label);
+      return option || COMPLEXITY_OPTIONS[0];
+    }
+
+    // Fallback to easy
+    return COMPLEXITY_OPTIONS[0];
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       loadRoomEstimatesData();
-      // Reset states when dialog opens
-      setCalculatedArea(0);
-      setSelectedRooms([]);
-      setTotalWallArea(0);
-      setTotalCeilingArea(0);
+
+      // Load initial room data if provided, otherwise reset
+      if (initialRoomData && initialRoomData.detailedRooms) {
+        console.log('🔍 RoomEstimatesCalculator - Loading initial data:', initialRoomData);
+
+        // Restore previously selected rooms with their complexity settings
+        const restoredRooms = initialRoomData.detailedRooms.map(room => {
+          const transformedDifficulty = transformDifficultyData(room.difficultyData);
+          console.log('📊 Room:', room.name, '- Original difficulty:', room.difficultyData, '- Transformed:', transformedDifficulty);
+
+          return {
+            id: room.id || `room_${Date.now()}`,
+            quantity: room.quantity || 1,
+            includeCeiling: room.includeCeiling || false,
+            difficultyData: transformedDifficulty,
+            name: room.name
+          };
+        });
+
+        console.log('✅ Restored rooms:', restoredRooms);
+        setSelectedRooms(restoredRooms);
+      } else {
+        // Reset states when dialog opens without initial data
+        setCalculatedArea(0);
+        setSelectedRooms([]);
+        setTotalWallArea(0);
+        setTotalCeilingArea(0);
+      }
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, initialRoomData, transformDifficultyData]);
 
   const loadRoomEstimatesData = async () => {
     try {
@@ -197,6 +245,7 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
             let ceilingArea = roomData.ceilingAreaSqM * complexityFactor;
 
             return {
+              id: selectedRoom.id, // Include room ID for restoration
               name: roomData.roomType,
               quantity: quantity,
               includeCeiling: selectedRoom.includeCeiling || false,

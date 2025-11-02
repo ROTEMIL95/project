@@ -20,9 +20,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Trash2, Save, X } from 'lucide-react';
-import { User } from '@/lib/entities';
+import { useUser } from '@/components/utils/UserContext';
+import { supabase } from '@/lib/supabase';
 
 export default function RoomEstimatesSettings({ isOpen, onClose, onSave }) {
+  const { user } = useUser();
   const [roomEstimates, setRoomEstimates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,13 +33,16 @@ export default function RoomEstimatesSettings({ isOpen, onClose, onSave }) {
     if (isOpen) {
       loadRoomEstimates();
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   const loadRoomEstimates = async () => {
     try {
       setLoading(true);
-      const userData = await User.me();
-      setRoomEstimates(userData.roomEstimates || []);
+      if (user && user.user_metadata?.roomEstimates) {
+        setRoomEstimates(user.user_metadata.roomEstimates);
+      } else {
+        setRoomEstimates([]);
+      }
     } catch (error) {
       console.error('שגיאה בטעינת נתוני החללים:', error);
     } finally {
@@ -102,7 +107,14 @@ export default function RoomEstimatesSettings({ isOpen, onClose, onSave }) {
         return;
       }
 
-      await User.updateMyUserData({ roomEstimates: validEstimates });
+      // Update user metadata via Supabase Auth
+      await supabase.auth.updateUser({
+        data: {
+          ...user.user_metadata,
+          roomEstimates: validEstimates
+        }
+      });
+
       onSave(validEstimates);
       onClose();
     } catch (error) {

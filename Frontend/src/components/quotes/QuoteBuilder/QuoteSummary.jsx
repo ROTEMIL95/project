@@ -713,6 +713,111 @@ export default function QuoteSummary({
                     </div>
                 </div>
             )}
+
+            {/* NEW: Tiling Panel Summary - show detailed breakdown when items have panel work */}
+            {(() => {
+                const tilingItems = selectedItems.filter(it => it.categoryId === 'cat_tiling');
+                const tilingItemsWithPanel = tilingItems.filter(it => Number(it.panelQuantity || 0) > 0);
+
+                if (tilingItemsWithPanel.length === 0) return null;
+
+                return (
+                    <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
+                        <div className="flex items-center justify-between p-4 bg-orange-50/80 border-b">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-orange-100 rounded-lg">
+                                    <Package className="h-5 w-5 text-orange-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-800">פירוט ריצוף וחיפוי — עם פאנל</h3>
+                                    <p className="text-sm text-gray-600">פריטים שכוללים עבודת פאנל נוסף לריצוף הרגיל</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-4 space-y-4">
+                            {tilingItemsWithPanel.map((item, i) => {
+                                const quantity = Number(item.quantity || 0);
+                                const panelQuantity = Number(item.panelQuantity || 0);
+                                const quantityWorkDays = Number(item.quantityWorkDays || 0);
+                                const panelWorkDays = Number(item.panelWorkDays || 0);
+                                const quantityLaborCost = Number(item.quantityLaborCost || 0);
+                                const panelLaborCost = Number(item.panelLaborCost || 0);
+                                const totalArea = quantity + panelQuantity;
+                                const totalWorkDays = quantityWorkDays + panelWorkDays;
+                                const totalLaborCost = quantityLaborCost + panelLaborCost;
+
+                                return (
+                                    <div key={item.id || i} className="rounded-md border border-orange-200 p-3 bg-orange-50/30">
+                                        <div className="text-sm font-medium text-gray-800 mb-3">{item.description || item.name || 'פריט ריצוף'}</div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {/* Regular Tiling */}
+                                            {quantity > 0 && (
+                                                <div className="rounded bg-white p-3 border border-blue-200">
+                                                    <div className="font-semibold text-blue-700 mb-2 text-xs">ריצוף רגיל</div>
+                                                    <div className="space-y-1 text-xs text-gray-700">
+                                                        <div className="flex justify-between">
+                                                            <span>שטח:</span>
+                                                            <span className="font-semibold">{quantity.toFixed(1)} מ"ר</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>ימי עבודה:</span>
+                                                            <span className="font-semibold">{quantityWorkDays.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>עלות עובדים:</span>
+                                                            <span className="font-semibold text-blue-700">₪{formatPrice(quantityLaborCost)}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Panel Work */}
+                                            {panelQuantity > 0 && (
+                                                <div className="rounded bg-white p-3 border border-indigo-200">
+                                                    <div className="font-semibold text-indigo-700 mb-2 text-xs">עבודת פאנל</div>
+                                                    <div className="space-y-1 text-xs text-gray-700">
+                                                        <div className="flex justify-between">
+                                                            <span>שטח פאנל:</span>
+                                                            <span className="font-semibold">{panelQuantity.toFixed(1)} מ"ר</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>ימי עבודה:</span>
+                                                            <span className="font-semibold">{panelWorkDays.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>עלות עובדים:</span>
+                                                            <span className="font-semibold text-indigo-700">₪{formatPrice(panelLaborCost)}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Total Summary */}
+                                        <div className="mt-3 pt-3 border-t border-orange-200">
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="font-semibold text-gray-700">סה"כ פריט:</span>
+                                                <div className="flex items-center gap-3">
+                                                    <Badge variant="outline" className="bg-white border-orange-300 text-orange-700">
+                                                        {totalArea.toFixed(1)} מ"ר
+                                                    </Badge>
+                                                    <Badge variant="outline" className="bg-white border-orange-300 text-orange-700">
+                                                        {totalWorkDays.toFixed(2)} ימים
+                                                    </Badge>
+                                                    <Badge variant="outline" className="bg-white border-orange-300 text-orange-700 font-bold">
+                                                        ₪{formatPrice(totalLaborCost)}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }

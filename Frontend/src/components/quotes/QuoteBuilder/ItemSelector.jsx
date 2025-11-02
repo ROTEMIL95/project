@@ -584,19 +584,37 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
 
 
     const handleOpenGlobalEstimatesCalculator = useCallback((type) => {
+        console.log('🔍 [handleOpenGlobalEstimatesCalculator] Opening calculator for type:', type);
+        console.log('🔍 [handleOpenGlobalEstimatesCalculator] Current room:', room);
+        console.log('🔍 [handleOpenGlobalEstimatesCalculator] room.roomBreakdown:', room.roomBreakdown);
+        console.log('🔍 [handleOpenGlobalEstimatesCalculator] roomBreakdown length:', room.roomBreakdown?.length || 0);
+
+        const roomData = {
+            initialWallQuantity: type === 'paint' ? wallPaintQuantity : wallPlasterQuantity,
+            initialCeilingQuantity: type === 'paint' ? ceilingPaintQuantity : ceilingPlasterQuantity,
+            roomBreakdown: room.roomBreakdown,
+            calculatedWallArea: room.calculatedWallArea,
+            calculatedCeilingArea: room.calculatedCeilingArea,
+            detailedRooms: room.roomBreakdown // Pass existing detailed rooms for restoration
+        };
+
+        console.log('🔍 [handleOpenGlobalEstimatesCalculator] Passing roomData to calculator:', roomData);
+
         setAdvancedCalcOpen({
             type,
-            roomData: {
-                initialWallQuantity: type === 'paint' ? wallPaintQuantity : wallPlasterQuantity,
-                initialCeilingQuantity: type === 'paint' ? ceilingPaintQuantity : ceilingPlasterQuantity,
-                roomBreakdown: room.roomBreakdown,
-                calculatedWallArea: room.calculatedWallArea,
-                calculatedCeilingArea: room.calculatedCeilingArea,
-            }
+            roomData
         });
-    }, [wallPaintQuantity, ceilingPaintQuantity, wallPlasterQuantity, ceilingPlasterQuantity, room.roomBreakdown, room.calculatedWallArea, room.calculatedCeilingArea]);
+    }, [wallPaintQuantity, ceilingPaintQuantity, wallPlasterQuantity, ceilingPlasterQuantity, room.roomBreakdown, room.calculatedWallArea, room.calculatedCeilingArea, room]);
 
     const handleApplyAdvancedCalc = useCallback(({ wallSqM, ceilingSqM, detailedRooms }) => {
+        console.log('🔧 [handleApplyAdvancedCalc] Received data:', {
+            wallSqM,
+            ceilingSqM,
+            detailedRooms,
+            detailedRoomsCount: detailedRooms?.length || 0
+        });
+        console.log('🔧 [handleApplyAdvancedCalc] Current room before update:', room);
+
         if (isAdvancedCalcOpen.type === 'paint') {
             if (wallSqM > 0) {
                 setWallPaintQuantity(wallSqM.toString());
@@ -615,12 +633,17 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
             setIsPlasterDetailed(true);
         }
 
-        onUpdateRoom(room.id, {
+        const updatedRoom = {
             ...room,
             roomBreakdown: detailedRooms,
             calculatedWallArea: wallSqM,
             calculatedCeilingArea: ceilingSqM
-        });
+        };
+
+        console.log('🔧 [handleApplyAdvancedCalc] Updated room data:', updatedRoom);
+        console.log('🔧 [handleApplyAdvancedCalc] Calling onUpdateRoom with room ID:', room.id);
+
+        onUpdateRoom(room.id, updatedRoom);
 
         setAdvancedCalcOpen(false);
     }, [isAdvancedCalcOpen, setWallPaintQuantity, setCeilingPaintQuantity, setWallPlasterQuantity, setCeilingPlasterQuantity, onUpdateRoom, room]);
@@ -1151,9 +1174,23 @@ const PaintRoomsManager = React.forwardRef(({
     selectedItems = [], // 🆕 Current selected items (needed to filter manual items)
 }, ref) => {
     const [rooms, setRooms] = useState(() => {
+        console.log('📂 [PaintRoomsManager useState] Initializing rooms state');
+        console.log('📂 [PaintRoomsManager useState] existingCategoryData:', existingCategoryData);
+
         if (existingCategoryData && existingCategoryData.rooms && existingCategoryData.rooms.length > 0) {
+            console.log('📂 [PaintRoomsManager useState] Loading existing rooms:', existingCategoryData.rooms);
+            console.log('📂 [PaintRoomsManager useState] Rooms with roomBreakdown:',
+                existingCategoryData.rooms.filter(r => r.roomBreakdown && r.roomBreakdown.length > 0).map(r => ({
+                    id: r.id,
+                    name: r.name,
+                    roomBreakdownLength: r.roomBreakdown.length,
+                    roomBreakdown: r.roomBreakdown
+                }))
+            );
             return existingCategoryData.rooms;
         }
+
+        console.log('📂 [PaintRoomsManager useState] Creating new default room');
 
         return [
             {
@@ -1468,6 +1505,13 @@ const PaintRoomsManager = React.forwardRef(({
 
     useImperativeHandle(ref, () => ({
         saveData: () => {
+            console.log('💾 [PaintRoomsManager saveData] Saving paint rooms data');
+            console.log('💾 [PaintRoomsManager saveData] Total rooms:', rooms.length);
+            console.log('💾 [PaintRoomsManager saveData] Rooms with roomBreakdown:',
+                rooms.filter(r => r.roomBreakdown && r.roomBreakdown.length > 0).length
+            );
+            console.log('💾 [PaintRoomsManager saveData] Full rooms data:', rooms);
+
             // 1. Get catalog-based room items
             const catalogItems = rooms.flatMap(room => {
                 const items = [];
@@ -1513,11 +1557,19 @@ const PaintRoomsManager = React.forwardRef(({
                 const catalogTotalPrice = catalogItems.reduce((sum, item) => sum + (Number(item.totalSellingPrice) || 0), 0);
                 const catalogTotalWorkDays = catalogItems.reduce((sum, item) => sum + (Number(item.totalWorkDays) || 0), 0);
                 const catalogTotalQuantity = catalogItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+                const catalogTotalLaborCost = catalogItems.reduce((sum, item) => sum + (Number(item.laborCost) || 0), 0);
+                const catalogTotalMaterialCost = catalogItems.reduce((sum, item) => sum + (Number(item.materialCost) || 0), 0);
 
                 // Add manual items totals
                 const manualTotalCost = manualItems.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
                 const manualTotalPrice = manualItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
                 const manualTotalWorkDays = manualItems.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
+                const manualTotalLaborCost = manualItems.reduce((sum, item) => sum + (Number(item.laborCost) || 0), 0);
+                const manualTotalMaterialCost = manualItems.reduce((sum, item) => sum + (Number(item.materialCost) || 0), 0);
+
+                // Calculate total laborCost and materialCost from all items
+                const totalLaborCost = catalogTotalLaborCost + manualTotalLaborCost;
+                const totalMaterialCost = catalogTotalMaterialCost + manualTotalMaterialCost;
 
                 // Create consolidated summary item
                 const consolidatedItem = {
@@ -1532,6 +1584,8 @@ const PaintRoomsManager = React.forwardRef(({
                     totalProfit: (catalogTotalPrice + manualTotalPrice) - (catalogTotalCost + manualTotalCost),
                     totalWorkDays: catalogTotalWorkDays + manualTotalWorkDays,
                     workDuration: catalogTotalWorkDays + manualTotalWorkDays,
+                    laborCost: totalLaborCost,
+                    materialCost: totalMaterialCost,
                     quantity: catalogTotalQuantity,
                     unit: 'מ"ר',
                     // Store detailed breakdown for reference
@@ -1547,6 +1601,8 @@ const PaintRoomsManager = React.forwardRef(({
                 const manualTotalCost = manualItems.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
                 const manualTotalPrice = manualItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
                 const manualTotalWorkDays = manualItems.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
+                const manualTotalLaborCost = manualItems.reduce((sum, item) => sum + (Number(item.laborCost) || 0), 0);
+                const manualTotalMaterialCost = manualItems.reduce((sum, item) => sum + (Number(item.materialCost) || 0), 0);
 
                 const consolidatedItem = {
                     id: `cat_paint_plaster_summary_${Date.now()}`,
@@ -1560,6 +1616,8 @@ const PaintRoomsManager = React.forwardRef(({
                     totalProfit: manualTotalPrice - manualTotalCost,
                     totalWorkDays: manualTotalWorkDays,
                     workDuration: manualTotalWorkDays,
+                    laborCost: manualTotalLaborCost,
+                    materialCost: manualTotalMaterialCost,
                     detailedBreakdown: manualItems,
                     catalogItemsCount: 0,
                     manualItemsCount: manualItems.length,
@@ -1577,10 +1635,22 @@ const PaintRoomsManager = React.forwardRef(({
                 ));
             }
 
-            return {
+            const returnData = {
                 quoteItems: quoteItems,
                 rawRooms: rooms // Return the full internal rooms state for parent to store in categoryDataMap
             };
+
+            console.log('💾 [PaintRoomsManager saveData] Returning data:', {
+                quoteItemsCount: quoteItems.length,
+                rawRoomsCount: rooms.length,
+                roomsWithBreakdown: rooms.filter(r => r.roomBreakdown?.length > 0).map(r => ({
+                    id: r.id,
+                    name: r.name,
+                    roomBreakdownLength: r.roomBreakdown.length
+                }))
+            });
+
+            return returnData;
         }
     }), [rooms, categoryId, stagedManualItems, setStagedManualItems]);
 

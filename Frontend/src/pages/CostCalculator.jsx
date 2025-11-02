@@ -759,16 +759,18 @@ export default function CostCalculator() {
 
     const handleSaveRoomEstimates = async (updatedEstimates) => {
         try {
-            if (typeof User.updateMyUserData === 'function') {
-                await User.updateMyUserData({ roomEstimates: updatedEstimates });
-            } else {
-                console.log('User.updateMyUserData not available - backend not connected');
-            }
-            setUserData(prevUserData => ({
-                ...prevUserData,
-                roomEstimates: updatedEstimates
-            }));
+            // Update user metadata via Supabase Auth
+            await supabase.auth.updateUser({
+                data: {
+                    ...userData.user_metadata,
+                    roomEstimates: updatedEstimates
+                }
+            });
+            
             setShowRoomEstimatesSettings(false);
+            
+            // The useUser hook will automatically refresh the user data
+            console.log('Room estimates saved successfully');
         } catch (error) {
             console.error("Error saving room estimates:", error);
             alert("שגיאה בשמירת הגדרות אומדן חללים.");

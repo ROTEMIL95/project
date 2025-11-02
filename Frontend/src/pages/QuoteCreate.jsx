@@ -1617,7 +1617,7 @@ export default function QuoteCreate() {
       const timings = categoryTimings[category.id];
 
       if (timings && timings.startDate && timings.endDate && categoryItems.length > 0) {
-        const totalWorkDaysNeeded = categoryItems.reduce((sum, item => sum + (Number(item.workDuration) || 0)), 0);
+        const totalWorkDaysNeeded = categoryItems.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
         const availableWorkDays = calculateWorkingDays(timings.startDate, timings.endDate);
         const workersNeeded = availableWorkDays > 0 ? Math.ceil(totalWorkDaysNeeded / availableWorkDays) : 0;
 
