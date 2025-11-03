@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { User } from '@/lib/entities';
+import { useUser } from '@/components/utils/UserContext';
+import { supabase } from '@/lib/supabase';
 import { 
   Home, 
   Menu, 
@@ -19,25 +20,12 @@ import {
 import { Button } from '@/components/ui/button';
 
 export default function Layout({ children, currentPageName }) {
-  const [user, setUser] = useState(null);
+  const { user } = useUser();
   const [showSidebar, setShowSidebar] = useState(true);
   const navigate = useNavigate();
-  
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const userData = await User.me();
-        setUser(userData);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    };
-    
-    fetchUser();
-  }, []);
 
   const handleLogout = async () => {
-    await User.logout();
+    await supabase.auth.signOut();
     navigate(createPageUrl('Login'));
   };
 

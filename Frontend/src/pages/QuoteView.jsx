@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Quote } from '@/lib/entities';
-import { User } from '@/lib/entities';
+import { useUser } from '@/components/utils/UserContext';
 import QuoteToHTML from '@/components/quotes/QuoteToHTML';
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle, ArrowLeft, Edit, Download } from 'lucide-react';
 
 export default function QuoteView() {
   const navigate = useNavigate();
+  const { user } = useUser();
   const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState(null);
   const [error, setError] = useState(null);
@@ -27,8 +28,7 @@ export default function QuoteView() {
           return;
         }
 
-        const user = await User.me();
-        if (!user || !user.email) {
+        if (!user || !user.id) {
           setError("נדרשת התחברות לצפייה בהצעה.");
           setLoading(false);
           return;
@@ -52,7 +52,7 @@ export default function QuoteView() {
     };
 
     fetchQuoteData();
-  }, []);
+  }, [user]);
 
   const handleEdit = () => {
     navigate(createPageUrl(`QuoteCreate?id=${quote.id}`));
