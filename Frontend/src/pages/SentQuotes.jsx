@@ -145,7 +145,11 @@ export default function SentQuotes() {
     const handleDeleteQuote = async (quoteToDelete) => {
         if (!quoteToDelete || !user) return;
 
-        if (quoteToDelete.created_by !== user.email) {
+        // Allow admins to delete any quote, or users to delete their own quotes
+        const isAdmin = user?.role === 'admin';
+        const isOwner = quoteToDelete.created_by === user.email || quoteToDelete.userId === user.id;
+        
+        if (!isAdmin && !isOwner) {
             toast({
                 variant: "destructive",
                 title: "שגיאת הרשאות",
@@ -189,7 +193,11 @@ export default function SentQuotes() {
     };
 
     const handleEditQuote = (quote) => {
-        if (user && quote.created_by !== user.email) {
+        // Allow admins to edit any quote, or users to edit their own quotes
+        const isAdmin = user?.role === 'admin';
+        const isOwner = user && (quote.created_by === user.email || quote.userId === user.id);
+        
+        if (user && !isAdmin && !isOwner) {
             toast({
                 variant: "destructive",
                 title: "שגיאת הרשאות",
