@@ -40,9 +40,9 @@ export default function RevenueChart({ user }) {
           console.log("RevenueChart: Fetched quotes:", allQuotes.length);
 
           const approvedQuotes = allQuotes.filter((q) => q.status === 'אושר');
-          const totalRevenue = approvedQuotes.reduce((sum, quote) => sum + (quote.total_price || 0), 0);
+          const totalRevenue = approvedQuotes.reduce((sum, quote) => sum + (quote.totalPrice || quote.finalAmount || 0), 0);
           const totalProfit = approvedQuotes.reduce((sum, quote) => {
-            const profit = (quote.profit_amount || 0);
+            const profit = (quote.profitAmount || (quote.totalPrice - quote.totalCost) || 0);
             return sum + Math.max(0, profit);
           }, 0);
 
@@ -52,7 +52,7 @@ export default function RevenueChart({ user }) {
           const currentMonth = new Date().getMonth();
           const currentYear = new Date().getFullYear();
           const monthlyQuotes = allQuotes.filter((quote) => {
-            const quoteDate = new Date(quote.created_at);
+            const quoteDate = new Date(quote.createdAt);
             return quoteDate.getMonth() === currentMonth && quoteDate.getFullYear() === currentYear;
           }).length;
 
@@ -69,12 +69,12 @@ export default function RevenueChart({ user }) {
           }
 
           approvedQuotes.forEach((quote) => {
-            const quoteDate = new Date(quote.created_at);
+            const quoteDate = new Date(quote.createdAt);
             const monthKey = `${quoteDate.getFullYear()}-${String(quoteDate.getMonth() + 1).padStart(2, '0')}`;
 
             if (monthlyData[monthKey]) {
-              const revenue = quote.total_price || 0;
-              const profit = quote.profit_amount || 0;
+              const revenue = quote.totalPrice || quote.finalAmount || 0;
+              const profit = quote.profitAmount || (quote.totalPrice - quote.totalCost) || 0;
 
               monthlyData[monthKey].revenue += revenue;
               monthlyData[monthKey].profit += profit;

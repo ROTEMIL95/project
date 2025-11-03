@@ -26,6 +26,7 @@ import {
   Settings,
   Eye,
   Calculator,
+  MessageCircle,
 } from 'lucide-react';
 import CategorySelector from '@/components/quotes/QuoteBuilder/CategorySelector';
 import ItemSelector from '@/components/quotes/QuoteBuilder/ItemSelector';
@@ -52,6 +53,7 @@ import ElectricalCategory from '@/components/quotes/QuoteBuilder/ElectricalCateg
 import HebrewLabelPatcher from '@/components/utils/HebrewLabelPatcher';
 import ManualCalcDialog from "@/components/quotes/QuoteBuilder/ManualCalcDialog";
 import ManualCalcInjector from "@/components/quotes/QuoteBuilder/ManualCalcInjector";
+import ShareQuoteDialog from "@/components/quotes/QuoteBuilder/ShareQuoteDialog";
 import ItemsDebugPanel from '@/components/utils/ItemsDebugPanel';
 import ErrorBoundary from '@/components/utils/ErrorBoundary';
 import { useUser } from '@/components/utils/UserContext';
@@ -403,6 +405,8 @@ export default function QuoteCreate() {
     const dbg = (urlParams.get('debug') || '').toLowerCase();
     return dbg === 'items' || dbg === 'all';
   });
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [savedQuoteId, setSavedQuoteId] = useState(null);
 
   const { toast } = useToast();
   
@@ -1444,9 +1448,16 @@ export default function QuoteCreate() {
         description: `הצעת המחיר "${projectInfo.projectName || 'ללא שם'}" ${isDraft ? 'נשמרה' : 'נשלחה'} בהצלחה.`,
       });
 
-      setTimeout(() => {
-        navigate(createPageUrl('SentQuotes'));
-      }, 500);
+      // If not a draft, show share dialog instead of immediate redirect
+      if (!isDraft) {
+        setSavedQuoteId(savedQuote?.id || existingQuoteId);
+        setShowShareDialog(true);
+      } else {
+        // For drafts, navigate immediately
+        setTimeout(() => {
+          navigate(createPageUrl('SentQuotes'));
+        }, 500);
+      }
 
     } catch (error) {
       console.error("Error saving quote:", error);
@@ -1461,7 +1472,7 @@ export default function QuoteCreate() {
   }, [
     currentUser, projectInfo, existingQuoteId, totals, selectedItems, categoryTimings, // Renamed user to currentUser, editingQuoteId to existingQuoteId
     projectComplexities, priceIncrease, discountPercent, paymentTerms, navigate, toast, // Renamed discount to discountPercent
-    setQuoteData, setIsLoadingUser, tilingWorkTypes, userTilingItems // Renamed setIsSaving to setIsLoadingUser, added new states
+    setQuoteData, setIsLoadingUser, tilingWorkTypes, userTilingItems, setSavedQuoteId, setShowShareDialog // Renamed setIsSaving to setIsLoadingUser, added new states
   ]);
 
   const handleSaveQuote = async (isDraft = false) => {
@@ -2596,6 +2607,20 @@ export default function QuoteCreate() {
           onClose={() => setShowItemsDebug(false)}
         />
       )}
+
+      {/* Share Quote Dialog */}
+      <ShareQuoteDialog
+        open={showShareDialog}
+        onOpenChange={(open) => {
+          setShowShareDialog(open);
+          // Navigate to SentQuotes when dialog closes
+          if (!open) {
+            navigate(createPageUrl('SentQuotes'));
+          }
+        }}
+        quoteId={savedQuoteId}
+        quoteData={projectInfo}
+      />
     </div>
   );
 }

@@ -49,17 +49,112 @@ export class Category {
   }
 
   static async list() {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name');
-    
-    if (error) {
-      console.error("Error fetching categories:", error);
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      
+      if (error) {
+        console.error("Error fetching categories:", error);
+        throw error;
+      }
+      
+      // Convert snake_case keys to camelCase for frontend
+      return (data || []).map(category => convertKeysToCamelCase(category));
+    } catch (error) {
+      console.error("Category.list error:", error);
+      return [];
+    }
+  }
+
+  static async getById(id) {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching category:", error);
+        throw error;
+      }
+
+      // Convert snake_case keys to camelCase for frontend
+      return data ? convertKeysToCamelCase(data) : null;
+    } catch (error) {
+      console.error("Category.getById error:", error);
+      return null;
+    }
+  }
+
+  static async create(categoryData) {
+    try {
+      // Convert camelCase keys to snake_case for database
+      const snakeCaseData = convertKeysToSnakeCase(categoryData);
+      
+      const { data, error } = await supabase
+        .from('categories')
+        .insert([snakeCaseData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating category:", error);
+        throw error;
+      }
+
+      // Convert snake_case keys to camelCase for frontend
+      return data ? convertKeysToCamelCase(data) : null;
+    } catch (error) {
+      console.error("Category.create error:", error);
       throw error;
     }
-    
-    return data || [];
+  }
+
+  static async update(id, updates) {
+    try {
+      // Convert camelCase keys to snake_case for database
+      const snakeCaseUpdates = convertKeysToSnakeCase(updates);
+      
+      const { data, error } = await supabase
+        .from('categories')
+        .update(snakeCaseUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error updating category:", error);
+        throw error;
+      }
+
+      // Convert snake_case keys to camelCase for frontend
+      return data ? convertKeysToCamelCase(data) : null;
+    } catch (error) {
+      console.error("Category.update error:", error);
+      throw error;
+    }
+  }
+
+  static async delete(id) {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error("Error deleting category:", error);
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Category.delete error:", error);
+      return false;
+    }
   }
 }
 
@@ -222,6 +317,130 @@ export class QuoteItem {
 export class Project {
   static fromJSON(json) {
     return json;
+  }
+
+  static async filter(filters = {}) {
+    try {
+      let query = supabase
+        .from('projects')
+        .select('*');
+
+      // Apply filters
+      if (filters.user_id) {
+        query = query.eq('user_id', filters.user_id);
+      }
+      if (filters.status) {
+        query = query.eq('status', filters.status);
+      }
+      if (filters.client_id) {
+        query = query.eq('client_id', filters.client_id);
+      }
+
+      // Order by created_at descending
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching projects:", error);
+        throw error;
+      }
+
+      // Convert snake_case keys to camelCase for frontend
+      return (data || []).map(project => convertKeysToCamelCase(project));
+    } catch (error) {
+      console.error("Project.filter error:", error);
+      return [];
+    }
+  }
+
+  static async getById(id) {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching project:", error);
+        throw error;
+      }
+
+      // Convert snake_case keys to camelCase for frontend
+      return data ? convertKeysToCamelCase(data) : null;
+    } catch (error) {
+      console.error("Project.getById error:", error);
+      return null;
+    }
+  }
+
+  static async create(projectData) {
+    try {
+      // Convert camelCase keys to snake_case for database
+      const snakeCaseData = convertKeysToSnakeCase(projectData);
+      
+      const { data, error } = await supabase
+        .from('projects')
+        .insert([snakeCaseData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating project:", error);
+        throw error;
+      }
+
+      // Convert snake_case keys to camelCase for frontend
+      return data ? convertKeysToCamelCase(data) : null;
+    } catch (error) {
+      console.error("Project.create error:", error);
+      throw error;
+    }
+  }
+
+  static async update(id, updates) {
+    try {
+      // Convert camelCase keys to snake_case for database
+      const snakeCaseUpdates = convertKeysToSnakeCase(updates);
+      
+      const { data, error } = await supabase
+        .from('projects')
+        .update(snakeCaseUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error updating project:", error);
+        throw error;
+      }
+
+      // Convert snake_case keys to camelCase for frontend
+      return data ? convertKeysToCamelCase(data) : null;
+    } catch (error) {
+      console.error("Project.update error:", error);
+      throw error;
+    }
+  }
+
+  static async delete(id) {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error("Error deleting project:", error);
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Project.delete error:", error);
+      return false;
+    }
   }
 }
 

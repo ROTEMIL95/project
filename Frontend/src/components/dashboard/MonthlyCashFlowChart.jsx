@@ -146,13 +146,17 @@ export default function MonthlyCashFlowChart({ user }) {
         };
 
         approvedQuotes.forEach(quote => {
-          const { 
-            total_price = 0, 
-            paymentTerms = [], 
-            categoryTimings = {}, 
-            items = [], 
-            total_cost = 0 
+          const {
+            totalPrice = 0,
+            finalAmount = 0,
+            paymentTerms = [],
+            categoryTimings = {},
+            items = [],
+            totalCost = 0
           } = quote;
+
+          const total_price = finalAmount || totalPrice;
+          const total_cost = totalCost;
           
           const projectPaymentTerms = (paymentTerms && paymentTerms.length > 0) ? paymentTerms : user.defaultPaymentTerms;
 
@@ -166,7 +170,7 @@ export default function MonthlyCashFlowChart({ user }) {
               }
             });
 
-            const approvalDate = new Date(quote.created_at || today);
+            const approvalDate = new Date(quote.createdAt || today);
             const finalPaymentDate = latestCategoryEndDate > new Date(0) ? addWeeks(latestCategoryEndDate, 1) : addWeeks(approvalDate, 4);
 
             projectPaymentTerms.forEach((term, index) => {

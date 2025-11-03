@@ -99,10 +99,10 @@ export default function useSafeUser(options = {}) {
         const u = supabaseUser ? {
           id: supabaseUser.id,
           email: supabaseUser.email,
-          full_name: supabaseUser.user_metadata?.full_name || supabaseUser.email,
-          phone: supabaseUser.user_metadata?.phone || '',
-          role: supabaseUser.user_metadata?.role || 'user',
-          isActive: supabaseUser.user_metadata?.isActive !== false,
+          full_name: profileData?.full_name || supabaseUser.user_metadata?.full_name || supabaseUser.email,
+          phone: profileData?.phone || supabaseUser.user_metadata?.phone || '',
+          role: profileData?.role || 'user', // Get role from user_profiles table
+          isActive: profileData?.is_active !== false,
           created_at: supabaseUser.created_at,
           // Add user_metadata from user_profiles table
           user_metadata: {

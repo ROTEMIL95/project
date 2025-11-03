@@ -201,11 +201,11 @@ export default function SentQuotes() {
     };
 
     const handleStatusChange = async (quote, newStatus) => {
-        if (!user || quote.created_by !== user.email) {
+        if (!user) {
             toast({
                 variant: "destructive",
-                title: "שגיאת הרשאות",
-                description: "אינך רשאי לשנות סטטוס של הצעת מחיר זו.",
+                title: "שגיאה",
+                description: "משתמש לא מזוהה.",
             });
             return;
         }
@@ -300,12 +300,11 @@ export default function SentQuotes() {
             // יצירת טרנזקציה פיננסית חדשה
             const transactionData = {
                 quoteId: quote.id,
-                projectName: quote.projectName || 'פרויקט ללא שם',
-                clientName: quote.clientName || 'לקוח ללא שם',
-                closingDate: new Date().toISOString(),
+                transactionDate: new Date().toISOString(),
                 revenue: quote.finalAmount || quote.totalAmount || 0, // Use finalAmount if available, otherwise totalAmount
                 estimatedCost: totalEstimatedCost,
                 estimatedProfit: (quote.finalAmount || quote.totalAmount || 0) - totalEstimatedCost,
+                status: 'completed',
                 projectType: quote.projectType || 'אחר'
             };
 

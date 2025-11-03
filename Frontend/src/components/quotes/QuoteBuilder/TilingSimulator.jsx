@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Check, Calculator, Plus, Settings, Package, TrendingUp, Loader2 } from 'lucide-react'; // Added Package, TrendingUp, and Loader2
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User } from '@/lib/entities';
+import { useUser } from '@/components/utils/UserContext';
 import {
   Table,
   TableBody,
@@ -25,7 +25,7 @@ import { Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { User } from '@/lib/entities';
+import { supabase } from '@/lib/supabase';
 
 import { calculatePanelCosts } from '@/components/costCalculator/PricingService'; // New import for panel calculation
 
@@ -36,6 +36,7 @@ export default function TilingSimulator({
     categoryTimings = {}, // Ensure default value to prevent undefined errors
     onCategoryTimingChange
 }) {
+  const { user } = useUser();
   // NEW: internal loading state
   const [isLoadingData, setIsLoadingData] = useState(true);
 
@@ -139,15 +140,12 @@ export default function TilingSimulator({
     const loadData = async () => {
       setIsLoadingData(true); // Set loading to true at the start
       try {
-        const userData = await User.me();
-        if (userData.tilingSettings) {
+        if (user?.user_metadata?.tilingSettings) {
           setSettings(prevSettings => ({
             ...prevSettings,
-            ...userData.tilingSettings
+            ...user.user_metadata.tilingSettings
           }));
         }
-        // No setUser(userData) as there's no corresponding state in the original code.
-        // If there were other items to load, they would go here.
       } catch (error) {
         console.error("Error loading tiling settings:", error);
       } finally {
@@ -156,13 +154,15 @@ export default function TilingSimulator({
     };
 
     loadData();
-  }, []);
+  }, [user]);
 
   // שמירת הגדרות המשתמש
   const handleSaveSettings = async () => {
     try {
-      await User.updateMyUserData({
-        tilingSettings: settings
+      await supabase.auth.updateUser({
+        data: {
+          tilingSettings: settings
+        }
       });
     } catch (error) {
       console.error("Error saving tiling settings:", error);

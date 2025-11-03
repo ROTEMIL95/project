@@ -60,7 +60,7 @@ export default function AdminUsers() {
       }
 
       try {
-        const userList = await User.list('-created_date');
+        const userList = await User.list('-created_at');
         setUsers(userList);
         setFilteredUsers(userList);
       } catch (error) {

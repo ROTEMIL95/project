@@ -1,17 +1,29 @@
 import React from 'react';
-import { User } from '@/lib/entities';
+import { supabase } from '@/lib/supabase';
 
 // פונקציה שבודקת אם המשתמש פעיל לפני כל פעולה
 export const checkUserActiveStatus = async () => {
   try {
-    const userData = await User.me();
+    const { data: { user }, error } = await supabase.auth.getUser();
     
-    if (userData.isActive === false) {
+    if (error) throw error;
+    if (!user) throw new Error('No user found');
+    
+    // Check if user is active (from user_profiles table)
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('is_active')
+      .eq('auth_user_id', user.id)
+      .single();
+    
+    if (profileError) throw profileError;
+    
+    if (profile?.is_active === false) {
       alert('החשבון שלך הושבת. אנא צור קשר עם מנהל המערכת.');
       
       // נתק ונווט החוצה
       try {
-        await User.logout();
+        await supabase.auth.signOut();
       } catch (error) {
         console.error('Logout error:', error);
       }
@@ -21,7 +33,7 @@ export const checkUserActiveStatus = async () => {
       throw new Error('User account is disabled');
     }
     
-    return userData;
+    return user;
   } catch (error) {
     // אם יש שגיאה בבדיקת המשתמש, תן לפלטפורמה לטפל
     throw error;

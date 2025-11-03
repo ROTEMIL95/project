@@ -24,6 +24,13 @@ export default function Layout({ children, currentPageName }) {
   const [showSidebar, setShowSidebar] = useState(true);
   const navigate = useNavigate();
 
+  // Debug: Log user role
+  useEffect(() => {
+    if (user) {
+      console.log('Layout: User loaded', { email: user.email, role: user.role, isAdmin: user.role === 'admin' });
+    }
+  }, [user]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate(createPageUrl('Login'));
@@ -33,7 +40,7 @@ export default function Layout({ children, currentPageName }) {
     setShowSidebar(!showSidebar);
   };
 
-  const menuItems = [
+  const baseMenuItems = [
     { name: 'דשבורד', icon: <Home className="h-5 w-5" />, path: 'Dashboard' },
     { name: 'קטלוג מוצרים', icon: <ShoppingCart className="h-5 w-5" />, path: 'Catalog' },
     { name: 'הצעות מחיר', icon: <FileText className="h-5 w-5" />, path: 'QuotesList' },
@@ -42,6 +49,16 @@ export default function Layout({ children, currentPageName }) {
     { name: 'דוחות', icon: <BarChart3 className="h-5 w-5" />, path: 'Reports' },
     { name: 'הגדרות', icon: <Settings className="h-5 w-5" />, path: 'Settings' }
   ];
+
+  const adminMenuItems = [
+    { name: 'ניהול משתמשים', icon: <UserIcon className="h-5 w-5" />, path: 'AdminUsers' },
+    { name: 'לוח בקרה מנהל', icon: <BarChart3 className="h-5 w-5" />, path: 'AdminDashboard' }
+  ];
+
+  // Combine menu items based on user role
+  const menuItems = user?.role === 'admin' 
+    ? [...baseMenuItems, ...adminMenuItems]
+    : baseMenuItems;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col" dir="rtl">

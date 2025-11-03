@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Landmark, TrendingUp, TrendingDown, DollarSign, BarChart3, PieChart, Users, Loader2, Edit, Save, X, Trash2, CalendarIcon, Filter, ChevronDown, FileText, CheckCircle, XCircle, Clock, Send, Eye, ArrowUp, ArrowDown, CircleDollarSign, Percent, Archive } from 'lucide-react';
+import { Landmark, TrendingUp, TrendingDown, DollarSign, BarChart3, PieChart, Users, Loader2, Edit, Save, X, Trash2, CalendarIcon, Filter, ChevronDown, FileText, CheckCircle, XCircle, Clock, Send, Eye, ArrowUp, ArrowDown, CircleDollarSign, Percent, Archive, AlertCircle } from 'lucide-react';
 import { FinancialTransaction } from '@/lib/entities';
 import { Quote } from '@/lib/entities';
 import { User } from '@/lib/entities';
@@ -54,6 +54,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/components/ui/use-toast";
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', minimumFractionDigits: 0 }).format(amount || 0);
@@ -73,6 +74,7 @@ const statusOptions = {
 
 export default function Finance() {
     const { user: currentUser, loading: userLoading } = useUser();
+    const { toast } = useToast();
     const [transactions, setTransactions] = useState([]);
     const [quotes, setQuotes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -132,8 +134,20 @@ export default function Finance() {
             setError(null);
             try {
                 if (currentUser && currentUser.email) {
-                    await loadTransactions(currentUser);
-                    await loadQuotes(currentUser);
+                    const loadedTransactions = await loadTransactions(currentUser);
+                    const loadedQuotes = await loadQuotes(currentUser);
+
+                    // Check if there are approved quotes without financial transactions
+                    // and create missing transactions automatically
+                    if (loadedTransactions.length === 0 && loadedQuotes.length > 0) {
+                        console.log('🔍 Checking for missing transactions...');
+                        const createdCount = await createMissingTransactions(currentUser, loadedQuotes);
+                        if (createdCount > 0) {
+                            console.log(`✅ Created ${createdCount} missing transactions, reloading...`);
+                            // Reload transactions after creating missing ones
+                            await loadTransactions(currentUser);
+                        }
+                    }
                 } else {
                     throw new Error("User not authenticated or email missing.");
                 }
@@ -150,28 +164,95 @@ export default function Finance() {
     const loadTransactions = async (user) => {
         if (!user || !user.id) {
             setTransactions([]);
-            return;
+            return [];
         }
         try {
             const data = await FinancialTransaction.filter({ user_id: user.id });
             setTransactions(data);
+            return data;
         } catch (err) {
             console.error("Failed to fetch financial transactions:", err);
             setTransactions([]);
+            return [];
         }
     };
 
     const loadQuotes = async (user) => {
         if (!user || !user.email) {
             setQuotes([]);
-            return;
+            return [];
         }
         try {
             const quotesData = await Quote.filter({ user_id: user.id });
             setQuotes(quotesData || []);
+            return quotesData || [];
         } catch (err) {
             console.error("Failed to fetch quotes:", err);
             setQuotes([]);
+            return [];
+        }
+    };
+
+    // Migration function to create missing financial transactions for approved quotes
+    const createMissingTransactions = async (user, quotesToCheck) => {
+        if (!user || !quotesToCheck || quotesToCheck.length === 0) return;
+
+        try {
+            const approvedQuotes = quotesToCheck.filter(q => q.status === 'אושר');
+            let createdCount = 0;
+
+            for (const quote of approvedQuotes) {
+                // Check if transaction already exists
+                const existingTransactions = await FinancialTransaction.filter({ quoteId: quote.id });
+
+                if (existingTransactions.length === 0) {
+                    // Calculate total cost from quote items
+                    let totalCost = 0;
+
+                    if (quote.items && Array.isArray(quote.items)) {
+                        for (const item of quote.items) {
+                            totalCost += (item.materialCost || 0);
+                            totalCost += (item.laborCost || 0);
+                            totalCost += (item.additionalCost || 0);
+                            totalCost += (item.fixedCostsTotal || 0);
+                        }
+                    }
+
+                    // Add project complexities costs
+                    if (quote.projectComplexities &&
+                        quote.projectComplexities.additionalCostDetails &&
+                        Array.isArray(quote.projectComplexities.additionalCostDetails)) {
+                        for (const detail of quote.projectComplexities.additionalCostDetails) {
+                            totalCost += (detail.contractorCost || detail.cost || 0);
+                        }
+                    }
+
+                    // Create financial transaction
+                    const transactionData = {
+                        userId: user.id,
+                        quoteId: quote.id,
+                        transactionDate: quote.approvedAt || quote.updatedAt || new Date().toISOString(),
+                        revenue: quote.finalAmount || quote.totalPrice || 0,
+                        estimatedCost: totalCost,
+                        estimatedProfit: (quote.finalAmount || quote.totalPrice || 0) - totalCost,
+                        status: 'completed',
+                        projectType: quote.projectType || 'אחר'
+                    };
+
+                    await FinancialTransaction.create(transactionData);
+                    createdCount++;
+                    console.log(`✅ Created financial transaction for quote ${quote.id} (${quote.projectName})`);
+                }
+            }
+
+            if (createdCount > 0) {
+                console.log(`📊 Migration complete: Created ${createdCount} missing transactions`);
+                return createdCount;
+            }
+            return 0;
+        } catch (error) {
+            console.error('Error creating missing transactions:', error);
+            return 0;
         }
     };
 
@@ -368,23 +449,30 @@ export default function Finance() {
                     const bTotalProfit = (b.revenue || 0) - (b.estimatedCost || 0);
                     const aTotalCost = a.estimatedCost || 0;
                     const bTotalCost = b.estimatedCost || 0;
-                    
+
                     aValue = aTotalCost > 0 ? (aTotalProfit / aTotalCost) * 100 : (aTotalProfit > 0 ? Infinity : 0);
                     bValue = bTotalCost > 0 ? (bTotalProfit / bTotalCost) * 100 : (bTotalProfit > 0 ? Infinity : 0);
                 }
-                
+
                 if (sortConfig.key === 'estimatedProfit') {
                     aValue = (a.revenue || 0) - (a.estimatedCost || 0);
                     bValue = (b.revenue || 0) - (b.estimatedCost || 0);
                 }
-                
+
                 if (sortConfig.key === 'transactionDate') {
                     aValue = new Date(a.transactionDate);
                     bValue = new Date(b.transactionDate);
                 }
 
-                if (typeof aValue === 'string' && typeof bValue === 'string' && 
-                    (sortConfig.key === 'projectName' || sortConfig.key === 'clientName')) {
+                // Get clientName from related quote for sorting
+                if (sortConfig.key === 'clientName') {
+                    const aQuote = quotes.find(q => q.id === a.quoteId);
+                    const bQuote = quotes.find(q => q.id === b.quoteId);
+                    aValue = aQuote?.clientName || '';
+                    bValue = bQuote?.clientName || '';
+                }
+
+                if (typeof aValue === 'string' && typeof bValue === 'string' && sortConfig.key === 'clientName') {
                     return sortConfig.direction === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
                 }
 
@@ -398,7 +486,7 @@ export default function Finance() {
             });
         }
         return sortableItems;
-    }, [filteredTransactions, sortConfig]);
+    }, [filteredTransactions, sortConfig, quotes]);
 
     const requestSort = (key) => {
         let direction = 'desc';
@@ -863,11 +951,11 @@ export default function Finance() {
 
     const barChartData = filteredTransactions.slice(0, 10).map(t => {
         const relatedQuote = quotes.find(q => q.id === t.quoteId);
-        const projectAddress = relatedQuote?.projectAddress || t.projectName;
-        
-        const displayAddress = projectAddress && projectAddress.length > 25 
-            ? projectAddress.substring(0, 25) + '...' 
-            : projectAddress || t.projectName;
+        const projectAddress = relatedQuote?.projectAddress || relatedQuote?.projectName || 'לא ידוע';
+
+        const displayAddress = projectAddress && projectAddress.length > 25
+            ? projectAddress.substring(0, 25) + '...'
+            : projectAddress;
             
         return {
             name: displayAddress,
@@ -882,16 +970,24 @@ export default function Finance() {
     const quoteStats = calculateQuoteStats();
     
     // Data for Revenue chart
-    const revenueByProjectData = filteredTransactions.map(t => ({
-        name: t.projectName.length > 20 ? t.projectName.substring(0, 20) + '...' : t.projectName,
-        הכנסה: t.revenue || 0,
-    })).filter(t => t.הכנסה > 0).sort((a,b) => b.הכנסה - a.הכנסה).slice(0, 15);
+    const revenueByProjectData = filteredTransactions.map(t => {
+        const relatedQuote = quotes.find(q => q.id === t.quoteId);
+        const projectName = relatedQuote?.projectName || 'ללא שם';
+        return {
+            name: projectName.length > 20 ? projectName.substring(0, 20) + '...' : projectName,
+            הכנסה: t.revenue || 0,
+        };
+    }).filter(t => t.הכנסה > 0).sort((a,b) => b.הכנסה - a.הכנסה).slice(0, 15);
 
     // Data for Profit chart
-    const profitByProjectData = filteredTransactions.map(t => ({
-        name: t.projectName.length > 20 ? t.projectName.substring(0, 20) + '...' : t.projectName,
-        רווח: calculateTotalProfitForTransaction(t) || 0,
-    })).sort((a,b) => b.רווח - a.רווח).slice(0, 15);
+    const profitByProjectData = filteredTransactions.map(t => {
+        const relatedQuote = quotes.find(q => q.id === t.quoteId);
+        const projectName = relatedQuote?.projectName || 'ללא שם';
+        return {
+            name: projectName.length > 20 ? projectName.substring(0, 20) + '...' : projectName,
+            רווח: calculateTotalProfitForTransaction(t) || 0,
+        };
+    }).sort((a,b) => b.רווח - a.רווח).slice(0, 15);
 
     const getChartTitle = () => {
         switch(activeChart) {
@@ -1426,7 +1522,7 @@ export default function Finance() {
                                             <TableCell className="font-medium">
                                                 {transaction.transactionDate ? format(new Date(transaction.transactionDate), 'dd/MM/yyyy', { locale: he }) : '-'}
                                             </TableCell>
-                                            <TableCell className="text-gray-700">{transaction.clientName}</TableCell>
+                                            <TableCell className="text-gray-700">{quote?.clientName || 'לא ידוע'}</TableCell>
                                             <TableCell className="text-emerald-600 font-semibold">
                                                 {isEditing ? (
                                                     <Input name="revenue" type="number" value={editedData.revenue} onChange={handleDataChange} className="w-32 text-right" />
@@ -1504,26 +1600,22 @@ export default function Finance() {
                                                         </Button>
 
                                                         <AlertDialog>
-                                                            <AlertDialogTrigger asChild>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-400"
-                                                                    disabled={isDeleting === transaction.id}
-                                                                >
-                                                                    {isDeleting === transaction.id ? (
-                                                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                                                    ) : (
-                                                                        <Trash2 className="h-4 w-4 mr-1" />
-                                                                    )}
-                                                                    מחק
-                                                                </Button>
+                                                            <AlertDialogTrigger
+                                                                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-red-200 bg-background hover:bg-red-50 hover:border-red-400 h-9 px-3 text-red-600 hover:text-red-700"
+                                                                disabled={isDeleting === transaction.id}
+                                                            >
+                                                                {isDeleting === transaction.id ? (
+                                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                                ) : (
+                                                                    <Trash2 className="h-4 w-4 mr-1" />
+                                                                )}
+                                                                מחק
                                                             </AlertDialogTrigger>
                                                             <AlertDialogContent>
                                                                 <AlertDialogHeader>
                                                                     <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
                                                                     <AlertDialogDescription>
-                                                                        פעולה זו תמחק לצמיתות את העסקה "{transaction.projectName}"
+                                                                        פעולה זו תמחק לצמיתות את העסקה "{quote?.projectName || 'לא ידוע'}"
                                                                         מהמערכת. פעולה זו לא ניתנת לביטול.
                                                                     </AlertDialogDescription>
                                                                 </AlertDialogHeader>
@@ -1543,7 +1635,56 @@ export default function Finance() {
                                             </TableCell>
                                         </TableRow>
                                     );
-                                }) : (
+                                }) : transactions.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="text-center py-12">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <AlertCircle className="h-12 w-12 text-gray-400" />
+                                                <div>
+                                                    <h3 className="text-lg font-semibold text-gray-800">
+                                                        אין עסקאות פיננסיות
+                                                    </h3>
+                                                    <p className="text-sm text-gray-600 mt-2">
+                                                        עסקאות פיננסיות נוצרות אוטומטית כאשר הצעת מחיר מאושרת.
+                                                    </p>
+                                                    {quotes.filter(q => q.status === 'אושר').length > 0 && (
+                                                        <>
+                                                            <p className="text-sm text-gray-600 mt-1">
+                                                                יש לך <span className="font-bold">{quotes.filter(q => q.status === 'אושר').length}</span> הצעות מאושרות ללא עסקאות.
+                                                            </p>
+                                                            <Button
+                                                                onClick={async () => {
+                                                                    setLoading(true);
+                                                                    try {
+                                                                        const createdCount = await createMissingTransactions(currentUser, quotes);
+                                                                        if (createdCount > 0) {
+                                                                            await loadTransactions(currentUser);
+                                                                            toast({
+                                                                                title: "הצלחה!",
+                                                                                description: `נוצרו ${createdCount} עסקאות פיננסיות`,
+                                                                            });
+                                                                        }
+                                                                    } catch (error) {
+                                                                        toast({
+                                                                            variant: "destructive",
+                                                                            title: "שגיאה",
+                                                                            description: "נכשל ביצירת עסקאות פיננסיות",
+                                                                        });
+                                                                    } finally {
+                                                                        setLoading(false);
+                                                                    }
+                                                                }}
+                                                                className="mt-4"
+                                                            >
+                                                                צור עסקאות חסרות
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
                                     <TableRow>
                                         <TableCell colSpan={8} className="text-center py-10 text-gray-500">
                                             אין עסקאות התואמות את הסינון הנוכחי.

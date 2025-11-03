@@ -25,9 +25,11 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { User } from '@/lib/entities';
+import { useUser } from '@/components/utils/UserContext';
+import { supabase } from '@/lib/supabase';
 
 export default function PaintSimulator({ onAddToQuote }) {
+  const { user } = useUser();
   const [settings, setSettings] = useState({
     additionalLayerDiscount: 15, // אחוז הנחה לשכבות נוספות
     baseLaborCost: 60, // עלות עבודה בסיסית למ"ר
@@ -90,9 +92,8 @@ export default function PaintSimulator({ onAddToQuote }) {
   useEffect(() => {
     const loadUserSettings = async () => {
       try {
-        const userData = await User.me();
-        if (userData.paintSettings) {
-          setSettings(userData.paintSettings);
+        if (user?.user_metadata?.paintSettings) {
+          setSettings(user.user_metadata.paintSettings);
         }
       } catch (error) {
         console.error("Error loading paint settings:", error);
@@ -100,12 +101,14 @@ export default function PaintSimulator({ onAddToQuote }) {
     };
     
     loadUserSettings();
-  }, []);
+  }, [user]);
 
   const handleSaveSettings = async (newSettings) => {
     try {
-      await User.updateMyUserData({
-        paintSettings: newSettings
+      await supabase.auth.updateUser({
+        data: {
+          paintSettings: newSettings
+        }
       });
       setSettings(newSettings);
     } catch (error) {
