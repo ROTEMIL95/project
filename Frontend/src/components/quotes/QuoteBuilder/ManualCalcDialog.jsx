@@ -464,10 +464,10 @@ export default function ManualCalcDialog() {
                     value={form.wallsLayers}
                     onValueChange={(v) => setForm((f) => ({ ...f, wallsLayers: v }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger dir="rtl">
                       <SelectValue placeholder="בחר שכבות" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent dir="rtl" className="z-[9999]" position="popper" sideOffset={5} align="start">
                       {["0","1","2","3","4","5","6"].map(n => (
                         <SelectItem key={`wl-${n}`} value={n}>{n}</SelectItem>
                       ))}
@@ -526,10 +526,10 @@ export default function ManualCalcDialog() {
                     value={form.ceilingLayers}
                     onValueChange={(v) => setForm((f) => ({ ...f, ceilingLayers: v }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger dir="rtl">
                       <SelectValue placeholder="בחר שכבות" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent dir="rtl" className="z-[9999]" position="popper" sideOffset={5} align="start">
                       {["0","1","2","3","4","5","6"].map(n => (
                         <SelectItem key={`cl-${n}`} value={n}>{n}</SelectItem>
                       ))}
