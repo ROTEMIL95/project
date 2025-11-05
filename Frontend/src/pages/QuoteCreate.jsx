@@ -565,15 +565,31 @@ export default function QuoteCreate() {
     let updatedRoomBreakdownForProjectComplexities = null;
 
     setSelectedItems(prevItems => {
+      // Remove old summary items for the same category to prevent duplicates
+      const isSummaryItem = itemsToAdd.some(item => 
+        item.source === 'paint_plaster_category_summary' || 
+        item.source === 'tiling_category_summary'
+      );
+      
+      let cleanedItems = prevItems;
+      
+      if (isSummaryItem) {
+        // Remove old summary items for this category
+        cleanedItems = prevItems.filter(item => 
+          !(item.categoryId === itemCategoryId && 
+            (item.source === 'paint_plaster_category_summary' || 
+             item.source === 'tiling_category_summary'))
+        );
+        console.log(`[QuoteCreate] Removed old summary items for category: ${itemCategoryId}`);
+      }
+
       const isDemolitionRegularItem = itemCategoryId === 'cat_demolition' &&
                                       !itemsToAdd.some(it => it.source === 'demolition_rounding');
 
-      const hasExistingRounding = prevItems.some(it =>
+      const hasExistingRounding = cleanedItems.some(it =>
         it.categoryId === 'cat_demolition' &&
         ((Number(it.demolitionRoundingSharePrice) || 0) > 0 || (Number(it.demolitionRoundingShareCost) || 0) > 0 || (Number(it.demolitionRoundingShareWorkDays) || 0) > 0)
       );
-
-      let cleanedItems = prevItems;
       if (isDemolitionRegularItem && hasExistingRounding) {
         cleanedItems = prevItems.map(it => {
           if (it.categoryId !== 'cat_demolition') return it;

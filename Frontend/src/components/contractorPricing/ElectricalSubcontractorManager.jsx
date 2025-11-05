@@ -132,7 +132,7 @@ export default function ElectricalSubcontractorManager() {
   const numPrice = `${numBase} text-indigo-600 font-bold`;
   const numProfit = `${numBase} text-green-700 font-bold`;
 
-  const { user } = useUser();
+  const { user, refresh: refreshUser } = useUser();
 
   useEffect(() => {
     const load = async () => {
@@ -142,8 +142,22 @@ export default function ElectricalSubcontractorManager() {
       }
 
       setLoading(true);
-      const d = user.user_metadata?.electricalDefaults || { desiredProfitPercent: 40 };
-      let its = user.user_metadata?.electricalSubcontractorItems || [];
+      
+      // Load data from user_profiles table instead of user_metadata
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('electrical_defaults, electrical_subcontractor_items')
+        .eq('auth_user_id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error loading electrical data:', profileError);
+        setLoading(false);
+        return;
+      }
+
+      const d = profile?.electrical_defaults || { desiredProfitPercent: 40 };
+      let its = profile?.electrical_subcontractor_items || [];
 
       // אם אין פריטים – זורעים את כל ברירות המחדל
       if (!its || its.length === 0) {
@@ -156,13 +170,13 @@ export default function ElectricalSubcontractorManager() {
           ...DEFAULT_REPAIRS,
           ...DEFAULT_INSTALLATIONS, // Add new category defaults
         ].map((it) => ({ ...it, clientPricePerUnit: calcClientPrice(it.contractorCostPerUnit, profit) }));
-        await supabase.auth.updateUser({
-          data: {
-            ...user.user_metadata,
-            electricalSubcontractorItems: its,
-            electricalDefaults: d
-          }
-        });
+        await supabase
+          .from('user_profiles')
+          .update({
+            electrical_subcontractor_items: its,
+            electrical_defaults: d
+          })
+          .eq('auth_user_id', user.id);
       } else {
         // השלמת פריטים חסרים מכל תתי־הקטגוריות בלי כפילויות (גם אם כבר יש פריטים בתת־קטגוריה)
         const existingIds = new Set(its.map((x) => x.id));
@@ -183,13 +197,13 @@ export default function ElectricalSubcontractorManager() {
 
         if (toAdd.length) {
           its = [...its, ...toAdd];
-          await supabase.auth.updateUser({
-            data: {
-              ...user.user_metadata,
-              electricalSubcontractorItems: its,
-              electricalDefaults: d
-            }
-          });
+          await supabase
+            .from('user_profiles')
+            .update({
+              electrical_subcontractor_items: its,
+              electrical_defaults: d
+            })
+            .eq('auth_user_id', user.id);
         }
       }
 
@@ -244,13 +258,13 @@ export default function ElectricalSubcontractorManager() {
     const exists = items.some((x) => x.id === newItem.id);
     const updated = exists ? items.map((x) => (x.id === newItem.id ? newItem : x)) : [...items, newItem];
     setItems(updated);
-    await supabase.auth.updateUser({
-      data: {
-        ...user.user_metadata,
-        electricalSubcontractorItems: updated,
-        electricalDefaults: defaults
-      }
-    });
+    await supabase
+      .from('user_profiles')
+      .update({
+        electrical_subcontractor_items: updated,
+        electrical_defaults: defaults
+      })
+      .eq('auth_user_id', user.id);
     closeDialog();
   };
 
@@ -258,26 +272,48 @@ export default function ElectricalSubcontractorManager() {
     if (!window.confirm("למחוק את הפריט הזה?")) return;
     const updated = items.filter((x) => x.id !== id);
     setItems(updated);
-    await supabase.auth.updateUser({
-      data: {
-        ...user.user_metadata,
-        electricalSubcontractorItems: updated,
-        electricalDefaults: defaults
-      }
-    });
+    await supabase
+      .from('user_profiles')
+      .update({
+        electrical_subcontractor_items: updated,
+        electrical_defaults: defaults
+      })
+      .eq('auth_user_id', user.id);
   };
 
   const handleSaveAll = async () => {
     setSaving(true);
+    
+    console.log('[ElectricalSubcontractorManager] Saving data:', {
+      userId: user.id,
+      email: user.email,
+      itemsCount: items.length,
+      defaultsProfit: defaults.desiredProfitPercent
+    });
+
     try {
-      if (typeof User.updateMyUserData === 'function') {
-        await User.updateMyUserData({ electricalSubcontractorItems: items, electricalDefaults: defaults });
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update({
+          electrical_subcontractor_items: items,
+          electrical_defaults: defaults
+        })
+        .eq('auth_user_id', user.id);
+
+      if (error) {
+        console.error('[ElectricalSubcontractorManager] Save error:', error);
       } else {
-        console.log('User.updateMyUserData not available - backend not connected');
+        console.log('[ElectricalSubcontractorManager] Save successful:', data);
+        // Refresh user data in context so QuoteCreate components get updated data
+        if (refreshUser) {
+          await refreshUser();
+          console.log('[ElectricalSubcontractorManager] User data refreshed');
+        }
       }
     } catch (error) {
-      console.error('Failed to save electrical subcontractor data:', error);
+      console.error('[ElectricalSubcontractorManager] Failed to save electrical subcontractor data:', error);
     }
+    
     setSaving(false);
   };
 

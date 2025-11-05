@@ -1225,6 +1225,7 @@ const PaintRoomsManager = React.forwardRef(({
     });
     const [isSummaryOpen, setIsSummaryOpen] = useState(true);
     const [isTilingSummaryOpen, setIsTilingSummaryOpen] = useState(true);
+    const [isManualItemsOpen, setIsManualItemsOpen] = useState(true);
     const [preciseWorkDays, setPreciseWorkDays] = useState(false);
     const [preciseBucketCalculation, setPreciseBucketCalculation] = useState(false);
 
@@ -1885,30 +1886,59 @@ const PaintRoomsManager = React.forwardRef(({
                                         }
                                     };
 
+                                    const handleDeleteManualItem = (itemToDelete) => {
+                                        if (setStagedManualItems && typeof setStagedManualItems === 'function') {
+                                            setStagedManualItems(prev => 
+                                                prev.filter(item => item.id !== itemToDelete.id)
+                                            );
+                                        }
+                                    };
+
                                     return (
-                                        <div className="mt-4 border-t pt-4">
-                                            <h4 className="font-semibold text-gray-700 mb-3 text-center flex items-center justify-center gap-2">
-                                                <span className="text-purple-600">✏️</span>
-                                                פריטים ידניים
-                                            </h4>
-                                            <div className="space-y-3">
+                                        <div className="mt-6 p-0">
+                                            <Collapsible open={isManualItemsOpen} onOpenChange={setIsManualItemsOpen}>
+                                                <CollapsibleTrigger asChild>
+                                                    <button className="w-full bg-gradient-to-r from-purple-50 via-pink-50 to-indigo-50 rounded-lg border-2 border-purple-300 p-3 hover:shadow-md transition-all duration-300 cursor-pointer">
+                                                        <div className="flex justify-between items-center">
+                                                            <h3 className="text-lg font-bold text-gray-800 flex items-center">
+                                                                <Edit className="w-5 h-5 ml-2 text-purple-600" />
+                                                                פריטים ידניים
+                                                            </h3>
+                                                            {isManualItemsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                                        </div>
+                                                    </button>
+                                                </CollapsibleTrigger>
+                                                <CollapsibleContent className="pt-3">
+                                                    <div className="bg-white rounded-lg border-2 border-purple-300 shadow-sm overflow-hidden">
+                                                        <div className="p-4 space-y-3">
                                                 {stagedPaintItems.map((item, index) => {
                                                     const walls = item.manualMeta?.walls || {};
                                                     const ceiling = item.manualMeta?.ceiling || {};
 
                                                     return (
                                                         <div key={item.id || index} className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-4 border-2 border-purple-200 relative">
-                                                            {/* Edit Button */}
-                                                            <button
-                                                                onClick={() => handleEditManualItem(item)}
-                                                                className="absolute top-3 left-3 p-1.5 rounded-md bg-white/80 hover:bg-white border border-purple-300 hover:border-purple-400 text-purple-700 hover:text-purple-900 transition-all shadow-sm hover:shadow-md"
-                                                                title="ערוך פריט"
-                                                            >
-                                                                <Edit className="w-4 h-4" />
-                                                            </button>
+                                                            {/* Action Buttons */}
+                                                            <div className="absolute top-3 left-3 flex gap-2">
+                                                                {/* Edit Button */}
+                                                                <button
+                                                                    onClick={() => handleEditManualItem(item)}
+                                                                    className="p-1.5 rounded-md bg-white/80 hover:bg-white border border-purple-300 hover:border-purple-400 text-purple-700 hover:text-purple-900 transition-all shadow-sm hover:shadow-md"
+                                                                    title="ערוך פריט"
+                                                                >
+                                                                    <Edit className="w-4 h-4" />
+                                                                </button>
+                                                                {/* Delete Button */}
+                                                                <button
+                                                                    onClick={() => handleDeleteManualItem(item)}
+                                                                    className="p-1.5 rounded-md bg-white/80 hover:bg-red-50 border border-red-300 hover:border-red-400 text-red-600 hover:text-red-700 transition-all shadow-sm hover:shadow-md"
+                                                                    title="מחק פריט"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
 
                                                             {/* Description */}
-                                                            <div className="mb-3 pb-2 border-b border-purple-200 pr-10">
+                                                            <div className="mb-3 pb-2 border-b border-purple-200 pr-20">
                                                                 <h5 className="font-semibold text-gray-800 text-sm">{item.description}</h5>
                                                             </div>
 
@@ -1985,7 +2015,10 @@ const PaintRoomsManager = React.forwardRef(({
                                                         </div>
                                                     );
                                                 })}
-                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </CollapsibleContent>
+                                            </Collapsible>
                                         </div>
                                     );
                                 })()}
@@ -3189,14 +3222,9 @@ const ItemSelector = React.forwardRef(({
         categoryData: categorySpecificDataForMap
     });
 
-    // Update global selectedItems: remove old items for this category, add new ones + staged manual items
-    setSelectedItems(prevItems => {
-        const otherCategoryItems = prevItems.filter(item => item.categoryId !== categoryIdToSave);
-        const itemsToAdd = Array.isArray(itemsFromCurrentCategoryComponent) ? itemsFromCurrentCategoryComponent : [];
-        // ✅ Include staged manual items in selectedItems
-        return [...otherCategoryItems, ...itemsToAdd, ...stagedItemsForCategory];
-    });
-
+    // ✅ ONLY save to categoryDataMap, DON'T add to selectedItems yet
+    // Items will be added to selectedItems only when user clicks "Save" or proceeds to next step
+    
     // Update categoryDataMap
     setCategoryDataMap(prev => ({
         ...prev,
@@ -3204,6 +3232,7 @@ const ItemSelector = React.forwardRef(({
             categoryId: categoryIdToSave,
             ...categorySpecificDataForMap,
             stagedManualItems: stagedItemsForCategory, // ✅ Save staged manual items
+            quoteItems: itemsFromCurrentCategoryComponent, // ✅ Save quote items for later
             timing: categoryTimings[categoryIdToSave] || null,
         }
     }));
@@ -3495,6 +3524,24 @@ const ItemSelector = React.forwardRef(({
   const handleNextCategory = useCallback(async () => {
     if (currentCategoryForItems) {
         await saveCurrentCategoryData(currentCategoryForItems);
+        
+        // ✅ Add items to selectedItems (floating cart) when moving to next category
+        const categoryData = categoryDataMap[currentCategoryForItems];
+        if (categoryData) {
+            const itemsToAdd = categoryData.quoteItems || [];
+            const stagedItems = categoryData.stagedManualItems || [];
+            
+            setSelectedItems(prevItems => {
+                const otherCategoryItems = prevItems.filter(item => item.categoryId !== currentCategoryForItems);
+                return [...otherCategoryItems, ...itemsToAdd, ...stagedItems];
+            });
+            
+            console.log('[ItemSelector] Added items to floating cart (next category):', {
+                categoryId: currentCategoryForItems,
+                quoteItems: itemsToAdd.length,
+                stagedItems: stagedItems.length
+            });
+        }
     }
 
     const currentIndex = selectedCategories.indexOf(currentCategoryForItems);
@@ -3502,15 +3549,33 @@ const ItemSelector = React.forwardRef(({
         const nextCategoryId = selectedCategories[currentIndex + 1];
         setCurrentCategoryForItems(nextCategoryId);
     }
-  }, [currentCategoryForItems, selectedCategories, saveCurrentCategoryData, setCurrentCategoryForItems]);
+  }, [currentCategoryForItems, selectedCategories, saveCurrentCategoryData, setCurrentCategoryForItems, categoryDataMap, setSelectedItems]);
 
   const handleSaveAndProceed = useCallback(async () => {
     if (currentCategoryForItems) {
         await saveCurrentCategoryData(currentCategoryForItems);
+        
+        // ✅ NOW add items to selectedItems (floating cart)
+        const categoryData = categoryDataMap[currentCategoryForItems];
+        if (categoryData) {
+            const itemsToAdd = categoryData.quoteItems || [];
+            const stagedItems = categoryData.stagedManualItems || [];
+            
+            setSelectedItems(prevItems => {
+                const otherCategoryItems = prevItems.filter(item => item.categoryId !== currentCategoryForItems);
+                return [...otherCategoryItems, ...itemsToAdd, ...stagedItems];
+            });
+            
+            console.log('[ItemSelector] Added items to floating cart:', {
+                categoryId: currentCategoryForItems,
+                quoteItems: itemsToAdd.length,
+                stagedItems: stagedItems.length
+            });
+        }
     }
 
     onProceed();
-  }, [currentCategoryForItems, saveCurrentCategoryData, onProceed]);
+  }, [currentCategoryForItems, saveCurrentCategoryData, onProceed, categoryDataMap, setSelectedItems]);
 
   const handleBack = useCallback(async () => {
       if (currentCategoryForItems) {

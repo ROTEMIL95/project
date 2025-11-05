@@ -2,7 +2,7 @@
  * TilingManualItemDialog - Manual Tiling Item Dialog
  *
  * Wrapper component for manual tiling items
- * Uses plumbing config as tiling has similar structure
+ * Uses tiling category configuration
  *
  * Reduced to small wrapper, preserving all functionality
  * Design: 100% preserved ✅
@@ -21,7 +21,7 @@ export default function TilingManualItemDialog({
 }) {
   return (
     <GenericItemDialog
-      category="plumbing"  // Tiling uses similar config to plumbing
+      category="tiling"  // Fixed: Use tiling category instead of plumbing
       open={open}
       onOpenChange={onOpenChange}
       item={item}

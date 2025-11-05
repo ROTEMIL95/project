@@ -149,7 +149,7 @@ export default function PlumbingSubcontractorManager() {
   const numPrice = `${numBase} text-indigo-600 font-bold`;
   const numProfit = `${numBase} text-green-700 font-bold`;
 
-  const { user } = useUser();
+  const { user, refresh: refreshUser } = useUser();
 
   // טעינת נתונים מהמשתמש + זריעה ראשונית אם אין נתונים
   useEffect(() => {
@@ -160,8 +160,22 @@ export default function PlumbingSubcontractorManager() {
       }
 
       setLoading(true);
-      const d = user.user_metadata?.plumbingDefaults || { desiredProfitPercent: 40 };
-      const its = user.user_metadata?.plumbingSubcontractorItems || [];
+      
+      // Load data from user_profiles table instead of user_metadata
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('plumbing_defaults, plumbing_subcontractor_items')
+        .eq('auth_user_id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error loading plumbing data:', profileError);
+        setLoading(false);
+        return;
+      }
+
+      const d = profile?.plumbing_defaults || { desiredProfitPercent: 40 };
+      const its = profile?.plumbing_subcontractor_items || [];
 
       setDefaults({ desiredProfitPercent: Number(d.desiredProfitPercent || 40) });
 
@@ -180,13 +194,13 @@ export default function PlumbingSubcontractorManager() {
           clientPricePerUnit: calcClientPrice(item.contractorCostPerUnit, profit),
           // לא שומרים desiredProfitPercent בפריט – משתמשים בברירת המחדל
         }));
-        await supabase.auth.updateUser({
-          data: {
-            ...user.user_metadata,
-            plumbingSubcontractorItems: seeded,
-            plumbingDefaults: d
-          }
-        });
+        await supabase
+          .from('user_profiles')
+          .update({
+            plumbing_subcontractor_items: seeded,
+            plumbing_defaults: d
+          })
+          .eq('auth_user_id', user.id);
         setItems(seeded);
       } else {
         // NEW: השלמה אוטומטית לתת־קטגוריות שחסרות אצל המשתמש
@@ -209,13 +223,13 @@ export default function PlumbingSubcontractorManager() {
           });
 
           if (mergedItems.length !== its.length) {
-            await supabase.auth.updateUser({
-              data: {
-                ...user.user_metadata,
-                plumbingSubcontractorItems: mergedItems,
-                plumbingDefaults: d
-              }
-            });
+            await supabase
+              .from('user_profiles')
+              .update({
+                plumbing_subcontractor_items: mergedItems,
+                plumbing_defaults: d
+              })
+              .eq('auth_user_id', user.id);
           }
         }
         setItems(mergedItems);
@@ -229,13 +243,33 @@ export default function PlumbingSubcontractorManager() {
   // שמירת הכל (ברירות מחדל + רשימת פריטים)
   const handleSaveAll = async () => {
     setSaving(true);
-    await supabase.auth.updateUser({
-      data: {
-        ...user.user_metadata,
-        plumbingDefaults: defaults,
-        plumbingSubcontractorItems: items,
-      }
+    
+    console.log('[PlumbingSubcontractorManager] Saving data:', {
+      userId: user.id,
+      email: user.email,
+      itemsCount: items.length,
+      defaultsProfit: defaults.desiredProfitPercent
     });
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update({
+        plumbing_defaults: defaults,
+        plumbing_subcontractor_items: items,
+      })
+      .eq('auth_user_id', user.id);
+
+    if (error) {
+      console.error('[PlumbingSubcontractorManager] Save error:', error);
+    } else {
+      console.log('[PlumbingSubcontractorManager] Save successful:', data);
+      // Refresh user data in context so QuoteCreate components get updated data
+      if (refreshUser) {
+        await refreshUser();
+        console.log('[PlumbingSubcontractorManager] User data refreshed');
+      }
+    }
+    
     setSaving(false);
   };
 
