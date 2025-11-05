@@ -686,10 +686,14 @@ export default function Catalog() {
       try {
         let allItems = [];
 
+        // Fix: Access items from user.user_metadata
+        const userTilingItems = user?.user_metadata?.tilingItems;
+        const userPaintItems = user?.user_metadata?.paintItems;
+
         // Handle tiling items - seed defaults if user has none
-        if (user.tilingItems && user.tilingItems.length > 0) {
+        if (userTilingItems && userTilingItems.length > 0) {
           // User has existing tiling items
-          allItems = [...allItems, ...user.tilingItems];
+          allItems = [...allItems, ...userTilingItems];
         } else {
           // User has no tiling items - seed with hardcoded defaults
           console.log('📦 [Catalog] User has no tiling items, seeding defaults...');
@@ -712,9 +716,9 @@ export default function Catalog() {
         }
 
         // Handle paint items - seed defaults if user has none
-        if (user.paintItems && user.paintItems.length > 0) {
+        if (userPaintItems && userPaintItems.length > 0) {
           // User has existing paint items
-          allItems = [...allItems, ...user.paintItems];
+          allItems = [...allItems, ...userPaintItems];
         } else {
           // User has no paint items - seed with hardcoded defaults
           console.log('📦 [Catalog] User has no paint items, seeding defaults...');
@@ -768,10 +772,10 @@ export default function Catalog() {
       setItems(updatedItems);
 
       if (itemToDelete.category === 'tiling') {
-        const updatedTilingItems = (user.tilingItems || []).filter(item => item.id !== itemToDelete.id);
+        const updatedTilingItems = (user?.user_metadata?.tilingItems || []).filter(item => item.id !== itemToDelete.id);
         await User.updateMyUserData({ tilingItems: updatedTilingItems });
       } else if (itemToDelete.category === 'paint_plaster') {
-        const updatedPaintItems = (user.paintItems || []).filter(item => item.id !== itemToDelete.id);
+        const updatedPaintItems = (user?.user_metadata?.paintItems || []).filter(item => item.id !== itemToDelete.id);
         await User.updateMyUserData({ paintItems: updatedPaintItems });
       }
     } catch (error) {
@@ -780,11 +784,11 @@ export default function Catalog() {
       // In case of error, revert to previous state
       setLoading(true);
       let allItems = [];
-      if (user.tilingItems) {
-        allItems = [...allItems, ...user.tilingItems];
+      if (user?.user_metadata?.tilingItems) {
+        allItems = [...allItems, ...user.user_metadata.tilingItems];
       }
-      if (user.paintItems) {
-        allItems = [...allItems, ...user.paintItems];
+      if (user?.user_metadata?.paintItems) {
+        allItems = [...allItems, ...user.user_metadata.paintItems];
       }
       setItems(allItems);
       setLoading(false);

@@ -88,19 +88,41 @@ export default function useSafeUser(options = {}) {
 
             if (profileError) {
               if (!suppressConsole) {
-                console.warn('[useSafeUser] Profile load error:', profileError);
+                console.error('[useSafeUser] CRITICAL: Profile load error for user', supabaseUser.id, ':', {
+                  error: profileError,
+                  code: profileError.code,
+                  message: profileError.message,
+                  details: profileError.details,
+                  hint: profileError.hint,
+                });
               }
+              // Continue with null profileData - this might be why non-admin users see no data!
             }
 
             profileData = profile;
 
             if (!suppressConsole && profile) {
-              console.log('[useSafeUser] Profile loaded:', {
+              console.log('[useSafeUser] Profile loaded successfully:', {
                 userId: supabaseUser.id,
                 email: supabaseUser.email,
+                role: profile.role,
                 hasConstructionDefaults: !!profile.construction_defaults,
                 hasConstructionItems: !!profile.construction_subcontractor_items,
                 constructionItemsCount: profile.construction_subcontractor_items?.length || 0,
+                constructionItemsSample: profile.construction_subcontractor_items?.[0] ? {
+                  id: profile.construction_subcontractor_items[0].id,
+                  name: profile.construction_subcontractor_items[0].name,
+                  isActive: profile.construction_subcontractor_items[0].isActive,
+                } : null,
+                rawConstructionItems: Array.isArray(profile.construction_subcontractor_items) ?
+                  profile.construction_subcontractor_items.length :
+                  typeof profile.construction_subcontractor_items,
+              });
+            } else if (!suppressConsole && !profile) {
+              console.warn('[useSafeUser] Profile is NULL after query!', {
+                userId: supabaseUser.id,
+                email: supabaseUser.email,
+                hadError: !!profileError,
               });
             }
           } catch (profileError) {

@@ -218,23 +218,41 @@ export class Quote {
     }
   }
 
-  static async getById(id) {
+  static async getById(id, userId = null) {
     try {
-      const { data, error } = await supabase
+      console.log('[Quote.getById] Fetching quote:', { id, userId });
+      
+      let query = supabase
         .from('quotes')
         .select('*')
-        .eq('id', id)
-        .single();
+        .eq('id', id);
+      
+      // Add user_id filter if provided (helps with RLS and ownership checks)
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+      
+      const { data, error } = await query.single();
 
       if (error) {
-        console.error("Error fetching quote:", error);
+        console.error("[Quote.getById] Supabase error:", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         throw error;
       }
 
+      console.log('[Quote.getById] Raw data from Supabase:', data);
+      
       // Convert snake_case keys back to camelCase for frontend
-      return data ? convertKeysToCamelCase(data) : null;
+      const converted = data ? convertKeysToCamelCase(data) : null;
+      console.log('[Quote.getById] Converted data:', converted);
+      
+      return converted;
     } catch (error) {
-      console.error("Quote.getById error:", error);
+      console.error("[Quote.getById] Exception:", error);
       return null;
     }
   }

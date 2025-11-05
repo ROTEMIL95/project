@@ -64,17 +64,24 @@ export default function QuoteCreateNewPage() {
     try {
       setIsLoading(true);
 
-      if (user && user.tilingItems && Array.isArray(user.tilingItems)) {
-        console.log("QuoteCreateNewPage: Loaded tiling items from user data:", user.tilingItems.length);
-        setTilingItems(user.tilingItems);
+      // Fix: Access tiling items from user.user_metadata.tilingItems
+      const userTilingItems = user?.user_metadata?.tilingItems;
+      if (userTilingItems && Array.isArray(userTilingItems)) {
+        console.log("QuoteCreateNewPage: Loaded tiling items from user data:", userTilingItems.length);
+        setTilingItems(userTilingItems);
 
         const initialQuantities = {};
-        user.tilingItems.forEach(item => {
+        userTilingItems.forEach(item => {
           initialQuantities[item.id] = 1; // Default quantity
         });
         setCatalogItemQuantities(initialQuantities);
       } else {
-        console.warn("QuoteCreateNewPage: No tiling items found in user data or data is not an array.");
+        console.warn("QuoteCreateNewPage: No tiling items found in user data or data is not an array.", {
+          hasUser: !!user,
+          hasUserMetadata: !!user?.user_metadata,
+          tilingItemsType: typeof userTilingItems,
+          isArray: Array.isArray(userTilingItems)
+        });
         setTilingItems([]);
       }
 
