@@ -23,24 +23,43 @@ export default function RecentQuotes({ user }) {
       setError(null); // Reset error on new fetch attempt
       try {
         if (user && user.email) {
-          console.log("RecentQuotes: Fetching quotes for user:", user.email);
+          console.log("[RecentQuotes] Starting fetch for user:", {
+            userId: user.id,
+            email: user.email,
+          });
 
           // Check if Quote.filter is available
           if (typeof Quote.filter !== 'function') {
-            console.log("RecentQuotes: Backend not connected, showing empty state.");
+            console.log("[RecentQuotes] Backend not connected, showing empty state.");
             setRecentQuotes([]);
             setLoading(false);
             return;
           }
 
-          const quotes = await Quote.filter({ user_id: user.id });
-          console.log("RecentQuotes: Fetched quotes:", quotes.length);
-          setRecentQuotes(quotes);
+          const allQuotes = await Quote.filter({ user_id: user.id });
+          console.log("[RecentQuotes] Fetched quotes:", {
+            totalQuotes: allQuotes.length,
+            quotes: allQuotes.map(q => ({
+              id: q.id,
+              projectName: q.projectName,
+              clientName: q.clientName,
+              status: q.status,
+              totalPrice: q.totalPrice,
+              totalCost: q.totalCost,
+              createdAt: q.createdAt,
+            })),
+          });
+
+          // Limit to 5 most recent quotes (already sorted by created_at descending in Quote.filter)
+          const recentFive = allQuotes.slice(0, 5);
+          console.log("[RecentQuotes] Showing recent 5 quotes:", recentFive.length);
+          setRecentQuotes(recentFive);
         } else {
+          console.warn("[RecentQuotes] No user data available");
           setRecentQuotes([]);
         }
       } catch (error) {
-        console.error("RecentQuotes: Failed to fetch recent quotes:", error);
+        console.error("[RecentQuotes] Failed to fetch recent quotes:", error);
         // Don't show error, just empty state
         setRecentQuotes([]);
       } finally {
@@ -148,13 +167,18 @@ export default function RecentQuotes({ user }) {
 
           {/* Quotes List */}
           {recentQuotes.map((quote) => {
-            const profit = (quote.totalPrice || 0) - (quote.totalCost || 0);
+            const totalPrice = typeof quote.totalPrice === 'number' ? quote.totalPrice : 0;
+            const totalCost = typeof quote.totalCost === 'number' ? quote.totalCost : 0;
+            const profit = totalPrice - totalCost;
+            const projectName = quote.projectName || quote.title || 'ללא שם';
+            const clientName = quote.clientName || 'לא צוין';
+
             return (
               <div key={quote.id} className="p-3 rounded-lg hover:bg-gray-50/70 transition-colors border md:border-0 md:grid md:grid-cols-12 md:gap-4 md:items-center">
                 {/* Project Name (Mobile + Desktop) */}
                 <div className="col-span-4 mb-2 md:mb-0">
-                  <p className="font-semibold text-gray-800">{quote.projectName}</p>
-                  <p className="text-sm text-gray-500">{quote.clientName}</p>
+                  <p className="font-semibold text-gray-800">{projectName}</p>
+                  <p className="text-sm text-gray-500">{clientName}</p>
                 </div>
 
                 {/* Mobile Details Grid */}
@@ -169,7 +193,7 @@ export default function RecentQuotes({ user }) {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">סכום</p>
-                    <p className="font-bold text-indigo-600">{formatCurrency(quote.totalPrice || 0)}</p>
+                    <p className="font-bold text-indigo-600">{formatCurrency(totalPrice)}</p>
                   </div>
                   <div className="text-left">
                     <p className="text-xs text-gray-500">רווח</p>
@@ -185,7 +209,7 @@ export default function RecentQuotes({ user }) {
                   {getStatusBadge(quote.status || 'טיוטה')}
                 </div>
                 <div className="hidden md:block col-span-2 text-center text-sm font-bold text-indigo-600">
-                  {formatCurrency(quote.totalPrice || 0)}
+                  {formatCurrency(totalPrice)}
                 </div>
                 <div className={`hidden md:block col-span-1 text-center text-sm font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(profit)}

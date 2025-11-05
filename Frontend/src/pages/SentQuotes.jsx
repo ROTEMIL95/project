@@ -147,7 +147,7 @@ export default function SentQuotes() {
 
         // Allow admins to delete any quote, or users to delete their own quotes
         const isAdmin = user?.role === 'admin';
-        const isOwner = quoteToDelete.created_by === user.email || quoteToDelete.userId === user.id;
+        const isOwner = quoteToDelete.userId === user.id;
         
         if (!isAdmin && !isOwner) {
             toast({
@@ -195,7 +195,7 @@ export default function SentQuotes() {
     const handleEditQuote = (quote) => {
         // Allow admins to edit any quote, or users to edit their own quotes
         const isAdmin = user?.role === 'admin';
-        const isOwner = user && (quote.created_by === user.email || quote.userId === user.id);
+        const isOwner = user && quote.userId === user.id;
         
         if (user && !isAdmin && !isOwner) {
             toast({
