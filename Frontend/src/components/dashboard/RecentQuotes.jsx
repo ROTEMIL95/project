@@ -167,9 +167,9 @@ export default function RecentQuotes({ user }) {
 
           {/* Quotes List */}
           {recentQuotes.map((quote) => {
-            const totalPrice = typeof quote.totalPrice === 'number' ? quote.totalPrice : 0;
-            const totalCost = typeof quote.totalCost === 'number' ? quote.totalCost : 0;
-            const profit = totalPrice - totalCost;
+            const totalPrice = quote.totalPrice || quote.finalAmount || 0;
+            const totalCost = quote.totalCost || quote.estimatedCost || 0;
+            const profit = quote.profitAmount || (totalPrice - totalCost) || 0;
             const projectName = quote.projectName || quote.title || 'ללא שם';
             const clientName = quote.clientName || 'לא צוין';
 
