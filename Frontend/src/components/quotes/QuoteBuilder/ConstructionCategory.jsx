@@ -135,11 +135,23 @@ export default function ConstructionCategory({
   };
 
   React.useEffect(() => {
-    if (!currentUser?.user_metadata) return;
+    if (!currentUser?.user_metadata) {
+      console.warn('[ConstructionCategory] No user_metadata available');
+      return;
+    }
 
     try {
       const me = currentUser.user_metadata;
       const d = me?.constructionDefaults || {};
+
+      console.log('[ConstructionCategory] Loading construction data:', {
+        userId: currentUser.id,
+        email: currentUser.email,
+        hasMetadata: !!me,
+        hasDefaults: !!d,
+        hasItems: !!me?.constructionSubcontractorItems,
+        rawItemsCount: me?.constructionSubcontractorItems?.length || 0,
+      });
 
       let day = 1000;
       const dayCandidate = Number(d.laborCostPerDay);
@@ -150,22 +162,40 @@ export default function ConstructionCategory({
         day = workerCost <= 500 ? workerCost * 8 : workerCost;
       }
 
-      console.log('Construction defaults loaded:', {
+      console.log('[ConstructionCategory] Pricing defaults:', {
         laborCostPerDay: d.laborCostPerDay,
         workerCostPerUnit: d.workerCostPerUnit,
-        calculated: day
+        calculated: day,
+        desiredProfitPercent: d.desiredProfitPercent
       });
 
       setPricingDefaults({
         laborCostPerDay: day > 0 ? day : 1000,
         desiredProfitPercent: Number(d.desiredProfitPercent) || 30
       });
-      const items = Array.isArray(me?.constructionSubcontractorItems)
-        ? me.constructionSubcontractorItems.filter(it => it.isActive !== false)
+
+      const rawItems = me?.constructionSubcontractorItems;
+      const items = Array.isArray(rawItems)
+        ? rawItems.filter(it => it.isActive !== false)
         : [];
+
+      console.log('[ConstructionCategory] Catalog items loaded:', {
+        totalItems: rawItems?.length || 0,
+        activeItems: items.length,
+        filteredOut: (rawItems?.length || 0) - items.length,
+        sampleItem: items[0] ? {
+          id: items[0].id,
+          name: items[0].name,
+          subCategory: items[0].subCategory,
+          isActive: items[0].isActive,
+          contractorCostPerUnit: items[0].contractorCostPerUnit,
+          clientPricePerUnit: items[0].clientPricePerUnit
+        } : null
+      });
+
       setCatalogItems(items);
     } catch (e) {
-      console.error("Failed to load construction defaults or catalog items:", e);
+      console.error("[ConstructionCategory] Failed to load construction defaults or catalog items:", e);
     }
   }, [currentUser]);
 
@@ -719,9 +749,31 @@ export default function ConstructionCategory({
 
           <CardContent className="p-4 md:p-6 space-y-4">
             <Separator />
-            {filteredCatalogItems.length === 0 ? (
+            {catalogItems.length === 0 ? (
+              <div className="py-10 px-6 text-center">
+                <div className="max-w-md mx-auto space-y-4">
+                  <div className="p-4 rounded-full bg-purple-100 w-16 h-16 mx-auto flex items-center justify-center">
+                    <Settings className="w-8 h-8 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">אין פריטי בינוי במחירון</h3>
+                  <p className="text-sm text-gray-600">
+                    כדי להוסיף פריטים להצעת המחיר, עליך תחילה להגדיר את מחירון הבינוי שלך
+                  </p>
+                  <Button
+                    onClick={() => window.location.href = '/ContractorPricing'}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <Settings className="ml-2 w-4 h-4" />
+                    עבור להגדרות מחירון בינוי
+                  </Button>
+                  <p className="text-xs text-gray-500">
+                    מספר פריטים כולל: {catalogItems.length} | פריטים פעילים: {catalogItems.filter(it => it.isActive !== false).length}
+                  </p>
+                </div>
+              </div>
+            ) : filteredCatalogItems.length === 0 ? (
               <div className="py-10 text-center text-gray-500">
-                {search.trim() ? "לא נמצאו פריטים התואמים את החיפוש" : "אין פריטים להצגה. עדכן את מחירון הבינוי שלך."}
+                {search.trim() ? "לא נמצאו פריטים התואמים את החיפוש" : "אין פריטים להצגה בפילטר הנבחר"}
               </div>
             ) : subcatFilter === "all" ? (
               <>

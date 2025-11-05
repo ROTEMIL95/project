@@ -80,17 +80,33 @@ export default function useSafeUser(options = {}) {
         let profileData = null;
         if (supabaseUser) {
           try {
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await supabase
               .from('user_profiles')
               .select('*')
               .eq('auth_user_id', supabaseUser.id)
               .single();
 
+            if (profileError) {
+              if (!suppressConsole) {
+                console.warn('[useSafeUser] Profile load error:', profileError);
+              }
+            }
+
             profileData = profile;
+
+            if (!suppressConsole && profile) {
+              console.log('[useSafeUser] Profile loaded:', {
+                userId: supabaseUser.id,
+                email: supabaseUser.email,
+                hasConstructionDefaults: !!profile.construction_defaults,
+                hasConstructionItems: !!profile.construction_subcontractor_items,
+                constructionItemsCount: profile.construction_subcontractor_items?.length || 0,
+              });
+            }
           } catch (profileError) {
             // If profile doesn't exist yet, continue with null profileData
             if (!suppressConsole) {
-              console.warn('useSafeUser: Could not load user profile, continuing with auth data only');
+              console.warn('[useSafeUser] Could not load user profile, continuing with auth data only:', profileError);
             }
           }
         }
