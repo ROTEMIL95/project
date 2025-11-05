@@ -58,11 +58,29 @@ export default function PlumbingCategory({
   useEffect(() => {
     const run = () => {
       setLoading(true);
+
+      console.log('🔍 [PlumbingCategory] Loading data:', {
+        hasCurrentUser: !!currentUser,
+        currentUserKeys: currentUser ? Object.keys(currentUser) : [],
+        hasUserMetadata: !!currentUser?.user_metadata,
+        plumbingItems: currentUser?.user_metadata?.plumbingSubcontractorItems?.length || 0
+      });
+
       if (currentUser?.user_metadata) {
         const u = currentUser.user_metadata;
         setUser(u); // Store the user object
-        setItems((u.plumbingSubcontractorItems || []).filter((x) => x.isActive !== false));
+        const plumbingItems = (u.plumbingSubcontractorItems || []).filter((x) => x.isActive !== false);
+
+        console.log('🔍 [PlumbingCategory] Items loaded:', {
+          totalItems: u.plumbingSubcontractorItems?.length || 0,
+          activeItems: plumbingItems.length,
+          defaults: u.plumbingDefaults
+        });
+
+        setItems(plumbingItems);
         setDefaults(u.plumbingDefaults || { desiredProfitPercent: 30 }); // CHANGED: default profit percent from 40 to 30
+      } else {
+        console.warn('🔍 [PlumbingCategory] No user_metadata found!');
       }
       setLoading(false);
     };

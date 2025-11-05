@@ -274,6 +274,66 @@ export const constructionConfig = {
 };
 
 // =============================================================================
+// TILING CATEGORY (ריצוף וחיפוי)
+// =============================================================================
+export const tilingConfig = {
+  id: 'tiling',
+  name: 'ריצוף וחיפוי',
+  nameHe: 'ריצוף וחיפוי',
+  icon: 'grid',
+
+  colors: {
+    primary: 'orange',
+    bgLight: 'bg-orange-50',
+    bgMedium: 'bg-orange-100',
+    border: 'border-orange-200',
+    text: 'text-orange-700',
+    textDark: 'text-orange-900',
+    buttonBg: 'bg-orange-600',
+    buttonHover: 'hover:bg-orange-700',
+  },
+
+  dialog: {
+    title: 'הוספת פריט ריצוף וחיפוי ידני',
+    titleNew: 'הוספת פריט ריצוף וחיפוי',
+    description: 'מלא את נתוני הפריט. מחיר הלקוח יחושב אוטומטית לפי עלות קבלן + אחוז רווח.',
+    maxWidth: 'sm:max-w-[420px]',
+  },
+
+  fields: {
+    showName: true,  // Manual item - name required
+    showDescription: true,
+    showQuantity: true,
+    showUnit: false,  // Unit fixed to 'מ"ר'
+    showContractorCost: true,
+    showHoursPerUnit: false,
+    showMaterialCost: false,
+  },
+
+  defaults: {
+    profitPercent: 30,
+    unit: 'מ"ר',
+    initialQuantity: 1,
+    subCategory: 'tiling',
+  },
+
+  calculations: {
+    useQuantityInTotal: true,
+    roundToInteger: true,
+    ignoreQuantity: false,
+  },
+
+  summary: {
+    order: ['profit', 'contractor', 'client'],
+    labels: {
+      client: 'מחיר ללקוח',
+      contractor: 'עלות קבלן',
+      profit: 'רווח',
+    },
+  },
+};
+
+// =============================================================================
 // ALL CONFIGS EXPORT
 // =============================================================================
 export const categoryConfigs = {
@@ -281,6 +341,7 @@ export const categoryConfigs = {
   plumbing: plumbingConfig,
   demolition: demolitionConfig,
   construction: constructionConfig,
+  tiling: tilingConfig,
 };
 
 // Helper function to get config by category ID

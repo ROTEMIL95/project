@@ -284,6 +284,9 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
     ]);
 
     const rooms = roomsRaw.map((r, idx) => {
+        // Check if this is a manual item
+        const isManualItem = r?.source === 'manual_calc';
+        
         const wallsArea = Number(firstPositive([
             r?.paintQuantity, r?.calculatedWallArea, r?.wallArea, r?.wallAreaSqM, r?.wallsArea, r?.wallsNetArea, r?.wallAreaAfterOpenings
         ]));
@@ -294,18 +297,21 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
         const ceilingArea = includeCeiling ? ceilingAreaCandidate : 0;
 
         const metricPrice = firstPositive([
-            r?.paintCalculatedMetrics?.totalSellingPrice,
-            r?.metrics?.totalSellingPrice,
+            r?.totalPrice,                                    // Manual items
+            r?.totalSellingPrice,                             // Manual items
+            r?.paintCalculatedMetrics?.totalSellingPrice,     // Room items
+            r?.metrics?.totalSellingPrice,                    // Room items
             r?.price,
             r?.sellingPrice
         ]);
 
         return {
-            name: r?.name || r?.roomName || r?.roomType || `אזור ${idx + 1}`,
+            name: r?.description || r?.name || r?.roomName || r?.roomType || `אזור ${idx + 1}`,
             wallsArea,
             ceilingArea,
             includeCeiling,
-            metricPrice
+            metricPrice,
+            isManualItem
         };
     });
 
