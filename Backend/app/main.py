@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from app.config import settings
 from app.middleware.error_handler import setup_exception_handlers
 import logging
@@ -29,6 +30,44 @@ logger.info("CORS Configuration:")
 logger.info(f"  Allowed Origins: {cors_origins}")
 logger.info(f"  Number of origins: {len(cors_origins)}")
 logger.info("=" * 60)
+
+
+class CORSEnforcementMiddleware(BaseHTTPMiddleware):
+    """Middleware to ensure CORS headers are always present on all responses"""
+    
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get("origin")
+        origin_allowed = origin and origin in cors_origins
+        
+        # Handle OPTIONS preflight requests explicitly
+        if request.method == "OPTIONS":
+            response = Response(status_code=200)
+            if origin_allowed:
+                # Add CORS headers for allowed origins
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+                response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+                response.headers["Access-Control-Allow-Headers"] = "*"
+                response.headers["Access-Control-Max-Age"] = "3600"
+            # Always return 200 for OPTIONS, even if origin not allowed
+            # Browser will block the actual request if origin not allowed
+            return response
+        
+        # Process the request
+        response = await call_next(request)
+        
+        # Ensure CORS headers are present on all responses for allowed origins
+        if origin_allowed:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Expose-Headers"] = "*"
+        
+        return response
+
+
+# Add CORS enforcement middleware FIRST (outermost layer)
+# This ensures CORS headers are always present, even if CORSMiddleware fails
+app.add_middleware(CORSEnforcementMiddleware)
 
 # CORS Configuration - applies to ALL routes automatically
 # This middleware handles preflight OPTIONS requests for all endpoints
@@ -81,17 +120,38 @@ async def health_check():
     return {"status": "healthy"}
 
 
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str, request: Request):
+    """Global OPTIONS handler for all routes - handles preflight requests"""
+    origin = request.headers.get("origin")
+    if origin and origin in cors_origins:
+        return Response(
+            status_code=200,
+            headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Max-Age": "3600",
+            }
+        )
+    return Response(status_code=200)
+
+
 @app.get("/api/debug/cors")
-async def debug_cors():
+async def debug_cors(request: Request):
     """Debug endpoint to check CORS configuration (for troubleshooting)
     
     CORS middleware automatically applies to this and all other routes.
     The middleware handles OPTIONS preflight requests automatically.
     """
+    origin = request.headers.get("origin", "Not provided")
     return {
         "cors_origins": settings.cors_origins_list,
         "cors_origins_count": len(settings.cors_origins_list),
         "cors_origins_raw": settings.CORS_ORIGINS,
+        "request_origin": origin,
+        "origin_allowed": origin in settings.cors_origins_list if origin != "Not provided" else None,
         "allow_credentials": True,
         "allow_methods": ["*"],
         "allow_headers": ["*"],
