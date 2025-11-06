@@ -16,31 +16,40 @@ class APIClient {
 
   /**
    * Get authentication headers with Supabase token
+   * Note: Content-Type is only added for requests with bodies (POST, PUT, PATCH)
    */
-  async getAuthHeaders() {
+  async getAuthHeaders(includeContentType = false) {
     const { data: { session } } = await supabase.auth.getSession();
 
-    if (!session?.access_token) {
-      return {
-        'Content-Type': 'application/json',
-      };
+    const headers = {};
+    
+    // Only add Content-Type for requests with bodies
+    if (includeContentType) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
+    // Add Authorization header if session exists
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
     }
 
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-    };
+    return headers;
   }
 
   /**
    * Make a request to the API
+   * Includes credentials for CORS with authentication
    */
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    const headers = await this.getAuthHeaders();
+    
+    // Determine if we need Content-Type header (for requests with bodies)
+    const hasBody = options.body !== undefined;
+    const headers = await this.getAuthHeaders(hasBody);
 
     const config = {
       ...options,
+      credentials: 'include', // Required for CORS with credentials
       headers: {
         ...headers,
         ...options.headers,
@@ -67,13 +76,23 @@ class APIClient {
 
       return data;
     } catch (error) {
-      console.error(`API request failed: ${endpoint}`, error);
+      // Enhanced error logging for CORS issues
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        console.error(`API request failed: ${endpoint}`, {
+          error: error.message,
+          url,
+          possibleCorsIssue: 'Check CORS configuration and network connectivity',
+        });
+      } else {
+        console.error(`API request failed: ${endpoint}`, error);
+      }
       throw error;
     }
   }
 
   /**
    * GET request
+   * Note: GET requests don't need Content-Type header (no body)
    */
   async get(endpoint, params = {}) {
     const queryString = new URLSearchParams(params).toString();
@@ -81,6 +100,7 @@ class APIClient {
 
     return this.request(url, {
       method: 'GET',
+      // No body, so no Content-Type header needed
     });
   }
 
@@ -125,6 +145,7 @@ class APIClient {
 
   /**
    * Upload file with multipart/form-data
+   * Note: Don't set Content-Type for FormData - browser will set it with boundary
    */
   async upload(endpoint, formData) {
     const { data: { session } } = await supabase.auth.getSession();
@@ -133,12 +154,14 @@ class APIClient {
     if (session?.access_token) {
       headers['Authorization'] = `Bearer ${session.access_token}`;
     }
+    // Don't set Content-Type - browser will set it automatically with boundary for FormData
 
     const url = `${this.baseURL}${endpoint}`;
 
     try {
       const response = await fetch(url, {
         method: 'POST',
+        credentials: 'include', // Required for CORS with credentials
         headers,
         body: formData,
       });
@@ -159,7 +182,9 @@ class APIClient {
   // Health check
   async healthCheck() {
     try {
-      const response = await fetch(`${this.baseURL}/health`);
+      const response = await fetch(`${this.baseURL}/health`, {
+        credentials: 'include', // Required for CORS with credentials
+      });
       return response.ok;
     } catch (error) {
       return false;
