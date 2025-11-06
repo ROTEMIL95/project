@@ -8,7 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Create HTTPBearer with auto_error=False for OPTIONS requests
+# Create HTTPBearer instance for token extraction
 security = HTTPBearer(auto_error=False)
 
 
@@ -17,18 +17,10 @@ def verify_supabase_token(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ) -> dict:
     """Verify Supabase JWT token and return user data
-    Note: OPTIONS requests should be handled by CORS middleware before reaching here
+
+    Note: CORSMiddleware intercepts OPTIONS requests before they reach this dependency,
+    so we don't need to handle OPTIONS here.
     """
-    # Skip authentication for OPTIONS requests (preflight) - should not reach here
-    # but handle gracefully just in case
-    if request.method == "OPTIONS":
-        # Return a dummy payload - this should never be used since OPTIONS is handled by middleware
-        return {
-            "sub": "OPTIONS_BYPASS",
-            "email": None,
-            "user_metadata": {}
-        }
-    
     # If no credentials provided, raise error
     if credentials is None:
         raise HTTPException(
@@ -77,15 +69,12 @@ def verify_token(
 
 
 def get_current_user(request: Request, payload: dict = Depends(verify_token)) -> str:
-    """Get current user ID from token payload - skips OPTIONS requests
-    Note: OPTIONS requests should be handled by CORS middleware before reaching here
+    """Get current user ID from token payload
+
+    Note: CORSMiddleware intercepts OPTIONS requests before they reach this dependency.
     """
-    # Skip authentication for OPTIONS requests (preflight) - should not reach here
-    if request.method == "OPTIONS":
-        return "OPTIONS_BYPASS"
-    
     user_id: Optional[str] = payload.get("sub")
-    if user_id is None or user_id == "OPTIONS_BYPASS":
+    if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
@@ -94,12 +83,10 @@ def get_current_user(request: Request, payload: dict = Depends(verify_token)) ->
 
 
 def get_current_user_data(request: Request, payload: dict = Depends(verify_token)) -> dict:
-    """Get current user full data from token payload - skips OPTIONS requests
-    Note: OPTIONS requests should be handled by CORS middleware before reaching here
+    """Get current user full data from token payload
+
+    Note: CORSMiddleware intercepts OPTIONS requests before they reach this dependency.
     """
-    # Skip authentication for OPTIONS requests (preflight) - should not reach here
-    if request.method == "OPTIONS":
-        return {"sub": "OPTIONS_BYPASS", "email": None, "user_metadata": {}}
     return payload
 
 
@@ -107,11 +94,10 @@ def get_optional_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))
 ) -> Optional[str]:
-    """Get current user ID if token is provided, otherwise return None - skips OPTIONS requests"""
-    # Skip authentication for OPTIONS requests (preflight)
-    if request.method == "OPTIONS":
-        return None
-    
+    """Get current user ID if token is provided, otherwise return None
+
+    Note: CORSMiddleware intercepts OPTIONS requests before they reach this dependency.
+    """
     if credentials is None:
         return None
 

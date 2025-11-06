@@ -1,6 +1,5 @@
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
 from app.config import settings
 from app.middleware.error_handler import setup_exception_handlers
 import logging
@@ -32,67 +31,24 @@ logger.info(f"  Number of origins: {len(cors_origins)}")
 logger.info("=" * 60)
 
 
-class CORSEnforcementMiddleware(BaseHTTPMiddleware):
-    """Middleware to ensure CORS headers are always present on all responses
-    This MUST be the first middleware to intercept OPTIONS requests before dependencies run
-    """
-    
-    async def dispatch(self, request: Request, call_next):
-        origin = request.headers.get("origin")
-        origin_allowed = origin and origin in cors_origins
-        
-        # Handle OPTIONS preflight requests explicitly - MUST return before dependencies run
-        if request.method == "OPTIONS":
-            # Read requested headers and methods from preflight request
-            requested_headers = request.headers.get("access-control-request-headers", "*")
-            requested_method = request.headers.get("access-control-request-method", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
-            
-            response = Response(status_code=200)
-            if origin_allowed:
-                # Add CORS headers for allowed origins
-                response.headers["Access-Control-Allow-Origin"] = origin
-                response.headers["Access-Control-Allow-Credentials"] = "true"
-                response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
-                # Echo back the requested headers (or allow all)
-                response.headers["Access-Control-Allow-Headers"] = requested_headers if requested_headers else "*"
-                response.headers["Access-Control-Max-Age"] = "3600"
-                response.headers["Vary"] = "Origin"
-            # Always return 200 for OPTIONS, even if origin not allowed
-            # Browser will block the actual request if origin not allowed
-            return response
-        
-        # Process the request
-        response = await call_next(request)
-        
-        # Ensure CORS headers are present on all responses for allowed origins
-        if origin_allowed:
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Expose-Headers"] = "*"
-            response.headers["Vary"] = "Origin"
-        
-        return response
+# CRITICAL: In FastAPI/Starlette, middleware executes in REVERSE order
+# The LAST middleware added runs FIRST (outermost layer)
+# CORSMiddleware MUST be added LAST to intercept OPTIONS/preflight before auth dependencies
 
-
-# Add CORS enforcement middleware FIRST (outermost layer)
-# This ensures CORS headers are always present, even if CORSMiddleware fails
-app.add_middleware(CORSEnforcementMiddleware)
-
-# CORS Configuration - applies to ALL routes automatically
-# This middleware handles preflight OPTIONS requests for all endpoints
-# including: /, /health, /api/*, /docs, /redoc, etc.
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, PUT, DELETE, PATCH, OPTIONS, etc.)
-    allow_headers=["*"],  # Allow all headers (Authorization, Content-Type, etc.)
-    expose_headers=["*"],  # Expose all headers to the client
-    max_age=3600,  # Cache preflight requests for 1 hour
-)
-
-# Setup exception handlers
+# Setup exception handlers FIRST (they run LAST, innermost layer)
 setup_exception_handlers(app)
+
+
+# Add startup event to verify CORS configuration
+@app.on_event("startup")
+async def startup_event():
+    """Log CORS configuration at startup"""
+    logger.info("=" * 60)
+    logger.info("Application Startup:")
+    logger.info(f"  CORS Origins: {cors_origins}")
+    logger.info(f"  Frontend Origin Check: https://calculatesmartil.netlify.app in list = {('https://calculatesmartil.netlify.app' in cors_origins)}")
+    logger.info("  CORS Handling: FastAPI CORSMiddleware (last added = first to run)")
+    logger.info("=" * 60)
 
 # Import Routers
 from app.routers import (
@@ -129,35 +85,13 @@ async def health_check():
     return {"status": "healthy"}
 
 
-@app.options("/{full_path:path}")
-async def options_handler(full_path: str, request: Request):
-    """Global OPTIONS handler for all routes - handles preflight requests
-    Note: This is a backup handler - CORSEnforcementMiddleware should intercept OPTIONS first
-    """
-    origin = request.headers.get("origin")
-    requested_headers = request.headers.get("access-control-request-headers", "*")
-    
-    if origin and origin in cors_origins:
-        return Response(
-            status_code=200,
-            headers={
-                "Access-Control-Allow-Origin": origin,
-                "Access-Control-Allow-Credentials": "true",
-                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-                "Access-Control-Allow-Headers": requested_headers if requested_headers else "*",
-                "Access-Control-Max-Age": "3600",
-                "Vary": "Origin",
-            }
-        )
-    return Response(status_code=200)
 
 
 @app.get("/api/debug/cors")
 async def debug_cors(request: Request):
     """Debug endpoint to check CORS configuration (for troubleshooting)
-    
-    CORS middleware automatically applies to this and all other routes.
-    The middleware handles OPTIONS preflight requests automatically.
+
+    CORSMiddleware is added last, so it runs first and handles all OPTIONS preflight requests.
     """
     origin = request.headers.get("origin", "Not provided")
     return {
@@ -169,5 +103,18 @@ async def debug_cors(request: Request):
         "allow_credentials": True,
         "allow_methods": ["*"],
         "allow_headers": ["*"],
-        "note": "CORS middleware applies to ALL routes automatically, including all /api/* endpoints"
+        "note": "CORSMiddleware handles all preflight OPTIONS requests before they reach auth dependencies"
     }
+
+
+# CRITICAL: Add CORSMiddleware LAST so it runs FIRST (outermost layer)
+# This ensures OPTIONS/preflight requests are intercepted before hitting authentication dependencies
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, PUT, DELETE, PATCH, OPTIONS, etc.)
+    allow_headers=["*"],  # Allow all headers (Authorization, Content-Type, etc.)
+    expose_headers=["*"],  # Expose all headers to the client
+    max_age=3600,  # Cache preflight requests for 1 hour
+)
