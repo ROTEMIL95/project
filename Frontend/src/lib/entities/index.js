@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { quotesAPI } from '@/lib/api';  // Import backend API client
 
 // Helper function to convert camelCase to snake_case
 const toSnakeCase = (str) => {
@@ -183,35 +184,34 @@ export class Quote {
 
   static async filter(filters = {}) {
     try {
-      let query = supabase
-        .from('quotes')
-        .select('*');
+      console.log('[Quote.filter] Calling backend API with filters:', filters);
 
-      // Apply filters (using correct field names from database)
-      if (filters.created_by || filters.user_id) {
-        // Support both field names for backwards compatibility
-        const userId = filters.user_id || filters.created_by;
-        query = query.eq('user_id', userId);
-      }
+      // Call backend API instead of Supabase directly
+      // Backend uses admin client to bypass PostgREST/RLS issues
+      const params = {};
+
       if (filters.status) {
-        query = query.eq('status', filters.status);
+        params.status_filter = filters.status;
       }
       if (filters.client_id) {
-        query = query.eq('client_id', filters.client_id);
+        params.client_id = filters.client_id;
+      }
+      if (filters.skip !== undefined) {
+        params.skip = filters.skip;
+      }
+      if (filters.limit !== undefined) {
+        params.limit = filters.limit;
       }
 
-      // Order by created_at descending (correct field name)
-      query = query.order('created_at', { ascending: false });
+      const response = await quotesAPI.list(params);
 
-      const { data, error } = await query;
+      console.log('[Quote.filter] Backend API response:', response);
 
-      if (error) {
-        console.error("Error fetching quotes:", error);
-        throw error;
-      }
+      // Backend returns {quotes: [...], total: N}
+      const quotes = response.quotes || response || [];
 
-      // Convert snake_case keys back to camelCase for frontend
-      return (data || []).map(quote => convertKeysToCamelCase(quote));
+      // Convert snake_case keys to camelCase if needed
+      return quotes.map(quote => convertKeysToCamelCase(quote));
     } catch (error) {
       console.error("Quote.filter error:", error);
       return [];
