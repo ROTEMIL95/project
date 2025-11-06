@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(timeout:*)",
+      "Bash(./venv/Scripts/python.exe -m uvicorn:*)",
+      "Bash(./venv/Scripts/python.exe -m pip install:*)",
+      "Bash(curl:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm run build)",
+      "Bash(cat:*)",
+      "Bash(git log:*)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(python:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
