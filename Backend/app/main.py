@@ -33,22 +33,30 @@ logger.info("=" * 60)
 
 
 class CORSEnforcementMiddleware(BaseHTTPMiddleware):
-    """Middleware to ensure CORS headers are always present on all responses"""
+    """Middleware to ensure CORS headers are always present on all responses
+    This MUST be the first middleware to intercept OPTIONS requests before dependencies run
+    """
     
     async def dispatch(self, request: Request, call_next):
         origin = request.headers.get("origin")
         origin_allowed = origin and origin in cors_origins
         
-        # Handle OPTIONS preflight requests explicitly
+        # Handle OPTIONS preflight requests explicitly - MUST return before dependencies run
         if request.method == "OPTIONS":
+            # Read requested headers and methods from preflight request
+            requested_headers = request.headers.get("access-control-request-headers", "*")
+            requested_method = request.headers.get("access-control-request-method", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
+            
             response = Response(status_code=200)
             if origin_allowed:
                 # Add CORS headers for allowed origins
                 response.headers["Access-Control-Allow-Origin"] = origin
                 response.headers["Access-Control-Allow-Credentials"] = "true"
                 response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
-                response.headers["Access-Control-Allow-Headers"] = "*"
+                # Echo back the requested headers (or allow all)
+                response.headers["Access-Control-Allow-Headers"] = requested_headers if requested_headers else "*"
                 response.headers["Access-Control-Max-Age"] = "3600"
+                response.headers["Vary"] = "Origin"
             # Always return 200 for OPTIONS, even if origin not allowed
             # Browser will block the actual request if origin not allowed
             return response
@@ -61,6 +69,7 @@ class CORSEnforcementMiddleware(BaseHTTPMiddleware):
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Credentials"] = "true"
             response.headers["Access-Control-Expose-Headers"] = "*"
+            response.headers["Vary"] = "Origin"
         
         return response
 
@@ -122,8 +131,12 @@ async def health_check():
 
 @app.options("/{full_path:path}")
 async def options_handler(full_path: str, request: Request):
-    """Global OPTIONS handler for all routes - handles preflight requests"""
+    """Global OPTIONS handler for all routes - handles preflight requests
+    Note: This is a backup handler - CORSEnforcementMiddleware should intercept OPTIONS first
+    """
     origin = request.headers.get("origin")
+    requested_headers = request.headers.get("access-control-request-headers", "*")
+    
     if origin and origin in cors_origins:
         return Response(
             status_code=200,
@@ -131,8 +144,9 @@ async def options_handler(full_path: str, request: Request):
                 "Access-Control-Allow-Origin": origin,
                 "Access-Control-Allow-Credentials": "true",
                 "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Headers": requested_headers if requested_headers else "*",
                 "Access-Control-Max-Age": "3600",
+                "Vary": "Origin",
             }
         )
     return Response(status_code=200)

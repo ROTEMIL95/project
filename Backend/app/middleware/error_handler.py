@@ -17,9 +17,10 @@ def add_cors_headers(response: JSONResponse, request: Request) -> JSONResponse:
     if origin and origin in cors_origins:
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["Access-Control-Expose-Headers"] = "*"
+        response.headers["Vary"] = "Origin"
     elif "*" in cors_origins:
         # If wildcard is allowed (not recommended with credentials)
         response.headers["Access-Control-Allow-Origin"] = "*"
