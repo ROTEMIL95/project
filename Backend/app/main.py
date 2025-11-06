@@ -10,6 +10,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
+logger = logging.getLogger(__name__)
+
 app = FastAPI(
     title="Contractor Management System API",
     description="Backend API for contractor expense calculation system",
@@ -18,13 +20,25 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS Configuration
+# Get CORS origins list
+cors_origins = settings.cors_origins_list
+
+# Log CORS configuration at startup
+logger.info("=" * 60)
+logger.info("CORS Configuration:")
+logger.info(f"  Allowed Origins: {cors_origins}")
+logger.info(f"  Number of origins: {len(cors_origins)}")
+logger.info("=" * 60)
+
+# CORS Configuration with explicit options
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"],  # Expose all headers to the client
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 # Setup exception handlers
@@ -63,3 +77,16 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
+
+
+@app.get("/api/debug/cors")
+async def debug_cors():
+    """Debug endpoint to check CORS configuration (for troubleshooting)"""
+    return {
+        "cors_origins": settings.cors_origins_list,
+        "cors_origins_count": len(settings.cors_origins_list),
+        "cors_origins_raw": settings.CORS_ORIGINS,
+        "allow_credentials": True,
+        "allow_methods": ["*"],
+        "allow_headers": ["*"],
+    }
