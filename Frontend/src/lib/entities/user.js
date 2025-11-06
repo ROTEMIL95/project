@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { userProfileAPI } from '@/lib/api';
 
 // Helper function to convert camelCase to snake_case
 const toSnakeCase = (str) => {
@@ -56,25 +57,9 @@ export class User {
 
   static async list(orderBy = '-created_at') {
     try {
-      let query = supabase
-        .from('user_profiles')
-        .select('*');
-
-      // Parse orderBy parameter
-      if (orderBy) {
-        const isDescending = orderBy.startsWith('-');
-        const field = isDescending ? orderBy.substring(1) : orderBy;
-        query = query.order(field, { ascending: !isDescending });
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error fetching users:", error);
-        throw error;
-      }
-
-      // Convert snake_case keys to camelCase for frontend
+      const data = await userProfileAPI.list();
+      // Backend orders by created_at descending by default
+      // Client-side sorting can be added if needed for different orderBy values
       return (data || []).map(user => convertKeysToCamelCase(user));
     } catch (error) {
       console.error("User.list error:", error);
@@ -84,17 +69,7 @@ export class User {
 
   static async getById(id) {
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('auth_user_id', id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching user:", error);
-        throw error;
-      }
-
+      const data = await userProfileAPI.get(id);
       // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -107,19 +82,7 @@ export class User {
     try {
       // Convert camelCase keys to snake_case for database
       const snakeCaseUpdates = convertKeysToSnakeCase(updates);
-
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .update(snakeCaseUpdates)
-        .eq('auth_user_id', userId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error updating user:", error);
-        throw error;
-      }
-
+      const data = await userProfileAPI.update(userId, snakeCaseUpdates);
       // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -130,21 +93,7 @@ export class User {
 
   static async delete(userId) {
     try {
-      // Delete from user_profiles table
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .delete()
-        .eq('auth_user_id', userId);
-
-      if (profileError) {
-        console.error("Error deleting user profile:", profileError);
-        throw profileError;
-      }
-
-      // Note: Deleting from auth.users requires admin privileges
-      // This should be done via a Supabase Edge Function or backend API
-      // For now, we'll just delete the profile
-
+      await userProfileAPI.delete(userId);
       return true;
     } catch (error) {
       console.error("User.delete error:", error);
@@ -154,30 +103,11 @@ export class User {
 
   static async updateMyUserData(updates) {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-
-      if (error) {
-        throw error;
-      }
-
-      if (!user) {
-        throw new Error('No user logged in');
-      }
-
       // Convert camelCase keys to snake_case for database
       const snakeCaseUpdates = convertKeysToSnakeCase(updates);
-
-      // Update user_profiles table
-      const { data, error: updateError } = await supabase
-        .from('user_profiles')
-        .update(snakeCaseUpdates)
-        .eq('auth_user_id', user.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        throw updateError;
-      }
+      
+      // Update user_profiles table via backend API
+      const data = await userProfileAPI.updateMe(snakeCaseUpdates);
 
       // Trigger UserContext refresh to reload updated data
       window.dispatchEvent(new CustomEvent('user-data-updated'));

@@ -214,10 +214,25 @@ export const templatesAPI = {
 };
 
 export const financialAPI = {
+  // Analytics endpoints
   summary: () => api.get('/api/financial/summary'),
   revenue: (params) => api.get('/api/financial/revenue', params),
   expenses: (params) => api.get('/api/financial/expenses', params),
   cashFlow: (params) => api.get('/api/financial/cash-flow', params),
+  // CRUD operations
+  list: (params) => api.get('/api/financial', params),
+  get: (id) => api.get(`/api/financial/${id}`),
+  create: (data) => api.post('/api/financial', data),
+  update: (id, data) => api.put(`/api/financial/${id}`, data),
+  delete: (id) => api.delete(`/api/financial/${id}`),
+};
+
+export const categoriesAPI = {
+  list: () => api.get('/api/catalog/categories'),
+  get: (id) => api.get(`/api/catalog/categories/${id}`),
+  create: (data) => api.post('/api/catalog/categories', data),
+  update: (id, data) => api.put(`/api/catalog/categories/${id}`, data),
+  delete: (id) => api.delete(`/api/catalog/categories/${id}`),
 };
 
 export const contractorPricingAPI = {
@@ -242,4 +257,12 @@ export const userAPI = {
   register: (data) => api.post('/api/auth/register', data),
   login: (data) => api.post('/api/auth/login', data),
   refresh: () => api.post('/api/auth/refresh'),
+};
+
+export const userProfileAPI = {
+  list: () => api.get('/api/auth/users'),
+  get: (id) => api.get(`/api/auth/users/${id}`),
+  update: (id, data) => api.put(`/api/auth/users/${id}`, data),
+  delete: (id) => api.delete(`/api/auth/users/${id}`),
+  updateMe: (data) => api.put('/api/auth/me', data),
 };

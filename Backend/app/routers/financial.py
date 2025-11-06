@@ -48,6 +48,76 @@ async def list_transactions(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to list transactions")
 
 
+@router.get("/{transaction_id}", response_model=FinancialTransactionResponse)
+async def get_transaction(transaction_id: str, user_id: str = Depends(get_current_user)):
+    """Get a specific financial transaction by ID"""
+    supabase = get_supabase()
+    try:
+        response = supabase.table("financial_transactions")\
+            .select("*")\
+            .eq("id", transaction_id)\
+            .eq("user_id", user_id)\
+            .execute()
+        
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Transaction not found"
+            )
+        
+        return response.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting transaction: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get transaction"
+        )
+
+
+@router.put("/{transaction_id}", response_model=FinancialTransactionResponse)
+async def update_transaction(
+    transaction_id: str,
+    transaction: FinancialTransactionUpdate,
+    user_id: str = Depends(get_current_user)
+):
+    """Update a financial transaction"""
+    supabase = get_supabase()
+    try:
+        # Check if transaction exists and belongs to user
+        existing = supabase.table("financial_transactions")\
+            .select("*")\
+            .eq("id", transaction_id)\
+            .eq("user_id", user_id)\
+            .execute()
+        
+        if not existing.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Transaction not found"
+            )
+        
+        # Update transaction
+        update_data = transaction.model_dump(exclude_unset=True)
+        if update_data:
+            response = supabase.table("financial_transactions")\
+                .update(update_data)\
+                .eq("id", transaction_id)\
+                .execute()
+            return response.data[0]
+        
+        return existing.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating transaction: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update transaction"
+        )
+
+
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_transaction(transaction_id: str, user_id: str = Depends(get_current_user)):
     """Delete a financial transaction"""

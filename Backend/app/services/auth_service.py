@@ -203,6 +203,22 @@ async def get_user_by_id(user_id: str) -> dict:
         )
 
 
+async def list_users() -> list:
+    """List all user profiles"""
+    supabase = get_supabase()
+
+    try:
+        response = supabase.table("user_profiles").select("*").order("created_at", desc=True).execute()
+        return response.data or []
+
+    except Exception as e:
+        logger.error(f"List users error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to list users"
+        )
+
+
 async def update_user_profile(user_id: str, user_data: dict) -> dict:
     """Update user profile"""
     supabase = get_supabase()
@@ -242,4 +258,34 @@ async def update_user_profile(user_id: str, user_data: dict) -> dict:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update user"
+        )
+
+
+async def delete_user(user_id: str) -> None:
+    """Delete user profile"""
+    supabase = get_supabase()
+
+    try:
+        # Check if user exists
+        existing = supabase.table("user_profiles").select("*").eq("auth_user_id", user_id).execute()
+
+        if not existing.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        # Delete user profile
+        supabase.table("user_profiles").delete().eq("auth_user_id", user_id).execute()
+
+        # Note: Deleting from Supabase Auth requires admin privileges
+        # This is handled through Supabase backend
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Delete user error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete user"
         )

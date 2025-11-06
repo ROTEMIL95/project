@@ -86,6 +86,82 @@ async def get_category(
         )
 
 
+@router.put("/categories/{category_id}", response_model=CategoryResponse)
+async def update_category(
+    category_id: str,
+    category: CategoryUpdate,
+    user_id: str = Depends(get_current_user)
+):
+    """Update a category (admin only)"""
+    supabase = get_supabase()
+
+    try:
+        # Check if category exists
+        existing = supabase.table("categories")\
+            .select("*")\
+            .eq("id", category_id)\
+            .execute()
+
+        if not existing.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Category not found"
+            )
+
+        # Update category
+        update_data = category.model_dump(exclude_unset=True)
+        if update_data:
+            response = supabase.table("categories")\
+                .update(update_data)\
+                .eq("id", category_id)\
+                .execute()
+            return response.data[0]
+
+        return existing.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating category: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update category"
+        )
+
+
+@router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_category(
+    category_id: str,
+    user_id: str = Depends(get_current_user)
+):
+    """Delete a category (admin only)"""
+    supabase = get_supabase()
+
+    try:
+        # Check if category exists
+        existing = supabase.table("categories")\
+            .select("*")\
+            .eq("id", category_id)\
+            .execute()
+
+        if not existing.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Category not found"
+            )
+
+        # Delete category
+        supabase.table("categories").delete().eq("id", category_id).execute()
+        return None
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting category: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete category"
+        )
+
+
 # ============================================================================
 # CATALOG ITEM ROUTES
 # ============================================================================

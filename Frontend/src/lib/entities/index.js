@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { quotesAPI, categoriesAPI, projectsAPI, financialAPI } from '@/lib/api';  // Import backend API clients
 
 // Helper function to convert camelCase to snake_case
 const toSnakeCase = (str) => {
@@ -50,16 +50,7 @@ export class Category {
 
   static async list() {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-      
-      if (error) {
-        console.error("Error fetching categories:", error);
-        throw error;
-      }
-      
+      const data = await categoriesAPI.list();
       // Convert snake_case keys to camelCase for frontend
       return (data || []).map(category => convertKeysToCamelCase(category));
     } catch (error) {
@@ -70,17 +61,7 @@ export class Category {
 
   static async getById(id) {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching category:", error);
-        throw error;
-      }
-
+      const data = await categoriesAPI.get(id);
       // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -93,18 +74,7 @@ export class Category {
     try {
       // Convert camelCase keys to snake_case for database
       const snakeCaseData = convertKeysToSnakeCase(categoryData);
-      
-      const { data, error } = await supabase
-        .from('categories')
-        .insert([snakeCaseData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error creating category:", error);
-        throw error;
-      }
-
+      const data = await categoriesAPI.create(snakeCaseData);
       // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -117,19 +87,7 @@ export class Category {
     try {
       // Convert camelCase keys to snake_case for database
       const snakeCaseUpdates = convertKeysToSnakeCase(updates);
-      
-      const { data, error } = await supabase
-        .from('categories')
-        .update(snakeCaseUpdates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error updating category:", error);
-        throw error;
-      }
-
+      const data = await categoriesAPI.update(id, snakeCaseUpdates);
       // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -140,16 +98,7 @@ export class Category {
 
   static async delete(id) {
     try {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error("Error deleting category:", error);
-        throw error;
-      }
-
+      await categoriesAPI.delete(id);
       return true;
     } catch (error) {
       console.error("Category.delete error:", error);
@@ -183,74 +132,44 @@ export class Quote {
 
   static async filter(filters = {}) {
     try {
-      let query = supabase
-        .from('quotes')
-        .select('*');
+      console.log('[Quote.filter] Calling backend API with filters:', filters);
 
-      // Apply filters (using correct field names from database)
-      if (filters.created_by || filters.user_id) {
-        // Support both field names for backwards compatibility
-        const userId = filters.user_id || filters.created_by;
-        query = query.eq('user_id', userId);
-      }
+      // Call backend API instead of Supabase directly
+      const params = {};
+
       if (filters.status) {
-        query = query.eq('status', filters.status);
+        params.status_filter = filters.status;
       }
       if (filters.client_id) {
-        query = query.eq('client_id', filters.client_id);
+        params.client_id = filters.client_id;
+      }
+      if (filters.skip !== undefined) {
+        params.skip = filters.skip;
+      }
+      if (filters.limit !== undefined) {
+        params.limit = filters.limit;
       }
 
-      // Order by created_at descending (correct field name)
-      query = query.order('created_at', { ascending: false });
+      const response = await quotesAPI.list(params);
+      console.log('[Quote.filter] Backend API response:', response);
 
-      const { data, error } = await query;
+      // Backend returns {quotes: [...], total: N}
+      const quotes = response.quotes || response || [];
 
-      if (error) {
-        console.error("Error fetching quotes:", error);
-        throw error;
-      }
-
-      // Convert snake_case keys back to camelCase for frontend
-      return (data || []).map(quote => convertKeysToCamelCase(quote));
+      // Convert snake_case keys to camelCase if needed
+      return quotes.map(quote => convertKeysToCamelCase(quote));
     } catch (error) {
       console.error("Quote.filter error:", error);
       return [];
     }
   }
 
-  static async getById(id, userId = null) {
+  static async getById(id) {
     try {
-      console.log('[Quote.getById] Fetching quote:', { id, userId });
-      
-      let query = supabase
-        .from('quotes')
-        .select('*')
-        .eq('id', id);
-      
-      // Add user_id filter if provided (helps with RLS and ownership checks)
-      if (userId) {
-        query = query.eq('user_id', userId);
-      }
-      
-      const { data, error } = await query.single();
-
-      if (error) {
-        console.error("[Quote.getById] Supabase error:", {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        });
-        throw error;
-      }
-
-      console.log('[Quote.getById] Raw data from Supabase:', data);
-      
+      console.log('[Quote.getById] Fetching quote via backend API:', id);
+      const data = await quotesAPI.get(id);
       // Convert snake_case keys back to camelCase for frontend
-      const converted = data ? convertKeysToCamelCase(data) : null;
-      console.log('[Quote.getById] Converted data:', converted);
-      
-      return converted;
+      return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
       console.error("[Quote.getById] Exception:", error);
       return null;
@@ -261,18 +180,7 @@ export class Quote {
     try {
       // Convert camelCase keys to snake_case for database
       const snakeCaseData = convertKeysToSnakeCase(quoteData);
-      
-      const { data, error } = await supabase
-        .from('quotes')
-        .insert([snakeCaseData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error creating quote:", error);
-        throw error;
-      }
-
+      const data = await quotesAPI.create(snakeCaseData);
       // Convert snake_case keys back to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -285,19 +193,7 @@ export class Quote {
     try {
       // Convert camelCase keys to snake_case for database
       const snakeCaseUpdates = convertKeysToSnakeCase(updates);
-      
-      const { data, error } = await supabase
-        .from('quotes')
-        .update(snakeCaseUpdates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error updating quote:", error);
-        throw error;
-      }
-
+      const data = await quotesAPI.update(id, snakeCaseUpdates);
       // Convert snake_case keys back to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -308,16 +204,7 @@ export class Quote {
 
   static async delete(id) {
     try {
-      const { error } = await supabase
-        .from('quotes')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error("Error deleting quote:", error);
-        throw error;
-      }
-
+      await quotesAPI.delete(id);
       return true;
     } catch (error) {
       console.error("Quote.delete error:", error);
@@ -339,33 +226,28 @@ export class Project {
 
   static async filter(filters = {}) {
     try {
-      let query = supabase
-        .from('projects')
-        .select('*');
+      const params = {};
 
-      // Apply filters
-      if (filters.user_id) {
-        query = query.eq('user_id', filters.user_id);
-      }
       if (filters.status) {
-        query = query.eq('status', filters.status);
+        params.status_filter = filters.status;
       }
       if (filters.client_id) {
-        query = query.eq('client_id', filters.client_id);
+        params.client_id = filters.client_id;
+      }
+      if (filters.skip !== undefined) {
+        params.skip = filters.skip;
+      }
+      if (filters.limit !== undefined) {
+        params.limit = filters.limit;
       }
 
-      // Order by created_at descending
-      query = query.order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error fetching projects:", error);
-        throw error;
-      }
+      const response = await projectsAPI.list(params);
+      
+      // Backend returns {projects: [...], total: N}
+      const projects = response.projects || response || [];
 
       // Convert snake_case keys to camelCase for frontend
-      return (data || []).map(project => convertKeysToCamelCase(project));
+      return projects.map(project => convertKeysToCamelCase(project));
     } catch (error) {
       console.error("Project.filter error:", error);
       return [];
@@ -374,17 +256,7 @@ export class Project {
 
   static async getById(id) {
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching project:", error);
-        throw error;
-      }
-
+      const data = await projectsAPI.get(id);
       // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -397,18 +269,7 @@ export class Project {
     try {
       // Convert camelCase keys to snake_case for database
       const snakeCaseData = convertKeysToSnakeCase(projectData);
-      
-      const { data, error } = await supabase
-        .from('projects')
-        .insert([snakeCaseData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error creating project:", error);
-        throw error;
-      }
-
+      const data = await projectsAPI.create(snakeCaseData);
       // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -421,19 +282,7 @@ export class Project {
     try {
       // Convert camelCase keys to snake_case for database
       const snakeCaseUpdates = convertKeysToSnakeCase(updates);
-      
-      const { data, error } = await supabase
-        .from('projects')
-        .update(snakeCaseUpdates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error updating project:", error);
-        throw error;
-      }
-
+      const data = await projectsAPI.update(id, snakeCaseUpdates);
       // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -444,16 +293,7 @@ export class Project {
 
   static async delete(id) {
     try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error("Error deleting project:", error);
-        throw error;
-      }
-
+      await projectsAPI.delete(id);
       return true;
     } catch (error) {
       console.error("Project.delete error:", error);
@@ -493,36 +333,28 @@ export class FinancialTransaction {
 
   static async filter(filters = {}) {
     try {
-      let query = supabase
-        .from('financial_transactions')
-        .select('*');
+      const params = {};
 
-      // Apply filters
-      if (filters.user_id) {
-        query = query.eq('user_id', filters.user_id);
-      }
       if (filters.type) {
-        query = query.eq('type', filters.type);
+        params.type_filter = filters.type;
       }
-      if (filters.quote_id) {
-        query = query.eq('quote_id', filters.quote_id);
+      if (filters.category) {
+        params.category = filters.category;
       }
-      if (filters.project_id) {
-        query = query.eq('project_id', filters.project_id);
+      if (filters.skip !== undefined) {
+        params.skip = filters.skip;
+      }
+      if (filters.limit !== undefined) {
+        params.limit = filters.limit;
       }
 
-      // Order by transaction_date descending
-      query = query.order('transaction_date', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error fetching financial transactions:", error);
-        throw error;
-      }
+      const response = await financialAPI.list(params);
+      
+      // Backend returns {transactions: [...], total: N}
+      const transactions = response.transactions || response || [];
 
       // Convert snake_case keys back to camelCase for frontend
-      return (data || []).map(transaction => convertKeysToCamelCase(transaction));
+      return transactions.map(transaction => convertKeysToCamelCase(transaction));
     } catch (error) {
       console.error("FinancialTransaction.filter error:", error);
       return [];
@@ -531,17 +363,7 @@ export class FinancialTransaction {
 
   static async getById(id) {
     try {
-      const { data, error } = await supabase
-        .from('financial_transactions')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching financial transaction:", error);
-        throw error;
-      }
-
+      const data = await financialAPI.get(id);
       // Convert snake_case keys back to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -554,18 +376,7 @@ export class FinancialTransaction {
     try {
       // Convert camelCase keys to snake_case for database
       const snakeCaseData = convertKeysToSnakeCase(transactionData);
-      
-      const { data, error } = await supabase
-        .from('financial_transactions')
-        .insert([snakeCaseData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error creating financial transaction:", error);
-        throw error;
-      }
-
+      const data = await financialAPI.create(snakeCaseData);
       // Convert snake_case keys back to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -578,19 +389,7 @@ export class FinancialTransaction {
     try {
       // Convert camelCase keys to snake_case for database
       const snakeCaseUpdates = convertKeysToSnakeCase(updates);
-      
-      const { data, error } = await supabase
-        .from('financial_transactions')
-        .update(snakeCaseUpdates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error updating financial transaction:", error);
-        throw error;
-      }
-
+      const data = await financialAPI.update(id, snakeCaseUpdates);
       // Convert snake_case keys back to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
@@ -601,16 +400,7 @@ export class FinancialTransaction {
 
   static async delete(id) {
     try {
-      const { error } = await supabase
-        .from('financial_transactions')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error("Error deleting financial transaction:", error);
-        throw error;
-      }
-
+      await financialAPI.delete(id);
       return true;
     } catch (error) {
       console.error("FinancialTransaction.delete error:", error);
