@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { userAPI } from "@/lib/api";  // Import backend API client
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -76,53 +77,29 @@ export default function useSafeUser(options = {}) {
         if (authError) throw authError;
         if (abortRef.current) return;
 
-        // Load user profile data from database
+        // Load user profile data from backend API instead of Supabase
         let profileData = null;
         if (supabaseUser) {
           try {
-            const { data: profile, error: profileError } = await supabase
-              .from('user_profiles')
-              .select('*')
-              .eq('auth_user_id', supabaseUser.id)
-              .single();
-
-            if (profileError) {
-              if (!suppressConsole) {
-                console.error('[useSafeUser] CRITICAL: Profile load error for user', supabaseUser.id, ':', {
-                  error: profileError,
-                  code: profileError.code,
-                  message: profileError.message,
-                  details: profileError.details,
-                  hint: profileError.hint,
-                });
-              }
-              // Continue with null profileData - this might be why non-admin users see no data!
+            // Call backend API - bypasses PostgREST/RLS issues completely
+            if (!suppressConsole) {
+              console.log('[useSafeUser] Fetching profile from backend API for user:', supabaseUser.id);
             }
 
-            profileData = profile;
+            profileData = await userAPI.me();
 
-            if (!suppressConsole && profile) {
-              console.log('[useSafeUser] Profile loaded successfully:', {
+            if (!suppressConsole && profileData) {
+              console.log('[useSafeUser] Profile loaded successfully from backend:', {
                 userId: supabaseUser.id,
-                email: supabaseUser.email,
-                role: profile.role,
-                hasConstructionDefaults: !!profile.construction_defaults,
-                hasConstructionItems: !!profile.construction_subcontractor_items,
-                constructionItemsCount: profile.construction_subcontractor_items?.length || 0,
-                constructionItemsSample: profile.construction_subcontractor_items?.[0] ? {
-                  id: profile.construction_subcontractor_items[0].id,
-                  name: profile.construction_subcontractor_items[0].name,
-                  isActive: profile.construction_subcontractor_items[0].isActive,
-                } : null,
-                rawConstructionItems: Array.isArray(profile.construction_subcontractor_items) ?
-                  profile.construction_subcontractor_items.length :
-                  typeof profile.construction_subcontractor_items,
+                email: profileData.email,
+                role: profileData.role,
+                hasConstructionDefaults: !!profileData.construction_defaults,
+                constructionItemsCount: profileData.construction_subcontractor_items?.length || 0,
               });
-            } else if (!suppressConsole && !profile) {
-              console.warn('[useSafeUser] Profile is NULL after query!', {
+            } else if (!suppressConsole && !profileData) {
+              console.warn('[useSafeUser] Profile is NULL from backend API!', {
                 userId: supabaseUser.id,
                 email: supabaseUser.email,
-                hadError: !!profileError,
               });
             }
           } catch (profileError) {

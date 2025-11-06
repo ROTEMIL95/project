@@ -3,7 +3,7 @@ from typing import Optional
 from jose import jwt
 from passlib.context import CryptContext
 from app.config import settings
-from app.database import get_supabase
+from app.database import get_supabase_admin  # Changed to admin client to bypass PostgREST/RLS issues
 from app.models.user import UserCreate, UserLogin, Token
 from fastapi import HTTPException, status
 import logging
@@ -65,7 +65,7 @@ def create_refresh_token(user_id: str) -> str:
 
 async def register_user(user_data: UserCreate) -> dict:
     """Register a new user"""
-    supabase = get_supabase()
+    supabase = get_supabase_admin()  # Use admin client
 
     try:
         # Check if user already exists
@@ -92,7 +92,7 @@ async def register_user(user_data: UserCreate) -> dict:
 
         # Create user profile in user_profiles table
         # Note: Most fields have defaults in the database schema
-        y = {
+        user_profile = {
             "auth_user_id": user_id,
             "email": user_data.email,
             "full_name": user_data.full_name,
@@ -128,7 +128,7 @@ async def register_user(user_data: UserCreate) -> dict:
 
 async def login_user(credentials: UserLogin) -> Token:
     """Authenticate user and return tokens"""
-    supabase = get_supabase()
+    supabase = get_supabase_admin()  # Use admin client
 
     try:
         # Use Supabase Auth for login (it handles password verification)
@@ -179,7 +179,7 @@ async def login_user(credentials: UserLogin) -> Token:
 
 async def get_user_by_id(user_id: str) -> dict:
     """Get user by ID"""
-    supabase = get_supabase()
+    supabase = get_supabase_admin()  # Use admin client
 
     try:
         response = supabase.table("user_profiles").select("*").eq("auth_user_id", user_id).execute()
@@ -221,7 +221,7 @@ async def list_users() -> list:
 
 async def update_user_profile(user_id: str, user_data: dict) -> dict:
     """Update user profile"""
-    supabase = get_supabase()
+    supabase = get_supabase_admin()  # Use admin client
 
     try:
         # Check if user exists

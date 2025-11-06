@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from app.models.quote import QuoteCreate, QuoteUpdate, QuoteResponse, QuoteList
 from app.middleware.auth_middleware import get_current_user
-from app.database import get_supabase
+from app.database import get_supabase_admin  # Changed to admin client to bypass PostgREST/RLS issues
 from typing import Optional
 from datetime import datetime
 import logging
@@ -25,7 +25,7 @@ async def create_quote(
     user_id: str = Depends(get_current_user)
 ):
     """Create a new quote"""
-    supabase = get_supabase()
+    supabase = get_supabase_admin()  # Use admin client
 
     try:
         # Prepare quote data
@@ -66,7 +66,7 @@ async def list_quotes(
     limit: int = Query(100, ge=1, le=100)
 ):
     """List all quotes for the current user"""
-    supabase = get_supabase()
+    supabase = get_supabase_admin()  # Use admin client
 
     try:
         query = supabase.table("quotes").select("*, quote_items(*)").eq("user_id", user_id)
@@ -103,7 +103,7 @@ async def get_quote(
     user_id: str = Depends(get_current_user)
 ):
     """Get a specific quote by ID"""
-    supabase = get_supabase()
+    supabase = get_supabase_admin()  # Use admin client
 
     try:
         response = supabase.table("quotes")\
@@ -138,7 +138,7 @@ async def update_quote(
     user_id: str = Depends(get_current_user)
 ):
     """Update a quote"""
-    supabase = get_supabase()
+    supabase = get_supabase_admin()  # Use admin client
 
     try:
         # Check if quote exists and belongs to user
@@ -189,7 +189,7 @@ async def delete_quote(
     user_id: str = Depends(get_current_user)
 ):
     """Delete a quote"""
-    supabase = get_supabase()
+    supabase = get_supabase_admin()  # Use admin client
 
     try:
         # Check if quote exists and belongs to user

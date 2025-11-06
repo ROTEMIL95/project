@@ -135,6 +135,7 @@ export class Quote {
       console.log('[Quote.filter] Calling backend API with filters:', filters);
 
       // Call backend API instead of Supabase directly
+      // Backend uses admin client to bypass PostgREST/RLS issues
       const params = {};
 
       if (filters.status) {
