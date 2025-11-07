@@ -15,7 +15,10 @@
       "Bash(xargs sed:*)",
       "Bash(dir /b /a:-d)",
       "Bash(git add:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd Render backend deployment fix documentation and environment template\n\n- Create RENDER_DEPLOYMENT_FIX.md with comprehensive guide to fix CORS errors\n- Add Backend/.env.example with all required environment variables including production URLs\n- Fix CORS_ORIGINS format in Backend/.env (add production URLs)\n- Document the issue: production backend blocking requests from calculatesmartil.netlify.app\n- Provide step-by-step instructions for updating Render environment variables\n- Include troubleshooting section and security notes\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

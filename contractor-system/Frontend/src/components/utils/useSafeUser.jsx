@@ -151,6 +151,9 @@ export default function useSafeUser(options = {}) {
             // Plumbing category data
             plumbingDefaults: profileData?.plumbing_defaults || {},
             plumbingSubcontractorItems: profileData?.plumbing_subcontractor_items || [],
+            // Demolition category data
+            demolitionItems: profileData?.demolition_items || [],
+            demolitionDefaults: profileData?.demolition_defaults || {},
           }
         } : null;
 
