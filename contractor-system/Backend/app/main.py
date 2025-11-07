@@ -35,11 +35,24 @@ for idx, origin in enumerate(cors_origins):
 logger.info("=" * 60)
 
 
-# CRITICAL: In FastAPI/Starlette, middleware executes in REVERSE order
-# The LAST middleware added runs FIRST (outermost layer)
-# CORSMiddleware MUST be added LAST to intercept OPTIONS/preflight before auth dependencies
+# CRITICAL: Add CORSMiddleware FIRST - before any routers or other middleware
+# This ensures OPTIONS/preflight requests are handled immediately
+logger.info(f"Adding CORSMiddleware with {len(cors_origins)} allowed origins")
 
-# Setup exception handlers FIRST (they run LAST, innermost layer)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,  # Explicit list - NO wildcards when using credentials
+    allow_credentials=True,  # Required for Authorization header
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],  # Explicit methods
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],  # Explicit headers
+    expose_headers=["*"],
+    max_age=600,  # Cache preflight for 10 minutes
+)
+
+logger.info("CORSMiddleware added successfully - will handle all OPTIONS requests")
+
+
+# Setup exception handlers AFTER CORS (so CORS runs first)
 setup_exception_handlers(app)
 
 
@@ -51,7 +64,7 @@ async def startup_event():
     logger.info("Application Startup:")
     logger.info(f"  CORS Origins: {cors_origins}")
     logger.info(f"  Frontend Origin Check: https://calculatesmartil.netlify.app in list = {('https://calculatesmartil.netlify.app' in cors_origins)}")
-    logger.info("  CORS Handling: FastAPI CORSMiddleware (last added = first to run)")
+    logger.info("  CORS Middleware Order: Added FIRST (runs before all routes)")
     logger.info("=" * 60)
 
 # Import Routers
@@ -60,7 +73,7 @@ from app.routers import (
     templates, financial, contractor_pricing, inquiries
 )
 
-# Include Routers
+# Include Routers AFTER middleware setup
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(quotes.router, prefix="/api/quotes", tags=["Quotes"])
 app.include_router(clients.router, prefix="/api/clients", tags=["Clients"])
@@ -121,25 +134,7 @@ async def debug_cors(request: Request):
         "origin_allowed": origin in settings.cors_origins_list if origin != "Not provided" else None,
         "match_details": match_details,
         "allow_credentials": True,
-        "allow_methods": ["*"],
-        "allow_headers": ["*"],
-        "note": "CORSMiddleware handles all preflight OPTIONS requests before they reach auth dependencies"
+        "allow_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        "allow_headers": ["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+        "note": "CORSMiddleware is configured at startup and handles all OPTIONS preflight requests"
     }
-
-
-# CRITICAL: Add CORSMiddleware LAST so it runs FIRST (outermost layer)
-# This ensures OPTIONS/preflight requests are intercepted before hitting authentication dependencies
-
-logger.info(f"Adding CORSMiddleware with {len(cors_origins)} allowed origins")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=600,  # Cache preflight requests for 10 minutes
-)
-
-logger.info("CORSMiddleware added successfully")
