@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Landmark, TrendingUp, TrendingDown, DollarSign, BarChart3, PieChart, Users, Loader2, Edit, Save, X, Trash2, CalendarIcon, Filter, ChevronDown, FileText, CheckCircle, XCircle, Clock, Send, Eye, ArrowUp, ArrowDown, CircleDollarSign, Percent, Archive, AlertCircle } from 'lucide-react';
 import { FinancialTransaction } from '@/lib/entities';
-import { Quote } from '@/lib/entities';
+// import { Quote } from '@/lib/entities'; // REMOVED - Quote API will be rebuilt
 import { User } from '@/lib/entities';
 import { useUser } from '@/components/utils/UserContext';
 import StatCard from '@/components/finance/StatCard';

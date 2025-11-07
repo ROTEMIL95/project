@@ -1,88 +1,109 @@
-from pydantic import BaseModel
-from typing import Optional, List, Any
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
 from datetime import datetime, date
-from decimal import Decimal
 
 
-class QuoteItemBase(BaseModel):
-    """Base quote item model"""
-    category_id: Optional[str] = None
-    catalog_item_id: Optional[str] = None
-    name: str
-    description: Optional[str] = None
-    unit: str
-    quantity: float
-    unit_price: float
-    total_price: float
-    contractor_unit_cost: Optional[float] = None
-    contractor_total_cost: Optional[float] = None
-    item_order: int = 0
-    metadata: dict = {}
+class QuoteCreate(BaseModel):
+    """
+    Quote creation model - matches database schema exactly (51 fields)
+    All fields optional except those with defaults
+    Database triggers handle: quote_number, user_id, timestamps
+    """
 
-
-class QuoteItemCreate(QuoteItemBase):
-    """Model for creating a quote item"""
-    pass
-
-
-class QuoteItemUpdate(BaseModel):
-    """Model for updating a quote item"""
-    name: Optional[str] = None
-    description: Optional[str] = None
-    unit: Optional[str] = None
-    quantity: Optional[float] = None
-    unit_price: Optional[float] = None
-    total_price: Optional[float] = None
-    contractor_unit_cost: Optional[float] = None
-    contractor_total_cost: Optional[float] = None
-    item_order: Optional[int] = None
-    metadata: Optional[dict] = None
-
-
-class QuoteItemResponse(QuoteItemBase):
-    """Model for quote item response"""
-    id: str
-    quote_id: str
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class QuoteBase(BaseModel):
-    """Base quote model"""
-    client_id: str
-    title: str
+    # ===== CORE IDENTIFICATION FIELDS =====
+    client_id: Optional[str] = None
+    title: Optional[str] = None
     description: Optional[str] = None
     status: str = "draft"  # draft, sent, approved, rejected, expired
-    discount_percentage: float = 0
-    discount_amount: float = 0
-    tax_percentage: float = 17  # Israeli VAT
-    tax_amount: float = 0
-    total_cost: float = 0
-    total_price: float = 0
-    profit_amount: float = 0
-    profit_margin: float = 0
-    additional_costs: List[dict] = []
-    payment_terms: List[dict] = []
-    valid_until: Optional[date] = None
+
+    # ===== FINANCIAL FIELDS (OLD SCHEMA) =====
+    discount_percentage: Optional[float] = 0
+    discount_amount: Optional[float] = 0
+    tax_percentage: Optional[float] = 17  # Israeli VAT
+    tax_amount: Optional[float] = 0
+    total_cost: Optional[float] = 0
+    total_price: Optional[float] = 0
+    profit_amount: Optional[float] = 0
+    profit_margin: Optional[float] = 0
+
+    # ===== FINANCIAL FIELDS (EXTENDED SCHEMA) =====
+    total_amount: Optional[float] = 0
+    discount_percent: Optional[float] = 0
+    price_increase: Optional[float] = 0
+    final_amount: Optional[float] = 0
+    estimated_work_days: Optional[float] = None
+    estimated_cost: Optional[float] = 0
+    estimated_profit_percent: Optional[float] = 0
+
+    # ===== PROJECT INFORMATION FIELDS =====
+    project_name: Optional[str] = None
+    project_address: Optional[str] = None
+    project_type: Optional[str] = None
+
+    # ===== CLIENT INFORMATION FIELDS =====
+    client_name: Optional[str] = None
+    client_email: Optional[str] = None
+    client_phone: Optional[str] = None
+
+    # ===== DATE FIELDS =====
+    work_days: Optional[float] = None
+    general_start_date: Optional[date] = None
+    general_end_date: Optional[date] = None
     start_date: Optional[date] = None
-    estimated_duration: Optional[int] = None  # in days
+    end_date: Optional[date] = None
+    valid_until: Optional[date] = None
+    estimated_duration: Optional[int] = None
+
+    # ===== JSONB FIELDS (stored as-is in database) =====
+    items: List[Dict[str, Any]] = Field(default_factory=list)
+    additional_costs: List[Dict[str, Any]] = Field(default_factory=list)
+    payment_terms: List[Dict[str, Any]] = Field(default_factory=list)
+    category_timings: Dict[str, Any] = Field(default_factory=dict)
+    project_complexities: Dict[str, Any] = Field(default_factory=dict)
+    company_info: Dict[str, Any] = Field(default_factory=dict)
+    category_commitments: Dict[str, Any] = Field(default_factory=dict)
+    tiling_work_types: List[Dict[str, Any]] = Field(default_factory=list)
+    tiling_items: List[Dict[str, Any]] = Field(default_factory=list)
+
+    # ===== TEXT FIELDS =====
     notes: Optional[str] = None
     terms_and_conditions: Optional[str] = None
+    created_by: Optional[str] = None
 
-
-class QuoteCreate(QuoteBase):
-    """Model for creating a quote"""
-    items: List[QuoteItemCreate] = []
+    class Config:
+        # Allow extra fields for forward compatibility
+        extra = "allow"
+        json_schema_extra = {
+            "example": {
+                "project_name": "Kitchen Renovation",
+                "client_name": "John Doe",
+                "status": "draft",
+                "final_amount": 50000,
+                "items": [
+                    {
+                        "name": "Labor",
+                        "quantity": 10,
+                        "unit_price": 1000,
+                        "total": 10000
+                    }
+                ]
+            }
+        }
 
 
 class QuoteUpdate(BaseModel):
-    """Model for updating a quote"""
+    """
+    Quote update model - all fields optional
+    Only fields provided will be updated
+    """
+
+    # Core fields
     client_id: Optional[str] = None
     title: Optional[str] = None
     description: Optional[str] = None
     status: Optional[str] = None
+
+    # Financial (old)
     discount_percentage: Optional[float] = None
     discount_amount: Optional[float] = None
     tax_percentage: Optional[float] = None
@@ -91,41 +112,146 @@ class QuoteUpdate(BaseModel):
     total_price: Optional[float] = None
     profit_amount: Optional[float] = None
     profit_margin: Optional[float] = None
-    additional_costs: Optional[List[dict]] = None
-    payment_terms: Optional[List[dict]] = None
-    valid_until: Optional[date] = None
+
+    # Financial (extended)
+    total_amount: Optional[float] = None
+    discount_percent: Optional[float] = None
+    price_increase: Optional[float] = None
+    final_amount: Optional[float] = None
+    estimated_work_days: Optional[float] = None
+    estimated_cost: Optional[float] = None
+    estimated_profit_percent: Optional[float] = None
+
+    # Project
+    project_name: Optional[str] = None
+    project_address: Optional[str] = None
+    project_type: Optional[str] = None
+
+    # Client
+    client_name: Optional[str] = None
+    client_email: Optional[str] = None
+    client_phone: Optional[str] = None
+
+    # Dates
+    work_days: Optional[float] = None
+    general_start_date: Optional[date] = None
+    general_end_date: Optional[date] = None
     start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    valid_until: Optional[date] = None
     estimated_duration: Optional[int] = None
+
+    # JSONB
+    items: Optional[List[Dict[str, Any]]] = None
+    additional_costs: Optional[List[Dict[str, Any]]] = None
+    payment_terms: Optional[List[Dict[str, Any]]] = None
+    category_timings: Optional[Dict[str, Any]] = None
+    project_complexities: Optional[Dict[str, Any]] = None
+    company_info: Optional[Dict[str, Any]] = None
+    category_commitments: Optional[Dict[str, Any]] = None
+    tiling_work_types: Optional[List[Dict[str, Any]]] = None
+    tiling_items: Optional[List[Dict[str, Any]]] = None
+
+    # Text
     notes: Optional[str] = None
     terms_and_conditions: Optional[str] = None
 
+    class Config:
+        extra = "allow"
 
-class QuoteResponse(QuoteBase):
-    """Model for quote response"""
+
+class QuoteResponse(BaseModel):
+    """
+    Quote response model - returned from API
+    Includes all database fields plus auto-generated ones
+    """
+
+    # Auto-generated fields
     id: str
     user_id: str
     quote_number: str
-    items: List[QuoteItemResponse] = []
-    sent_at: Optional[datetime] = None
-    approved_at: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
+    # Core fields
+    client_id: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: str
+
+    # Financial (old)
+    discount_percentage: Optional[float] = None
+    discount_amount: Optional[float] = None
+    tax_percentage: Optional[float] = None
+    tax_amount: Optional[float] = None
+    total_cost: Optional[float] = None
+    total_price: Optional[float] = None
+    profit_amount: Optional[float] = None
+    profit_margin: Optional[float] = None
+
+    # Financial (extended)
+    total_amount: Optional[float] = None
+    discount_percent: Optional[float] = None
+    price_increase: Optional[float] = None
+    final_amount: Optional[float] = None
+    estimated_work_days: Optional[float] = None
+    estimated_cost: Optional[float] = None
+    estimated_profit_percent: Optional[float] = None
+
+    # Project
+    project_name: Optional[str] = None
+    project_address: Optional[str] = None
+    project_type: Optional[str] = None
+
+    # Client
+    client_name: Optional[str] = None
+    client_email: Optional[str] = None
+    client_phone: Optional[str] = None
+
+    # Dates
+    work_days: Optional[float] = None
+    general_start_date: Optional[date] = None
+    general_end_date: Optional[date] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    valid_until: Optional[date] = None
+    estimated_duration: Optional[int] = None
+    sent_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+
+    # JSONB
+    items: List[Dict[str, Any]] = Field(default_factory=list)
+    additional_costs: List[Dict[str, Any]] = Field(default_factory=list)
+    payment_terms: List[Dict[str, Any]] = Field(default_factory=list)
+    category_timings: Dict[str, Any] = Field(default_factory=dict)
+    project_complexities: Dict[str, Any] = Field(default_factory=dict)
+    company_info: Dict[str, Any] = Field(default_factory=dict)
+    category_commitments: Dict[str, Any] = Field(default_factory=dict)
+    tiling_work_types: List[Dict[str, Any]] = Field(default_factory=list)
+    tiling_items: List[Dict[str, Any]] = Field(default_factory=list)
+
+    # Text
+    notes: Optional[str] = None
+    terms_and_conditions: Optional[str] = None
+    created_by: Optional[str] = None
+
     class Config:
         from_attributes = True
+        extra = "allow"
 
 
 class QuoteList(BaseModel):
-    """Model for quote list response"""
+    """Model for paginated quote list response"""
     quotes: List[QuoteResponse]
     total: int
 
 
 class QuoteSummary(BaseModel):
-    """Model for quote summary statistics"""
+    """Model for quote summary statistics (for future use)"""
     total_quotes: int
     draft_quotes: int
     sent_quotes: int
     approved_quotes: int
+    rejected_quotes: int
     total_value: float
     average_value: float

@@ -17,31 +17,35 @@ class APIClient {
   /**
    * Get authentication headers with Supabase token
    * Note: Content-Type is only added for requests with bodies (POST, PUT, PATCH)
+   *
+   * This retrieves the current Supabase session and extracts the access_token
+   * to send to the backend for authentication.
    */
   async getAuthHeaders(includeContentType = false) {
     const { data: { session }, error } = await supabase.auth.getSession();
 
     if (error) {
-      console.error('Error getting session:', error);
+      console.error('[API] Error getting Supabase session:', error);
+      throw new Error('Failed to get authentication session');
     }
 
     if (!session) {
-      console.warn('No active session found. User may not be authenticated.');
+      console.warn('[API] No active Supabase session found. User may not be authenticated.');
     }
 
     const headers = {};
-    
+
     // Only add Content-Type for requests with bodies
     if (includeContentType) {
       headers['Content-Type'] = 'application/json';
     }
-    
+
     // Add Authorization header if session exists
     if (session?.access_token) {
       headers['Authorization'] = `Bearer ${session.access_token}`;
-      console.log('Authorization header added successfully');
+      console.debug('[API] Authorization header added with Supabase access token');
     } else {
-      console.warn('No access token available - API call will fail with 401');
+      console.warn('[API] No access token available - API call will likely fail with 401');
     }
 
     return headers;
@@ -60,8 +64,8 @@ class APIClient {
 
     // Check if we have an authorization header - if not, this request will fail
     if (!headers['Authorization']) {
-      console.error('No authorization token available. Please log in again.');
-      throw new Error('Authentication required - please log in');
+      console.warn('[API] No authorization token available for:', endpoint);
+      throw new Error('No active session - please log in');
     }
 
     const config = {
@@ -88,20 +92,36 @@ class APIClient {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || `HTTP error! status: ${response.status}`);
+        const errorMessage = data.detail || `HTTP error! status: ${response.status}`;
+        console.error(`[API] Request failed: ${endpoint}`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          url
+        });
+        throw new Error(errorMessage);
       }
 
       return data;
     } catch (error) {
-      // Enhanced error logging for CORS issues
+      // Enhanced error logging for CORS and authentication issues
       if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
-        console.error(`API request failed: ${endpoint}`, {
+        console.error(`[API] Network error for ${endpoint}:`, {
           error: error.message,
           url,
-          possibleCorsIssue: 'Check CORS configuration and network connectivity',
+          hint: 'Check CORS configuration, backend URL, and network connectivity',
+        });
+      } else if (error.message.includes('401') || error.message.includes('authentication')) {
+        console.error(`[API] Authentication error for ${endpoint}:`, {
+          error: error.message,
+          url,
+          hint: 'Token may be expired or invalid. Try logging out and back in.',
         });
       } else {
-        console.error(`API request failed: ${endpoint}`, error);
+        console.error(`[API] Request failed for ${endpoint}:`, {
+          error: error.message,
+          url
+        });
       }
       throw error;
     }
@@ -219,7 +239,6 @@ export const quotesAPI = {
   create: (data) => api.post('/api/quotes', data),
   update: (id, data) => api.put(`/api/quotes/${id}`, data),
   delete: (id) => api.delete(`/api/quotes/${id}`),
-  send: (id) => api.post(`/api/quotes/${id}/send`),
 };
 
 export const clientsAPI = {

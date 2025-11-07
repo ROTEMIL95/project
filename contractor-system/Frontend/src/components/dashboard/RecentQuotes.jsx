@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Quote } from '@/lib/entities';
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Eye, Edit, ChevronLeft, FileText } from 'lucide-react';
@@ -11,6 +10,7 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toHebrewStatus } from '@/lib/statusMapping';
+import { Quote } from '@/lib/entities';
 
 export default function RecentQuotes({ user }) {
   const [recentQuotes, setRecentQuotes] = useState([]);

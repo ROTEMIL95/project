@@ -20,42 +20,53 @@ def verify_supabase_token(
 
     Note: CORSMiddleware intercepts OPTIONS requests before they reach this dependency,
     so we don't need to handle OPTIONS here.
+
+    This function validates tokens issued by Supabase Auth directly.
+    The frontend sends Supabase access tokens in the Authorization header.
     """
     # If no credentials provided, raise error
     if credentials is None:
+        logger.warning("No authentication credentials provided in request")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     token = credentials.credentials
     supabase = get_supabase()
 
     try:
         # Get user from Supabase using the token
+        # This validates the token against Supabase Auth service
+        logger.debug(f"Attempting to verify token for request to {request.url.path}")
         response = supabase.auth.get_user(token)
 
         if not response or not response.user:
+            logger.warning(f"Token verification failed: No user returned from Supabase for path {request.url.path}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
+                detail="Invalid or expired authentication token",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
         user = response.user
+        logger.debug(f"Successfully verified token for user {user.id} (email: {user.email})")
+
         return {
             "sub": user.id,
             "email": user.email,
-            "user_metadata": user.user_metadata
+            "user_metadata": user.user_metadata or {}
         }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Token verification error: {e}")
+        # Log detailed error for debugging
+        logger.error(f"Token verification error for path {request.url.path}: {str(e)}", exc_info=True)
+        logger.error(f"Token preview (first 20 chars): {token[:20] if token else 'None'}...")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
+            detail=f"Token verification failed: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -64,7 +75,7 @@ def verify_token(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ) -> dict:
-    """Verify JWT token and return payload - supports both Supabase and custom tokens"""
+    """Verify JWT token and return payload - uses Supabase Auth verification only"""
     return verify_supabase_token(request, credentials)
 
 

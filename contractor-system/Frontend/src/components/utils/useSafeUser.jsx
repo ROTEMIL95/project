@@ -71,11 +71,25 @@ export default function useSafeUser(options = {}) {
     for (let i = 0; i < maxRetries && !abortRef.current; i++) {
       setAttempts(i + 1);
       try {
-        // Use Supabase to get current user
-        const { data: { user: supabaseUser }, error: authError } = await supabase.auth.getUser();
-
-        if (authError) throw authError;
+        // Get current session first to ensure we have a valid access_token
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) throw sessionError;
         if (abortRef.current) return;
+
+        // If no session, user is not logged in
+        if (!session || !session.access_token) {
+          if (!suppressConsole) {
+            console.log('[useSafeUser] No active session found');
+          }
+          setUser(null);
+          setError(null);
+          setLoading(false);
+          saveToCache(null);
+          return;
+        }
+
+        const supabaseUser = session.user;
 
         // Load user profile data from backend API instead of Supabase
         let profileData = null;
@@ -186,6 +200,32 @@ export default function useSafeUser(options = {}) {
     fetchUser();
     return () => {
       abortRef.current = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Listen for auth state changes (login/logout)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!suppressConsole) {
+        console.log('[useSafeUser] Auth state changed:', event);
+      }
+      
+      // When user signs in or token is refreshed, reload the user
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        fetchUser();
+      }
+      // When user signs out, clear the user
+      else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setError(null);
+        setLoading(false);
+        saveToCache(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { supabase } from '@/lib/supabase';
-import { Quote } from '@/lib/entities';
+// import { Quote } from '@/lib/entities'; // REMOVED - Quote API will be rebuilt
 import { Client } from '@/lib/entities';
 import { CatalogItem } from '@/lib/entities';
 import { Category } from '@/lib/entities';

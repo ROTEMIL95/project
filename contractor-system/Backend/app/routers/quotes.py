@@ -1,22 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from app.models.quote import QuoteCreate, QuoteUpdate, QuoteResponse, QuoteList
 from app.middleware.auth_middleware import get_current_user
-from app.database import get_supabase_admin  # Changed to admin client to bypass PostgREST/RLS issues
+from app.database import get_supabase_admin
 from typing import Optional
-from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-
-def generate_quote_number(user_id: str) -> str:
-    """Generate unique quote number"""
-    import random
-    import string
-    timestamp = datetime.now().strftime("%Y%m%d")
-    random_str = ''.join(random.choices(string.digits, k=4))
-    return f"Q-{timestamp}-{random_str}"
 
 
 @router.post("/", response_model=QuoteResponse, status_code=status.HTTP_201_CREATED)
@@ -24,36 +14,48 @@ async def create_quote(
     quote: QuoteCreate,
     user_id: str = Depends(get_current_user)
 ):
-    """Create a new quote"""
-    supabase = get_supabase_admin()  # Use admin client
+    """
+    Create a new quote
+
+    - Database triggers handle: quote_number generation, user_id setting, timestamps
+    - Items stored as JSONB array in the same table
+    - All 51 fields supported
+    """
+    supabase = get_supabase_admin()
 
     try:
-        # Prepare quote data
-        quote_data = quote.model_dump(exclude={"items"})
+        # Convert Pydantic model to dict, exclude None values
+        quote_data = quote.model_dump(exclude_none=True)
+
+        # Set user_id (also set by trigger, but explicit is better)
         quote_data["user_id"] = user_id
-        quote_data["quote_number"] = generate_quote_number(user_id)
 
-        # Insert quote
-        quote_response = supabase.table("quotes").insert(quote_data).execute()
-        created_quote = quote_response.data[0]
+        # Don't set quote_number - trigger will generate it
+        # Don't set created_at/updated_at - triggers handle it
 
-        # Insert quote items
-        if quote.items:
-            items_data = [
-                {**item.model_dump(), "quote_id": created_quote["id"]}
-                for item in quote.items
-            ]
-            items_response = supabase.table("quote_items").insert(items_data).execute()
-            created_quote["items"] = items_response.data
-        else:
-            created_quote["items"] = []
+        logger.info(f"[create_quote] Creating quote for user {user_id}: project_name={quote_data.get('project_name')}, items_count={len(quote_data.get('items', []))}")
+
+        # Single table insert - items are JSONB
+        response = supabase.table("quotes").insert(quote_data).execute()
+
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create quote - no data returned"
+            )
+
+        created_quote = response.data[0]
+        logger.info(f"[create_quote] Quote created: id={created_quote.get('id')}, quote_number={created_quote.get('quote_number')}")
 
         return created_quote
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating quote: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create quote"
+            detail=f"Failed to create quote: {str(e)}"
         )
 
 
@@ -65,11 +67,18 @@ async def list_quotes(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100)
 ):
-    """List all quotes for the current user"""
-    supabase = get_supabase_admin()  # Use admin client
+    """
+    List all quotes for the current user
+
+    - Supports filtering by status and client_id
+    - Paginated results
+    - No joins needed (items in same table as JSONB)
+    """
+    supabase = get_supabase_admin()
 
     try:
-        query = supabase.table("quotes").select("*, quote_items(*)").eq("user_id", user_id)
+        # Build query
+        query = supabase.table("quotes").select("*").eq("user_id", user_id)
 
         if status_filter:
             query = query.eq("status", status_filter)
@@ -84,16 +93,17 @@ async def list_quotes(
         # Get paginated data
         response = query.order("created_at", desc=True).range(skip, skip + limit - 1).execute()
 
-        # Transform items key
-        for quote_item in response.data:
-            quote_item["items"] = quote_item.pop("quote_items", [])
+        logger.info(f"[list_quotes] Found {len(response.data)} quotes for user {user_id} (total: {total})")
 
         return QuoteList(quotes=response.data, total=total)
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error listing quotes: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to list quotes"
+            detail=f"Failed to list quotes: {str(e)}"
         )
 
 
@@ -102,12 +112,17 @@ async def get_quote(
     quote_id: str,
     user_id: str = Depends(get_current_user)
 ):
-    """Get a specific quote by ID"""
-    supabase = get_supabase_admin()  # Use admin client
+    """
+    Get a specific quote by ID
+
+    - Returns full quote with all fields including items (JSONB)
+    - Verifies quote belongs to user
+    """
+    supabase = get_supabase_admin()
 
     try:
         response = supabase.table("quotes")\
-            .select("*, quote_items(*)")\
+            .select("*")\
             .eq("id", quote_id)\
             .eq("user_id", user_id)\
             .execute()
@@ -118,16 +133,17 @@ async def get_quote(
                 detail="Quote not found"
             )
 
-        quote = response.data[0]
-        quote["items"] = quote.pop("quote_items", [])
-        return quote
+        logger.info(f"[get_quote] Retrieved quote {quote_id} for user {user_id}")
+
+        return response.data[0]
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error getting quote: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get quote"
+            detail=f"Failed to get quote: {str(e)}"
         )
 
 
@@ -137,13 +153,19 @@ async def update_quote(
     quote: QuoteUpdate,
     user_id: str = Depends(get_current_user)
 ):
-    """Update a quote"""
-    supabase = get_supabase_admin()  # Use admin client
+    """
+    Update a quote
+
+    - Only provided fields will be updated
+    - updated_at timestamp automatically updated by trigger
+    - Supports updating items (JSONB array)
+    """
+    supabase = get_supabase_admin()
 
     try:
         # Check if quote exists and belongs to user
         existing = supabase.table("quotes")\
-            .select("*")\
+            .select("id")\
             .eq("id", quote_id)\
             .eq("user_id", user_id)\
             .execute()
@@ -154,32 +176,36 @@ async def update_quote(
                 detail="Quote not found"
             )
 
-        # Update quote
-        update_data = quote.model_dump(exclude_unset=True)
-        if update_data:
-            response = supabase.table("quotes")\
-                .update(update_data)\
-                .eq("id", quote_id)\
-                .execute()
+        # Update quote - exclude unset and None values
+        update_data = quote.model_dump(exclude_unset=True, exclude_none=True)
 
-            # Get updated quote with items
-            updated = supabase.table("quotes")\
-                .select("*, quote_items(*)")\
-                .eq("id", quote_id)\
-                .execute()
+        if not update_data:
+            # No updates provided, return existing quote
+            response = supabase.table("quotes").select("*").eq("id", quote_id).execute()
+            return response.data[0]
 
-            result = updated.data[0]
-            result["items"] = result.pop("quote_items", [])
-            return result
+        logger.info(f"[update_quote] Updating quote {quote_id}: {len(update_data)} fields")
 
-        return existing.data[0]
+        response = supabase.table("quotes")\
+            .update(update_data)\
+            .eq("id", quote_id)\
+            .execute()
+
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update quote - no data returned"
+            )
+
+        return response.data[0]
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error updating quote: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update quote"
+            detail=f"Failed to update quote: {str(e)}"
         )
 
 
@@ -188,13 +214,18 @@ async def delete_quote(
     quote_id: str,
     user_id: str = Depends(get_current_user)
 ):
-    """Delete a quote"""
-    supabase = get_supabase_admin()  # Use admin client
+    """
+    Delete a quote
+
+    - Permanently deletes the quote
+    - Verifies quote belongs to user
+    """
+    supabase = get_supabase_admin()
 
     try:
         # Check if quote exists and belongs to user
         existing = supabase.table("quotes")\
-            .select("*")\
+            .select("id")\
             .eq("id", quote_id)\
             .eq("user_id", user_id)\
             .execute()
@@ -205,14 +236,18 @@ async def delete_quote(
                 detail="Quote not found"
             )
 
-        # Delete quote (cascade will delete items)
+        # Delete quote
         supabase.table("quotes").delete().eq("id", quote_id).execute()
+
+        logger.info(f"[delete_quote] Deleted quote {quote_id} for user {user_id}")
+
         return None
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error deleting quote: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete quote"
+            detail=f"Failed to delete quote: {str(e)}"
         )

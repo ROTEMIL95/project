@@ -133,15 +133,10 @@ export class Quote {
 
   static async filter(filters = {}) {
     try {
-      console.log('[Quote.filter] Calling backend API with filters:', filters);
-
-      // Call backend API instead of Supabase directly
-      // Backend uses admin client to bypass PostgREST/RLS issues
       const params = {};
 
       if (filters.status) {
-        // Convert Hebrew status to English for API call
-        params.status_filter = toEnglishStatus(filters.status);
+        params.status_filter = filters.status;
       }
       if (filters.client_id) {
         params.client_id = filters.client_id;
@@ -154,12 +149,11 @@ export class Quote {
       }
 
       const response = await quotesAPI.list(params);
-      console.log('[Quote.filter] Backend API response:', response);
 
       // Backend returns {quotes: [...], total: N}
       const quotes = response.quotes || response || [];
 
-      // Convert snake_case keys to camelCase if needed
+      // Convert snake_case keys to camelCase for frontend
       return quotes.map(quote => convertKeysToCamelCase(quote));
     } catch (error) {
       console.error("Quote.filter error:", error);
@@ -169,12 +163,11 @@ export class Quote {
 
   static async getById(id) {
     try {
-      console.log('[Quote.getById] Fetching quote via backend API:', id);
       const data = await quotesAPI.get(id);
-      // Convert snake_case keys back to camelCase for frontend
+      // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
-      console.error("[Quote.getById] Exception:", error);
+      console.error("Quote.getById error:", error);
       return null;
     }
   }
@@ -184,7 +177,7 @@ export class Quote {
       // Convert camelCase keys to snake_case for database
       const snakeCaseData = convertKeysToSnakeCase(quoteData);
       const data = await quotesAPI.create(snakeCaseData);
-      // Convert snake_case keys back to camelCase for frontend
+      // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
       console.error("Quote.create error:", error);
@@ -197,7 +190,7 @@ export class Quote {
       // Convert camelCase keys to snake_case for database
       const snakeCaseUpdates = convertKeysToSnakeCase(updates);
       const data = await quotesAPI.update(id, snakeCaseUpdates);
-      // Convert snake_case keys back to camelCase for frontend
+      // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
     } catch (error) {
       console.error("Quote.update error:", error);

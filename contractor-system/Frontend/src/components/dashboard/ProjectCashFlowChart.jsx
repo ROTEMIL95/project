@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Quote } from '@/lib/entities';
+// import { Quote } from '@/lib/entities'; // REMOVED - Quote API will be rebuilt
 import { useUser } from '@/components/utils/UserContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, Filter, BarChart3, Calendar, Users } from 'lucide-react';

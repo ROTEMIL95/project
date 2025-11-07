@@ -1,97 +1,54 @@
-from datetime import datetime, timedelta
-from typing import Optional
-from jose import jwt
-from passlib.context import CryptContext
-from app.config import settings
-from app.database import get_supabase_admin  # Changed to admin client to bypass PostgREST/RLS issues
+from datetime import datetime
+from app.database import get_supabase_admin, get_supabase
 from app.models.user import UserCreate, UserLogin, Token
 from fastapi import HTTPException, status
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def hash_password(password: str) -> str:
-    """Hash a password"""
-    return pwd_context.hash(password)
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash"""
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
-    """Create JWT access token"""
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(seconds=settings.JWT_EXPIRATION)
-
-    to_encode = {
-        "sub": user_id,
-        "exp": expire,
-        "type": "access"
-    }
-
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.JWT_SECRET,
-        algorithm=settings.JWT_ALGORITHM
-    )
-    return encoded_jwt
-
-
-def create_refresh_token(user_id: str) -> str:
-    """Create JWT refresh token"""
-    expire = datetime.utcnow() + timedelta(seconds=settings.JWT_REFRESH_EXPIRATION)
-
-    to_encode = {
-        "sub": user_id,
-        "exp": expire,
-        "type": "refresh"
-    }
-
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.JWT_SECRET,
-        algorithm=settings.JWT_ALGORITHM
-    )
-    return encoded_jwt
+# NOTE: This service uses Pure Supabase Auth
+# - Frontend authenticates directly with Supabase Auth
+# - Backend endpoints below are kept for compatibility but may not be actively used
+# - Supabase handles password hashing, token generation, and session management
+# - Tokens are issued by Supabase and validated in auth_middleware.py
 
 
 async def register_user(user_data: UserCreate) -> dict:
-    """Register a new user"""
+    """Register a new user using Supabase Auth
+
+    NOTE: Frontend typically handles registration directly with Supabase.
+    This endpoint is kept for backward compatibility or server-side registration needs.
+    """
     supabase = get_supabase_admin()  # Use admin client
 
     try:
         # Check if user already exists
         existing = supabase.table("user_profiles").select("*").eq("email", user_data.email).execute()
         if existing.data:
+            logger.warning(f"Registration attempt for existing email: {user_data.email}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
 
         # Create user in Supabase Auth
+        logger.info(f"Creating new user in Supabase Auth: {user_data.email}")
         auth_response = supabase.auth.sign_up({
             "email": user_data.email,
             "password": user_data.password
         })
 
         if not auth_response.user:
+            logger.error(f"Supabase Auth failed to create user: {user_data.email}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to create user"
+                detail="Failed to create user in authentication system"
             )
 
         user_id = auth_response.user.id
+        logger.info(f"User created successfully in Auth: {user_id}")
 
         # Create user profile in user_profiles table
-        # Note: Most fields have defaults in the database schema
         user_profile = {
             "auth_user_id": user_id,
             "email": user_data.email,
@@ -104,17 +61,24 @@ async def register_user(user_data: UserCreate) -> dict:
         }
 
         profile_response = supabase.table("user_profiles").insert(user_profile).execute()
+        logger.info(f"User profile created for: {user_id}")
 
-        # Generate tokens
-        access_token = create_access_token(user_id)
-        refresh_token = create_refresh_token(user_id)
-
-        return {
+        # Return Supabase session tokens (if available from auth_response)
+        # Note: Supabase returns session with access_token and refresh_token
+        session_data = {
             "user": profile_response.data[0] if profile_response.data else user_profile,
-            "access_token": access_token,
-            "refresh_token": refresh_token,
             "token_type": "bearer"
         }
+
+        # Add Supabase tokens if available in response
+        if hasattr(auth_response, 'session') and auth_response.session:
+            session_data["access_token"] = auth_response.session.access_token
+            session_data["refresh_token"] = auth_response.session.refresh_token
+            logger.info(f"Returning Supabase session tokens for user: {user_id}")
+        else:
+            logger.warning(f"No session returned from Supabase for user: {user_id}")
+
+        return session_data
 
     except HTTPException:
         raise
@@ -122,73 +86,137 @@ async def register_user(user_data: UserCreate) -> dict:
         logger.error(f"Registration error: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to register user"
+            detail=f"Failed to register user: {str(e)}"
         )
 
 
 async def login_user(credentials: UserLogin) -> Token:
-    """Authenticate user and return tokens"""
+    """Authenticate user and return Supabase tokens
+
+    NOTE: Frontend typically handles login directly with Supabase.
+    This endpoint is kept for backward compatibility or server-side login needs.
+    Returns Supabase-issued tokens.
+    """
     supabase = get_supabase_admin()  # Use admin client
 
     try:
         # Use Supabase Auth for login (it handles password verification)
+        logger.info(f"Attempting login for user: {credentials.email}")
         auth_response = supabase.auth.sign_in_with_password({
             "email": credentials.email,
             "password": credentials.password
         })
 
         if not auth_response.user:
+            logger.warning(f"Login failed for user: {credentials.email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
+                detail="Invalid email or password"
             )
 
         user_id = auth_response.user.id
+        logger.info(f"User authenticated successfully: {user_id}")
 
         # Get user profile from database
         response = supabase.table("user_profiles").select("*").eq("auth_user_id", user_id).execute()
 
         if not response.data:
+            logger.error(f"User profile not found for authenticated user: {user_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="User profile not found"
+                detail="User profile not found. Please contact support."
             )
 
         # Update last login date
-        supabase.table("user_profiles").update({"last_login_date": datetime.utcnow().isoformat()}).eq("auth_user_id", user_id).execute()
+        supabase.table("user_profiles").update({
+            "last_login_date": datetime.utcnow().isoformat()
+        }).eq("auth_user_id", user_id).execute()
 
-        # Generate tokens
-        access_token = create_access_token(user_id)
-        refresh_token = create_refresh_token(user_id)
+        # Return Supabase session tokens
+        if not hasattr(auth_response, 'session') or not auth_response.session:
+            logger.error(f"No session returned from Supabase for user: {user_id}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Authentication succeeded but no session was created"
+            )
 
+        logger.info(f"Returning Supabase tokens for user: {user_id}")
         return Token(
-            access_token=access_token,
-            refresh_token=refresh_token,
+            access_token=auth_response.session.access_token,
+            refresh_token=auth_response.session.refresh_token,
             token_type="bearer"
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Login error: {e}", exc_info=True)
+        logger.error(f"Login error for {credentials.email}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to login"
+            detail=f"Login failed: {str(e)}"
         )
 
 
-async def get_user_by_id(user_id: str) -> dict:
-    """Get user by ID"""
+async def get_user_by_id(user_id: str, auto_create: bool = False) -> dict:
+    """Get user by ID
+    
+    Args:
+        user_id: The auth_user_id from Supabase
+        auto_create: If True, automatically create a profile if it doesn't exist
+    """
     supabase = get_supabase_admin()  # Use admin client
 
     try:
         response = supabase.table("user_profiles").select("*").eq("auth_user_id", user_id).execute()
 
         if not response.data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
+            # If auto_create is enabled, create a basic profile
+            if auto_create:
+                logger.info(f"Auto-creating profile for user: {user_id}")
+                
+                # Get user data from Supabase Auth
+                try:
+                    auth_user = supabase.auth.admin.get_user_by_id(user_id)
+                    email = auth_user.user.email if auth_user and auth_user.user else None
+                except Exception as auth_error:
+                    logger.warning(f"Could not fetch auth user details: {auth_error}")
+                    email = None
+                
+                if not email:
+                    logger.error(f"Cannot auto-create profile without email for user: {user_id}")
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="User not found and cannot be auto-created (missing email)"
+                    )
+                
+                # Create basic user profile
+                user_profile = {
+                    "auth_user_id": user_id,
+                    "email": email,
+                    "full_name": email.split('@')[0],  # Use email prefix as default name
+                    "phone": "",
+                    "role": "admin" if email in ["rotemiluz53@gmail.com", "avishaycohen11@gmail.com"] else "user",
+                    "contract_template": "",
+                    "contractor_commitments": "",
+                    "client_commitments": ""
+                }
+                
+                profile_response = supabase.table("user_profiles").insert(user_profile).execute()
+                
+                if profile_response.data:
+                    logger.info(f"Profile auto-created successfully for: {user_id}")
+                    return profile_response.data[0]
+                else:
+                    logger.error(f"Failed to auto-create profile for: {user_id}")
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Failed to create user profile"
+                    )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found"
+                )
 
         user = response.data[0]
         return user
@@ -205,17 +233,19 @@ async def get_user_by_id(user_id: str) -> dict:
 
 async def list_users() -> list:
     """List all user profiles"""
-    supabase = get_supabase()
+    supabase = get_supabase_admin()  # Use admin client for consistent database access
 
     try:
+        logger.debug("Fetching all user profiles")
         response = supabase.table("user_profiles").select("*").order("created_at", desc=True).execute()
+        logger.info(f"Retrieved {len(response.data) if response.data else 0} user profiles")
         return response.data or []
 
     except Exception as e:
         logger.error(f"List users error: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to list users"
+            detail=f"Failed to list users: {str(e)}"
         )
 
 
@@ -263,13 +293,15 @@ async def update_user_profile(user_id: str, user_data: dict) -> dict:
 
 async def delete_user(user_id: str) -> None:
     """Delete user profile"""
-    supabase = get_supabase()
+    supabase = get_supabase_admin()  # Use admin client for database operations
 
     try:
         # Check if user exists
+        logger.info(f"Attempting to delete user: {user_id}")
         existing = supabase.table("user_profiles").select("*").eq("auth_user_id", user_id).execute()
 
         if not existing.data:
+            logger.warning(f"Delete attempt for non-existent user: {user_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
@@ -277,15 +309,17 @@ async def delete_user(user_id: str) -> None:
 
         # Delete user profile
         supabase.table("user_profiles").delete().eq("auth_user_id", user_id).execute()
+        logger.info(f"User profile deleted successfully: {user_id}")
 
         # Note: Deleting from Supabase Auth requires admin privileges
-        # This is handled through Supabase backend
+        # This is handled through Supabase dashboard or admin API
+        logger.warning(f"User profile deleted but Supabase Auth user still exists: {user_id}")
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Delete user error: {e}", exc_info=True)
+        logger.error(f"Delete user error for {user_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete user"
+            detail=f"Failed to delete user: {str(e)}"
         )

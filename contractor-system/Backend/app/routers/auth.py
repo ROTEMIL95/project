@@ -20,8 +20,8 @@ async def login(credentials: UserLogin):
 
 @router.get("/me", response_model=dict)
 async def get_current_user_profile(user_id: str = Depends(get_current_user)):
-    """Get current user profile"""
-    return await auth_service.get_user_by_id(user_id)
+    """Get current user profile - auto-creates profile if it doesn't exist"""
+    return await auth_service.get_user_by_id(user_id, auto_create=True)
 
 
 @router.post("/refresh", response_model=Token)

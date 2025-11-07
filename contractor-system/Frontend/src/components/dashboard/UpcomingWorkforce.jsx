@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Quote } from '@/lib/entities';
+// import { Quote } from '@/lib/entities'; // REMOVED - Quote API will be rebuilt
 import { useUser } from '@/components/utils/UserContext';
 import { Users, Calendar, Clock, AlertTriangle, Package, ShoppingCart, DollarSign, Lightbulb, Landmark } from 'lucide-react'; // Added Landmark
 import { format, differenceInDays, addWeeks, addDays } from 'date-fns';

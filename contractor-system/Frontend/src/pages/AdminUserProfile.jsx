@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@/lib/entities';
-import { Quote } from '@/lib/entities';
+// import { Quote } from '@/lib/entities'; // REMOVED - Quote API will be rebuilt
 import { FinancialTransaction } from '@/lib/entities';
 import { createPageUrl } from '@/utils';
 import { useUser } from '@/components/utils/UserContext';

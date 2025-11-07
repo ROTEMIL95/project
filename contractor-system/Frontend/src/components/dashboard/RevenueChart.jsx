@@ -26,16 +26,6 @@ export default function RevenueChart({ user }) {
         if (user && user.email) {
           console.log("RevenueChart: Fetching quotes for user:", user.email);
 
-          // Check if Quote.filter is available
-          if (typeof Quote.filter !== 'function') {
-            console.warn("RevenueChart: Quote.filter is not available yet. Backend not connected.");
-            // Set empty data instead of error
-            setChartData([]);
-            setStats({ totalRevenue: 0, totalProfit: 0, closingRate: 0, monthlyQuotes: 0 });
-            setLoading(false);
-            return;
-          }
-
           const allQuotes = await Quote.filter({ user_id: user.id });
           console.log("RevenueChart: Fetched quotes:", allQuotes.length);
 
