@@ -70,7 +70,7 @@ async def startup_event():
 # Import Routers
 from app.routers import (
     auth, quotes, clients, catalog, projects,
-    templates, financial, contractor_pricing, inquiries
+    templates, financial, contractor_pricing, inquiries, demolition
 )
 
 # Include Routers AFTER middleware setup
@@ -83,6 +83,7 @@ app.include_router(templates.router, prefix="/api/templates", tags=["Templates"]
 app.include_router(financial.router, prefix="/api/financial", tags=["Financial"])
 app.include_router(contractor_pricing.router, prefix="/api/contractor-pricing", tags=["Contractor Pricing"])
 app.include_router(inquiries.router, prefix="/api/inquiries", tags=["Inquiries"])
+app.include_router(demolition.router, prefix="/api/demolition", tags=["Demolition"])
 
 
 @app.get("/")
