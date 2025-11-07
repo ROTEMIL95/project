@@ -14,7 +14,8 @@
       "Bash(git log:*)",
       "Bash(xargs sed:*)",
       "Bash(dir /b /a:-d)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
