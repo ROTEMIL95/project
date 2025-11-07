@@ -36,7 +36,9 @@ import {
   Settings, // New import for edit mode
   Trash2, // New import for delete button
   Save, // New import for save button
-  X // New import for cancel button
+  X, // New import for cancel button
+  ChevronUp, // For expand/collapse controls
+  ChevronDown // For expand/collapse controls
 } from 'lucide-react';
 
 // הוספת מקדמי מורכבות קבועים לשימוש מיידי - ייעודי לחישוב חדרים
@@ -107,6 +109,9 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
     wallAreaSqM: 0,
     ceilingAreaSqM: 0
   });
+  
+  // Track which room cards are expanded (not auto-open)
+  const [expandedRoomIds, setExpandedRoomIds] = useState([]);
 
   // Helper function to transform difficulty data from different formats to standard format
   const transformDifficultyData = useCallback((data) => {
@@ -269,9 +274,12 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
     setSelectedRooms(prev => {
       const isSelected = prev.find(r => r.id === roomId);
       if (isSelected) {
+        // Remove from expanded list when deselecting
+        setExpandedRoomIds(expanded => expanded.filter(id => id !== roomId));
         return prev.filter(r => r.id !== roomId);
       } else {
         const roomData = roomEstimatesData.find(room => room.id === roomId);
+        // Don't auto-expand - user can click to expand manually
         return [...prev, {
           id: roomId,
           quantity: 1,
@@ -281,6 +289,14 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
         }];
       }
     });
+  };
+  
+  const toggleRoomExpanded = (roomId) => {
+    setExpandedRoomIds(prev => 
+      prev.includes(roomId) 
+        ? prev.filter(id => id !== roomId)
+        : [...prev, roomId]
+    );
   };
 
   const updateRoomQuantity = (roomId, quantity) => {
@@ -559,90 +575,6 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
               </>
             )}
 
-            {/* טבלת סיכום חדרים נבחרים */}
-            {selectedRooms.length > 0 && (
-              <Card className="bg-blue-50 border-blue-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base text-blue-800 flex items-center gap-2">
-                    <Building className="h-5 w-5" />
-                    חדרים נבחרים ({selectedRooms.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    {selectedRooms.map(selectedRoom => {
-                      const roomData = roomEstimatesData.find(r => r.id === selectedRoom.id);
-                      if (!roomData) return null;
-
-                      const complexityFactor = selectedRoom.difficultyData?.factor || 1.0;
-                      const wallArea = roomData.wallAreaSqM * complexityFactor * selectedRoom.quantity;
-                      const ceilingArea = selectedRoom.includeCeiling
-                        ? roomData.ceilingAreaSqM * complexityFactor * selectedRoom.quantity
-                        : 0;
-                      
-                      // Calculate price for this room
-                      const itemData = workType === 'paint' ? paintItemData : plasterItemData;
-                      const pricePerSqM = itemData?.pricePerSqM || itemData?.unitPrice || 0;
-                      const costPerSqM = itemData?.costPerSqM || itemData?.unitCost || 0;
-                      const roomTotalArea = wallArea + ceilingArea;
-                      const roomPrice = roomTotalArea * pricePerSqM;
-                      const roomCost = roomTotalArea * costPerSqM;
-
-                      return (
-                        <div key={selectedRoom.id} className="flex flex-col gap-2 text-sm p-3 bg-white rounded border border-blue-200 hover:border-blue-300 transition-colors">
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-3">
-                              {getRoomIcon(roomData.roomType)}
-                              <div className="flex flex-col">
-                                <span className="font-medium text-gray-800">{roomData.roomType}</span>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <Badge variant="outline" className="text-xs h-5">
-                                    כמות: {selectedRoom.quantity}
-                                  </Badge>
-                                  <Badge variant="outline" className="text-xs h-5 bg-purple-50 border-purple-200">
-                                    {selectedRoom.difficultyData?.label || 'רגיל'} (×{complexityFactor.toFixed(2)})
-                                  </Badge>
-                                  {selectedRoom.includeCeiling && (
-                                    <Badge variant="outline" className="text-xs h-5 bg-yellow-50 border-yellow-200">
-                                      + תקרה
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <span className="text-base font-bold text-indigo-700">
-                                ₪{Math.round(roomPrice).toLocaleString()}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {roomTotalArea.toFixed(1)} מ"ר × ₪{pricePerSqM.toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between text-xs pt-2 border-t border-blue-100">
-                            <div className="flex items-center gap-3">
-                              <span className="text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded">
-                                {wallArea.toFixed(1)} מ"ר קירות
-                              </span>
-                              {ceilingArea > 0 && (
-                                <span className="text-purple-600 font-semibold bg-purple-50 px-2 py-1 rounded">
-                                  + {ceilingArea.toFixed(1)} מ"ר תקרה
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-600">עלות: ₪{Math.round(roomCost).toLocaleString()}</span>
-                              <span className="text-green-600 font-semibold">רווח: ₪{Math.round(roomPrice - roomCost).toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* בחירת חללים */}
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -689,8 +621,7 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
                       isSelected
                         ? 'border-2 border-indigo-500 bg-gradient-to-br from-indigo-50 via-indigo-50/70 to-white shadow-lg ring-2 ring-indigo-200 ring-offset-1'
                         : 'border border-gray-200 hover:border-indigo-300 hover:shadow-md'
-                    } ${!isEditMode ? 'cursor-pointer' : ''}`}
-                    onClick={!isEditMode ? () => toggleRoomSelection(room.id) : undefined}
+                    }`}
                   >
                     <CardHeader className="pb-3">
                       {isEditMode ? (
@@ -742,7 +673,7 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
                         </div>
                       ) : (
                         <>
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleRoomSelection(room.id)}>
                             <CardTitle className={`text-base font-semibold flex items-center gap-2 ${
                               isSelected ? 'text-indigo-800' : 'text-gray-800'
                             }`}>
@@ -764,14 +695,39 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
                               }`}
                             />
                           </div>
-                          <div className={`text-xs mt-1 ${isSelected ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}>
-                            קירות: {room.wallAreaSqM} מ"ר • תקרה: {room.ceilingAreaSqM} מ"ר
+                          <div className="flex items-center justify-between mt-1">
+                            <div className={`text-xs ${isSelected ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}>
+                              קירות: {room.wallAreaSqM} מ"ר • תקרה: {room.ceilingAreaSqM} מ"ר
+                            </div>
+                            {isSelected && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleRoomExpanded(room.id);
+                                }}
+                                className="h-6 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                              >
+                                {expandedRoomIds.includes(room.id) ? (
+                                  <>
+                                    <ChevronUp className="h-3 w-3 ml-1" />
+                                    סגור
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="h-3 w-3 ml-1" />
+                                    ערוך
+                                  </>
+                                )}
+                              </Button>
+                            )}
                           </div>
                         </>
                       )}
                     </CardHeader>
                     
-                    {isSelected && !isEditMode && (
+                    {isSelected && !isEditMode && expandedRoomIds.includes(room.id) && (
                       <CardContent className="pt-0 space-y-3" onClick={e => e.stopPropagation()}>
                         {/* שורה עליונה: כמות ותקרה */}
                         <div className="grid grid-cols-2 gap-3">
