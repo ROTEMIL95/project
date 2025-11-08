@@ -51,8 +51,8 @@ class QuoteItemResponse(QuoteItemBase):
 
 class QuoteBase(BaseModel):
     """Base quote model"""
-    client_id: str
-    title: str
+    client_id: Optional[str] = None
+    title: Optional[str] = None
     description: Optional[str] = None
     status: str = "draft"  # draft, sent, approved, rejected, expired
     discount_percentage: float = 0
@@ -105,7 +105,7 @@ class QuoteResponse(QuoteBase):
     id: str
     user_id: str
     quote_number: str
-    items: List[QuoteItemResponse] = []
+    items: List[dict] = []  # Changed from List[QuoteItemResponse] to support JSONB structure
     sent_at: Optional[datetime] = None
     approved_at: Optional[datetime] = None
     created_at: datetime
