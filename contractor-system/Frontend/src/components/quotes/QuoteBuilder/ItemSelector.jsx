@@ -3545,6 +3545,13 @@ const ItemSelector = React.forwardRef(({
     }
 
     const currentIndex = selectedCategories.indexOf(currentCategoryForItems);
+    
+    // Safety check: ensure current category is valid before proceeding
+    if (currentIndex === -1) {
+        console.warn('[ItemSelector] Current category not found in selectedCategories, cannot navigate to next');
+        return;
+    }
+    
     if (currentIndex < selectedCategories.length - 1) {
         const nextCategoryId = selectedCategories[currentIndex + 1];
         setCurrentCategoryForItems(nextCategoryId);
@@ -3583,6 +3590,13 @@ const ItemSelector = React.forwardRef(({
       }
 
       const currentIndex = selectedCategories.indexOf(currentCategoryForItems);
+      
+      // Safety check: ensure current category is valid before proceeding
+      if (currentIndex === -1) {
+          console.warn('[ItemSelector] Current category not found in selectedCategories, cannot navigate back');
+          return;
+      }
+      
       if (currentIndex > 0) {
           const prevCategory = selectedCategories[currentIndex - 1];
           setCurrentCategoryForItems(prevCategory);
@@ -3592,6 +3606,12 @@ const ItemSelector = React.forwardRef(({
 
   const nextCategory = useMemo(() => {
     const currentIndex = selectedCategories.indexOf(currentCategoryForItems);
+    
+    // Safety check: ensure current category is in selected categories
+    if (currentIndex === -1) {
+      return null; // Current category not found, don't show next button
+    }
+    
     if (currentIndex < selectedCategories.length - 1) {
       const nextCategoryId = selectedCategories[currentIndex + 1];
       return AVAILABLE_CATEGORIES.find(c => c.id === nextCategoryId);
