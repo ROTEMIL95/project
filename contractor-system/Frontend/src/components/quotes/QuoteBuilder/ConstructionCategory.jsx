@@ -1150,14 +1150,24 @@ export default function ConstructionCategory({
 
           <Button 
             onClick={() => {
-              if (onProceed) {
-                onProceed();
+              const currentIndex = categoriesNav.findIndex(c => c.id === currentCategoryId);
+              if (currentIndex < categoriesNav.length - 1) {
+                onSelectCategory(categoriesNav[currentIndex + 1].id);
+              } else {
+                // זו הקטגוריה האחרונה - מעבר לעלויות נוספות
+                if (onProceed) onProceed();
               }
             }}
             className="bg-indigo-600 hover:bg-indigo-700 text-white"
-            disabled={!onProceed}
           >
-            הבא: עלויות נוספות
+            {(() => {
+              const currentIndex = categoriesNav.findIndex(c => c.id === currentCategoryId);
+              if (currentIndex < categoriesNav.length - 1) {
+                return `הבא: ${categoriesNav[currentIndex + 1].name}`;
+              } else {
+                return 'הבא: עלויות נוספות';
+              }
+            })()}
             <ArrowLeft className="mr-2 h-4 w-4" />
           </Button>
         </CardFooter>

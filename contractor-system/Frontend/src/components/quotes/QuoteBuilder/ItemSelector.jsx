@@ -2946,6 +2946,7 @@ const ItemSelector = React.forwardRef(({
   setSelectedItems,
   onAddItemToQuote,
   selectedCategories,
+  orderedCategories,
   setCurrentStep,
   AVAILABLE_CATEGORIES,
   currentCategoryForItems,
@@ -3589,15 +3590,14 @@ const ItemSelector = React.forwardRef(({
       }
   }, [selectedCategories, currentCategoryForItems, saveCurrentCategoryData, setCurrentCategoryForItems]);
 
-
   const nextCategory = useMemo(() => {
-    const currentIndex = selectedCategories.indexOf(currentCategoryForItems);
-    if (currentIndex < selectedCategories.length - 1) {
-      const nextCategoryId = selectedCategories[currentIndex + 1];
-      return AVAILABLE_CATEGORIES.find(c => c.id === nextCategoryId);
-    }
-    return null;
-  }, [selectedCategories, currentCategoryForItems, AVAILABLE_CATEGORIES]);
+    const currentIndex = orderedCategories.findIndex(c => c.id === currentCategoryForItems);
+    const next = currentIndex >= 0 && currentIndex < orderedCategories.length - 1
+      ? orderedCategories[currentIndex + 1]
+      : null;
+
+    return next;
+  }, [orderedCategories, currentCategoryForItems]);
 
   if (isLoadingUser || isLoadingCatalog) {
       return (

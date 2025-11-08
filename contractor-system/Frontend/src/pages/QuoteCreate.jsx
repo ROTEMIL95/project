@@ -199,6 +199,7 @@ function PersistedStep3({
   visible,
   userCategories,
   selectedCategories,
+  orderedCategories,
   selectedItems,
   setSelectedItems,
   currentCategoryForItems,
@@ -254,10 +255,7 @@ function PersistedStep3({
     );
   }
 
-  const navCats = (userCategories.length ? userCategories : AVAILABLE_CATEGORIES)
-    .filter(c => selectedCategories.includes(c.id))
-    .map(c => ({ id: c.id, name: c.name }));
-
+  // ✅ Use orderedCategories instead of navCats for correct order
   // category-specific editors (same as original case 3 logic)
   let content = null;
 
@@ -272,7 +270,7 @@ function PersistedStep3({
           categoryTimings={categoryTimings}
           onCategoryTimingChange={onCategoryTimingChange}
           onProceed={onProceedToAdditionalCosts}
-          categoriesNav={navCats}
+          categoriesNav={orderedCategories}
           currentCategoryId={effectiveCategoryId}
           onSelectCategory={setCurrentCategoryForItems}
         />
@@ -284,7 +282,7 @@ function PersistedStep3({
         <ConstructionCategory
           key={`cat-${effectiveCategoryId}`}
           onAddItemToQuote={onAddItemToQuote}
-          categoriesNav={navCats}
+          categoriesNav={orderedCategories}
           currentCategoryId={effectiveCategoryId}
           onSelectCategory={setCurrentCategoryForItems}
           categoryTimings={categoryTimings}
@@ -305,7 +303,7 @@ function PersistedStep3({
           categoryId="cat_plumbing"
           categoryTimings={categoryTimings}
           onCategoryTimingChange={onCategoryTimingChange}
-          categoriesNav={navCats}
+          categoriesNav={orderedCategories}
           currentCategoryId={effectiveCategoryId}
           onSelectCategory={setCurrentCategoryForItems}
           onProceed={onProceedToAdditionalCosts}
@@ -322,7 +320,7 @@ function PersistedStep3({
           categoryId="cat_electricity"
           categoryTimings={categoryTimings}
           onCategoryTimingChange={onCategoryTimingChange}
-          categoriesNav={navCats}
+          categoriesNav={orderedCategories}
           currentCategoryId={effectiveCategoryId}
           onSelectCategory={setCurrentCategoryForItems}
         />
@@ -345,8 +343,9 @@ function PersistedStep3({
             setSelectedItems={setSelectedItems}
             onAddItemToQuote={onAddItemToQuote}
             selectedCategories={selectedCategories}
+            orderedCategories={orderedCategories}
             setCurrentStep={() => { /* no-op; step נשלט מההורה */ }}
-            AVAILABLE_CATEGORIES={userCategories.length ? userCategories : AVAILABLE_CATEGORIES}
+            AVAILABLE_CATEGORIES={AVAILABLE_CATEGORIES}
             currentCategoryForItems={effectiveCategoryId}
             setCurrentCategoryForItems={setCurrentCategoryForItems}
             processedCategories={processedCategories}
@@ -2545,6 +2544,7 @@ export default function QuoteCreate() {
           visible={currentStep === 3}
           userCategories={userCategories}
           selectedCategories={selectedCategories}
+          orderedCategories={getOrderedSelectedCategories()}
           selectedItems={selectedItems}
           setSelectedItems={setSelectedItems}
           currentCategoryForItems={currentCategoryForItems}
