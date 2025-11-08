@@ -197,7 +197,7 @@ const AVAILABLE_CATEGORIES = [
 // NEW: persistently-mounted step 3 content to keep internal state when navigating away
 function PersistedStep3({
   visible,
-  effectiveCategoriesSource,
+  userCategories,
   selectedCategories,
   selectedItems,
   setSelectedItems,
@@ -254,7 +254,7 @@ function PersistedStep3({
     );
   }
 
-  const navCats = effectiveCategoriesSource
+  const navCats = (userCategories.length ? userCategories : AVAILABLE_CATEGORIES)
     .filter(c => selectedCategories.includes(c.id))
     .map(c => ({ id: c.id, name: c.name }));
 
@@ -346,7 +346,7 @@ function PersistedStep3({
             onAddItemToQuote={onAddItemToQuote}
             selectedCategories={selectedCategories}
             setCurrentStep={() => { /* no-op; step נשלט מההורה */ }}
-            AVAILABLE_CATEGORIES={effectiveCategoriesSource}
+            AVAILABLE_CATEGORIES={userCategories.length ? userCategories : AVAILABLE_CATEGORIES}
             currentCategoryForItems={effectiveCategoryId}
             setCurrentCategoryForItems={setCurrentCategoryForItems}
             processedCategories={processedCategories}
@@ -475,17 +475,13 @@ export default function QuoteCreate() {
     return AVAILABLE_CATEGORIES.filter(c => map[c.id] !== false);
   }, [user?.user_metadata?.categoryActiveMap]);
 
-  // ✅ SINGLE SOURCE OF TRUTH for effective categories (fixes bug with CategoryStepper vs Next button mismatch)
-  const effectiveCategoriesSource = useMemo(() => {
-    return userCategories.length ? userCategories : AVAILABLE_CATEGORIES;
-  }, [userCategories]);
-
   // NEW: Helper function to get ordered categories based on selectedCategories order
   const getOrderedSelectedCategories = useCallback(() => {
+    const sourceCategories = userCategories.length ? userCategories : AVAILABLE_CATEGORIES;
     return selectedCategories
-      .map(catId => effectiveCategoriesSource.find(c => c.id === catId))
+      .map(catId => sourceCategories.find(c => c.id === catId))
       .filter(Boolean);
-  }, [selectedCategories, effectiveCategoriesSource]);
+  }, [selectedCategories, userCategories]);
 
 
   // נרמול מבנה פירוט חדרים שמגיע מהטופס לגרסה עקבית להצגה ושמירה
@@ -1639,7 +1635,7 @@ export default function QuoteCreate() {
     const previewItems = enhanceManualItems(clonedItems);
 
     const workforceData = {};
-    const categoriesWithItems = effectiveCategoriesSource.filter(category =>
+    const categoriesWithItems = (userCategories.length ? userCategories : AVAILABLE_CATEGORIES).filter(category =>
       previewItems.some(item => item.categoryId === category.id)
     );
 
@@ -2159,7 +2155,7 @@ export default function QuoteCreate() {
                           </p>
                           <div className="flex flex-wrap gap-2 mb-3">
                             {categoriesWithoutDates.map(catId => {
-                              const cat = effectiveCategoriesSource.find(c => c.id === catId);
+                              const cat = (userCategories.length ? userCategories : AVAILABLE_CATEGORIES).find(c => c.id === catId);
                               return cat ? (
                                 <Badge key={catId} variant="outline" className="bg-orange-100 text-orange-900 border-orange-300">
                                   {cat.name}
@@ -2547,7 +2543,7 @@ export default function QuoteCreate() {
 
         <PersistedStep3
           visible={currentStep === 3}
-          effectiveCategoriesSource={effectiveCategoriesSource}
+          userCategories={userCategories}
           selectedCategories={selectedCategories}
           selectedItems={selectedItems}
           setSelectedItems={setSelectedItems}
@@ -2616,7 +2612,7 @@ export default function QuoteCreate() {
           selectedCategories={selectedCategories}
           currentCategoryForItems={currentCategoryForItems}
           effectiveCategoryId={selectedCategories.includes(currentCategoryForItems) ? currentCategoryForItems : (selectedCategories[0] || null)}
-          categories={effectiveCategoriesSource}
+          categories={userCategories.length ? userCategories : AVAILABLE_CATEGORIES}
           selectedItems={selectedItems}
           processedCategories={processedCategories}
           categoryTimings={categoryTimings}
