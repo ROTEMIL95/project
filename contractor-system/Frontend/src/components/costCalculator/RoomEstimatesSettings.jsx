@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Trash2, Save, X } from 'lucide-react';
 import { useUser } from '@/components/utils/UserContext';
-import { supabase } from '@/lib/supabase';
+import { User } from '@/lib/entities/user';
 
 export default function RoomEstimatesSettings({ isOpen, onClose, onSave }) {
   const { user } = useUser();
@@ -104,19 +104,25 @@ export default function RoomEstimatesSettings({ isOpen, onClose, onSave }) {
 
       if (validEstimates.length === 0) {
         alert('נא להוסיף לפחות חלל אחד עם שם תקין');
+        setSaving(false);
         return;
       }
 
-      // Update user metadata via Supabase Auth
-      await supabase.auth.updateUser({
-        data: {
-          ...user.user_metadata,
-          roomEstimates: validEstimates
+      // Update user_profiles table via backend API
+      // roomEstimates (camelCase) will be converted to room_estimates (snake_case) automatically
+      if (typeof User.updateMyUserData === 'function') {
+        const { error } = await User.updateMyUserData({ roomEstimates: validEstimates });
+        
+        if (error) {
+          throw error;
         }
-      });
 
-      onSave(validEstimates);
-      onClose();
+        onSave(validEstimates);
+        onClose();
+      } else {
+        console.error('User.updateMyUserData not available - backend not connected');
+        alert('שגיאה: לא ניתן לשמור - אין חיבור לשרת');
+      }
     } catch (error) {
       console.error('שגיאה בשמירת נתוני החללים:', error);
       alert('שגיאה בשמירת הנתונים');

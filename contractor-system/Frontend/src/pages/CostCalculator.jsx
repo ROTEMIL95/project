@@ -1655,7 +1655,7 @@ export default function CostCalculator() {
 
                 {/* Removed: demolition_disposal render */}
             </div>
-            <RoomEstimatesSettings isOpen={showRoomEstimatesSettings} onClose={handleCloseRoomEstimatesSettings} onSave={handleSaveRoomEstimates} initialRoomEstimates={userData?.roomEstimates || []} />
+            <RoomEstimatesSettings isOpen={showRoomEstimatesSettings} onClose={handleCloseRoomEstimatesSettings} onSave={handleSaveRoomEstimates} />
             <TilingDefaultsSettings isOpen={showTilingDefaultsSettings} onClose={() => setShowTilingDefaultsSettings(false)} onSave={handleSaveTilingDefaults} initialDefaults={userTilingDefaults || {}} />
 
             {/* NEW: Split FAB for paint/plaster */}
