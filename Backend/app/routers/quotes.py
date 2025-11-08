@@ -28,25 +28,14 @@ async def create_quote(
     supabase = get_supabase_admin()  # Use admin client
 
     try:
-        # Prepare quote data
-        quote_data = quote.model_dump(exclude={"items"})
+        # Prepare quote data including items as JSONB
+        quote_data = quote.model_dump()
         quote_data["user_id"] = user_id
         quote_data["quote_number"] = generate_quote_number(user_id)
 
-        # Insert quote
+        # Insert quote with items stored in the JSONB 'items' column
         quote_response = supabase.table("quotes").insert(quote_data).execute()
         created_quote = quote_response.data[0]
-
-        # Insert quote items
-        if quote.items:
-            items_data = [
-                {**item.model_dump(), "quote_id": created_quote["id"]}
-                for item in quote.items
-            ]
-            items_response = supabase.table("quote_items").insert(items_data).execute()
-            created_quote["items"] = items_response.data
-        else:
-            created_quote["items"] = []
 
         return created_quote
     except Exception as e:
@@ -69,7 +58,7 @@ async def list_quotes(
     supabase = get_supabase_admin()  # Use admin client
 
     try:
-        query = supabase.table("quotes").select("*, quote_items(*)").eq("user_id", user_id)
+        query = supabase.table("quotes").select("*").eq("user_id", user_id)
 
         if status_filter:
             query = query.eq("status", status_filter)
@@ -84,10 +73,7 @@ async def list_quotes(
         # Get paginated data
         response = query.order("created_at", desc=True).range(skip, skip + limit - 1).execute()
 
-        # Transform items key
-        for quote_item in response.data:
-            quote_item["items"] = quote_item.pop("quote_items", [])
-
+        # Items are already stored in the JSONB 'items' column, no transformation needed
         return QuoteList(quotes=response.data, total=total)
     except Exception as e:
         logger.error(f"Error listing quotes: {e}", exc_info=True)
@@ -107,7 +93,7 @@ async def get_quote(
 
     try:
         response = supabase.table("quotes")\
-            .select("*, quote_items(*)")\
+            .select("*")\
             .eq("id", quote_id)\
             .eq("user_id", user_id)\
             .execute()
@@ -118,9 +104,8 @@ async def get_quote(
                 detail="Quote not found"
             )
 
-        quote = response.data[0]
-        quote["items"] = quote.pop("quote_items", [])
-        return quote
+        # Items are already stored in the JSONB 'items' column, no transformation needed
+        return response.data[0]
     except HTTPException:
         raise
     except Exception as e:
@@ -162,15 +147,14 @@ async def update_quote(
                 .eq("id", quote_id)\
                 .execute()
 
-            # Get updated quote with items
+            # Get updated quote
             updated = supabase.table("quotes")\
-                .select("*, quote_items(*)")\
+                .select("*")\
                 .eq("id", quote_id)\
                 .execute()
 
-            result = updated.data[0]
-            result["items"] = result.pop("quote_items", [])
-            return result
+            # Items are already stored in the JSONB 'items' column, no transformation needed
+            return updated.data[0]
 
         return existing.data[0]
     except HTTPException:
