@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-// import { Quote } from '@/lib/entities'; // REMOVED - Quote API will be rebuilt
+import { Quote } from '@/lib/entities';
 import { useUser } from '@/components/utils/UserContext';
 import QuoteToHTML from '@/components/quotes/QuoteToHTML';
 import { Button } from "@/components/ui/button";

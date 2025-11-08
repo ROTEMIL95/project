@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.encoders import jsonable_encoder
 from app.models.project import ProjectCreate, ProjectUpdate, ProjectResponse, ProjectList
 from app.middleware.auth_middleware import get_current_user
 from app.database import get_supabase
@@ -16,7 +17,9 @@ async def create_project(project: ProjectCreate, user_id: str = Depends(get_curr
     try:
         project_data = project.model_dump()
         project_data["user_id"] = user_id
-        response = supabase.table("projects").insert(project_data).execute()
+        # Serialize all complex types (date, datetime, Decimal, UUID) to JSON-compatible types
+        payload = jsonable_encoder(project_data, exclude_none=True)
+        response = supabase.table("projects").insert(payload).execute()
         return response.data[0]
     except Exception as e:
         logger.error(f"Error creating project: {e}", exc_info=True)
@@ -81,7 +84,9 @@ async def update_project(project_id: str, project: ProjectUpdate, user_id: str =
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
         update_data = project.model_dump(exclude_unset=True)
         if update_data:
-            response = supabase.table("projects").update(update_data).eq("id", project_id).execute()
+            # Serialize all complex types (date, datetime, Decimal, UUID) to JSON-compatible types
+            payload = jsonable_encoder(update_data, exclude_none=True)
+            response = supabase.table("projects").update(payload).eq("id", project_id).execute()
             return response.data[0]
         return existing.data[0]
     except HTTPException:

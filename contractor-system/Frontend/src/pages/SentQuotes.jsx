@@ -306,14 +306,24 @@ export default function SentQuotes() {
             }
 
             // יצירת טרנזקציה פיננסית חדשה
+            const revenue = quote.finalAmount || quote.totalAmount || 0;
+            const profit = revenue - totalEstimatedCost;
+
             const transactionData = {
+                // Required fields for backend API
+                type: 'income',  // This is a quote payment (income)
+                category: 'quote_payment',  // Category from backend enum
+                amount: revenue,  // Total revenue from quote
+                description: `תשלום עבור פרויקט: ${quote.projectName || 'ללא שם'} - לקוח: ${quote.clientName || 'ללא שם'}`,
+                transactionDate: new Date().toISOString().split('T')[0],  // Format as YYYY-MM-DD (date only)
+
+                // Optional fields
                 quoteId: quote.id,
-                transactionDate: new Date().toISOString(),
-                revenue: quote.finalAmount || quote.totalAmount || 0, // Use finalAmount if available, otherwise totalAmount
-                estimatedCost: totalEstimatedCost,
-                estimatedProfit: (quote.finalAmount || quote.totalAmount || 0) - totalEstimatedCost,
-                status: 'completed',
-                projectType: quote.projectType || 'אחר'
+                clientId: quote.clientId || null,
+                projectId: quote.projectId || null,  // If project exists
+                referenceNumber: quote.quoteNumber || null,
+                paymentMethod: null,  // Can be set later by user
+                notes: `סוג פרויקט: ${quote.projectType || 'אחר'}\nעלות משוערת: ₪${totalEstimatedCost.toLocaleString()}\nרווח משוער: ₪${profit.toLocaleString()}\nאחוז רווח: ${totalEstimatedCost > 0 ? ((profit / totalEstimatedCost) * 100).toFixed(1) : 0}%`
             };
 
             await FinancialTransaction.create(transactionData);

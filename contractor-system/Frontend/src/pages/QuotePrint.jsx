@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-// import { Quote } from '@/lib/entities'; // REMOVED - Quote API will be rebuilt
+import { Quote } from '@/lib/entities';
 import QuoteToHTML from '@/components/quotes/QuoteToHTML';
 
 export default function QuotePrint() {

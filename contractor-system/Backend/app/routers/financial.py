@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.encoders import jsonable_encoder
 from app.models.financial import FinancialTransactionCreate, FinancialTransactionUpdate, FinancialTransactionResponse, FinancialTransactionList
 from app.middleware.auth_middleware import get_current_user
 from app.database import get_supabase
@@ -12,15 +13,37 @@ router = APIRouter()
 @router.post("/", response_model=FinancialTransactionResponse, status_code=status.HTTP_201_CREATED)
 async def create_transaction(transaction: FinancialTransactionCreate, user_id: str = Depends(get_current_user)):
     """Create a new financial transaction"""
-    supabase = get_supabase()
+    from app.database import get_supabase_admin
+    supabase = get_supabase_admin()  # Use admin client to bypass RLS
     try:
         transaction_data = transaction.model_dump()
         transaction_data["user_id"] = user_id
-        response = supabase.table("financial_transactions").insert(transaction_data).execute()
-        return response.data[0]
+
+        # Serialize all complex types (date, datetime, Decimal, UUID) to JSON-compatible types
+        payload = jsonable_encoder(transaction_data, exclude_none=True)
+
+        logger.info(f"[create_transaction] Creating transaction for user {user_id}: type={payload.get('type')}, category={payload.get('category')}, amount={payload.get('amount')}")
+
+        response = supabase.table("financial_transactions").insert(payload).execute()
+
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create transaction - no data returned"
+            )
+
+        created_transaction = response.data[0]
+        logger.info(f"[create_transaction] Transaction created: id={created_transaction.get('id')}")
+
+        return created_transaction
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating transaction: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create transaction")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create transaction: {str(e)}"
+        )
 
 
 @router.get("/", response_model=FinancialTransactionList)
@@ -101,8 +124,10 @@ async def update_transaction(
         # Update transaction
         update_data = transaction.model_dump(exclude_unset=True)
         if update_data:
+            # Serialize all complex types to JSON-compatible types
+            payload = jsonable_encoder(update_data, exclude_none=True)
             response = supabase.table("financial_transactions")\
-                .update(update_data)\
+                .update(payload)\
                 .eq("id", transaction_id)\
                 .execute()
             return response.data[0]

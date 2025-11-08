@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Project } from '@/lib/entities';
 import { ProjectCosts } from '@/lib/entities';
-// import { Quote } from '@/lib/entities'; // REMOVED - Quote API will be rebuilt
+import { Quote } from '@/lib/entities';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import {

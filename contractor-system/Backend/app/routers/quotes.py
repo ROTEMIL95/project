@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.encoders import jsonable_encoder
 from app.models.quote import QuoteCreate, QuoteUpdate, QuoteResponse, QuoteList
 from app.middleware.auth_middleware import get_current_user
 from app.database import get_supabase_admin
@@ -33,10 +34,13 @@ async def create_quote(
         # Don't set quote_number - trigger will generate it
         # Don't set created_at/updated_at - triggers handle it
 
-        logger.info(f"[create_quote] Creating quote for user {user_id}: project_name={quote_data.get('project_name')}, items_count={len(quote_data.get('items', []))}")
+        # Serialize all complex types (date, datetime, Decimal, UUID) to JSON-compatible types
+        payload = jsonable_encoder(quote_data, exclude_none=True)
+
+        logger.info(f"[create_quote] Creating quote for user {user_id}: project_name={payload.get('project_name')}, items_count={len(payload.get('items', []))}")
 
         # Single table insert - items are JSONB
-        response = supabase.table("quotes").insert(quote_data).execute()
+        response = supabase.table("quotes").insert(payload).execute()
 
         if not response.data:
             raise HTTPException(
@@ -197,10 +201,13 @@ async def update_quote(
             response = supabase.table("quotes").select("*").eq("id", quote_id).execute()
             return response.data[0]
 
-        logger.info(f"[update_quote] Updating quote {quote_id}: {len(update_data)} fields")
+        # Serialize all complex types (date, datetime, Decimal, UUID) to JSON-compatible types
+        payload = jsonable_encoder(update_data, exclude_none=True)
+
+        logger.info(f"[update_quote] Updating quote {quote_id}: {len(payload)} fields")
 
         response = supabase.table("quotes")\
-            .update(update_data)\
+            .update(payload)\
             .eq("id", quote_id)\
             .execute()
 
