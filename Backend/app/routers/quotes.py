@@ -50,6 +50,7 @@ async def create_quote(quote: QuoteCreate, user_id: str = Depends(get_current_us
 # GET /api/quotes  וגם  /api/quotes/
 @router.get("", response_model=QuoteList)
 @router.get("/", include_in_schema=False)
+
 async def list_quotes(
     user_id: str = Depends(get_current_user),
     status_filter: Optional[str] = None,

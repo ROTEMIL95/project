@@ -81,7 +81,8 @@ async def list_transactions(
     limit: int = Query(100, ge=1, le=100)
 ):
     """List all financial transactions for the current user"""
-    supabase = get_supabase()
+    from app.database import get_supabase_admin
+    supabase = get_supabase_admin()  # Use admin client to bypass RLS (already filtering by user_id)
     try:
         query = supabase.table("financial_transactions").select("*").eq("user_id", user_id)
         if type_filter:
@@ -100,7 +101,8 @@ async def list_transactions(
 @router.get("/{transaction_id}", response_model=FinancialTransactionResponse)
 async def get_transaction(transaction_id: str, user_id: str = Depends(get_current_user)):
     """Get a specific financial transaction by ID"""
-    supabase = get_supabase()
+    from app.database import get_supabase_admin
+    supabase = get_supabase_admin()  # Use admin client to bypass RLS (already filtering by user_id)
     try:
         response = supabase.table("financial_transactions")\
             .select("*")\
@@ -132,7 +134,8 @@ async def update_transaction(
     user_id: str = Depends(get_current_user)
 ):
     """Update a financial transaction"""
-    supabase = get_supabase()
+    from app.database import get_supabase_admin
+    supabase = get_supabase_admin()  # Use admin client to bypass RLS (already filtering by user_id)
     try:
         # Check if transaction exists and belongs to user
         existing = supabase.table("financial_transactions")\
@@ -172,7 +175,8 @@ async def update_transaction(
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_transaction(transaction_id: str, user_id: str = Depends(get_current_user)):
     """Delete a financial transaction"""
-    supabase = get_supabase()
+    from app.database import get_supabase_admin
+    supabase = get_supabase_admin()  # Use admin client to bypass RLS (already filtering by user_id)
     try:
         existing = supabase.table("financial_transactions").select("*").eq("id", transaction_id).eq("user_id", user_id).execute()
         if not existing.data:

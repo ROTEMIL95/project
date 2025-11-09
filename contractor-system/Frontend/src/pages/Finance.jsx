@@ -55,6 +55,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
+import { toEnglishStatus } from '@/lib/statusMapping';
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', minimumFractionDigits: 0 }).format(amount || 0);
@@ -195,7 +196,9 @@ export default function Finance() {
 
     // Migration function to create missing financial transactions for approved quotes
     const createMissingTransactions = async (user, quotesToCheck) => {
-        if (!user || !quotesToCheck || quotesToCheck.length === 0) return;
+        if (!user || !quotesToCheck || quotesToCheck.length === 0) {
+            return 0;
+        }
 
         try {
             const approvedQuotes = quotesToCheck.filter(q => q.status === 'approved');
@@ -241,12 +244,10 @@ export default function Finance() {
 
                     await FinancialTransaction.create(transactionData);
                     createdCount++;
-                    console.log(`✅ Created financial transaction for quote ${quote.id} (${quote.projectName})`);
                 }
             }
 
             if (createdCount > 0) {
-                console.log(`📊 Migration complete: Created ${createdCount} missing transactions`);
                 return createdCount;
             }
             return 0;
@@ -760,7 +761,8 @@ export default function Finance() {
 
             // עדכן את סטטוס ההצעה
             try {
-                await Quote.update(transaction.quoteId, { status: newStatus });
+                // Convert Hebrew status to English for database
+                await Quote.update(transaction.quoteId, { status: toEnglishStatus(newStatus) });
                 if (newStatus !== 'אושר') {
                     shouldDeleteFinancialTransaction = true;
                 }

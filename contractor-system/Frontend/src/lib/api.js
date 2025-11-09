@@ -127,13 +127,13 @@ class APIClient {
         }
       }
 
-      // Handle non-JSON responses
+      // Handle non-JSON responses and 204 No Content
       const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
+      if (response.status === 204 || !contentType || !contentType.includes('application/json')) {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return response;
+        return response.status === 204 ? null : response;
       }
 
       const data = await response.json();
