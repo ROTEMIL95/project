@@ -19,11 +19,12 @@ def generate_quote_number(user_id: str) -> str:
     return f"Q-{timestamp}-{random_str}"
 
 
-@router.post("/", response_model=QuoteResponse, status_code=status.HTTP_201_CREATED)
-async def create_quote(
-    quote: QuoteCreate,
-    user_id: str = Depends(get_current_user)
-):
+# POST /api/quotes  וגם  /api/quotes/
+@router.post("", response_model=QuoteResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", include_in_schema=False)
+async def create_quote(quote: QuoteCreate, user_id: str = Depends(get_current_user)):
+
+
     """Create a new quote"""
     supabase = get_supabase_admin()  # Use admin client
 
@@ -46,7 +47,9 @@ async def create_quote(
         )
 
 
-@router.get("/", response_model=QuoteList)
+# GET /api/quotes  וגם  /api/quotes/
+@router.get("", response_model=QuoteList)
+@router.get("/", include_in_schema=False)
 async def list_quotes(
     user_id: str = Depends(get_current_user),
     status_filter: Optional[str] = None,

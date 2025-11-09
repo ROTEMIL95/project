@@ -20,10 +20,10 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Disable automatic trailing slash redirects
+# Disable automatic trailiשng slash redirects
 # This prevents 307 redirects that can break CORS preflight requests
 # Frontend can call /api/quotes or /api/quotes/ - both work without redirect
-app.router.redirect_slashes = False
+app.router.redirect_slashes = True
 
 # Get CORS origins list
 cors_origins = settings.cors_origins_list

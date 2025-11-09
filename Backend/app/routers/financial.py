@@ -9,7 +9,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/", response_model=FinancialTransactionResponse, status_code=status.HTTP_201_CREATED)
+# POST /api/financial  וגם  /api/financial/
+@router.post("", response_model=FinancialTransactionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", include_in_schema=False)
 async def create_transaction(transaction: FinancialTransactionCreate, user_id: str = Depends(get_current_user)):
     """Create a new financial transaction"""
     supabase = get_supabase()
@@ -23,7 +25,9 @@ async def create_transaction(transaction: FinancialTransactionCreate, user_id: s
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create transaction")
 
 
-@router.get("/", response_model=FinancialTransactionList)
+# GET /api/financial  וגם  /api/financial/
+@router.get("", response_model=FinancialTransactionList)
+@router.get("/", include_in_schema=False)
 async def list_transactions(
     user_id: str = Depends(get_current_user),
     type_filter: Optional[str] = None,
