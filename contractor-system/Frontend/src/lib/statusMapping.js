@@ -11,6 +11,7 @@ export const STATUS_HE_TO_EN = {
   'נשלח': 'sent',
   'נדחה': 'rejected',
   'בוטל': 'cancelled',
+  'פג תוקף': 'expired',
 };
 
 // Status mappings: English to Hebrew
@@ -20,6 +21,7 @@ export const STATUS_EN_TO_HE = {
   'sent': 'נשלח',
   'rejected': 'נדחה',
   'cancelled': 'בוטל',
+  'expired': 'פג תוקף',
 };
 
 // English status constants
@@ -29,6 +31,7 @@ export const STATUS_EN = {
   SENT: 'sent',
   REJECTED: 'rejected',
   CANCELLED: 'cancelled',
+  EXPIRED: 'expired',
 };
 
 // Hebrew status constants
@@ -38,6 +41,7 @@ export const STATUS_HE = {
   SENT: 'נשלח',
   REJECTED: 'נדחה',
   CANCELLED: 'בוטל',
+  EXPIRED: 'פג תוקף',
 };
 
 /**
