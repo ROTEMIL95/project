@@ -1,23 +1,42 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from app.models.financial import FinancialTransactionCreate, FinancialTransactionUpdate, FinancialTransactionResponse, FinancialTransactionList
 from app.middleware.auth_middleware import get_current_user
 from app.database import get_supabase
 from typing import Optional
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 @router.post("/", response_model=FinancialTransactionResponse, status_code=status.HTTP_201_CREATED)
-async def create_transaction(transaction: FinancialTransactionCreate, user_id: str = Depends(get_current_user)):
+async def create_transaction(
+    request: Request,
+    transaction: FinancialTransactionCreate, 
+    user_id: str = Depends(get_current_user)
+):
     """Create a new financial transaction"""
     from app.database import get_supabase_admin
+    
+    # Log the raw request body for debugging
+    try:
+        body = await request.body()
+        logger.info(f"[create_transaction] Raw request body: {body.decode('utf-8')}")
+    except Exception as e:
+        logger.warning(f"[create_transaction] Could not read request body: {e}")
+    
     supabase = get_supabase_admin()  # Use admin client to bypass RLS
+    
     try:
         transaction_data = transaction.model_dump()
         transaction_data["user_id"] = user_id
+
+        # Log the parsed transaction data
+        logger.info(f"[create_transaction] Parsed transaction data: {json.dumps(transaction_data, default=str)}")
 
         # Serialize all complex types (date, datetime, Decimal, UUID) to JSON-compatible types
         payload = jsonable_encoder(transaction_data, exclude_none=True)
@@ -38,6 +57,13 @@ async def create_transaction(transaction: FinancialTransactionCreate, user_id: s
         return created_transaction
     except HTTPException:
         raise
+    except ValidationError as e:
+        logger.error(f"[create_transaction] Pydantic validation error: {e.errors()}")
+        logger.error(f"[create_transaction] Validation error details: {e.json()}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=e.errors()
+        )
     except Exception as e:
         logger.error(f"Error creating transaction: {e}", exc_info=True)
         raise HTTPException(

@@ -23,6 +23,20 @@ def setup_exception_handlers(app):
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        # Log detailed validation error information
+        logger.error("=" * 60)
+        logger.error(f"VALIDATION ERROR on {request.method} {request.url.path}")
+        logger.error(f"Validation errors: {exc.errors()}")
+        
+        # Try to log the request body
+        try:
+            body = await request.body()
+            logger.error(f"Request body: {body.decode('utf-8')}")
+        except Exception as e:
+            logger.error(f"Could not read request body: {e}")
+        
+        logger.error("=" * 60)
+        
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={"detail": exc.errors()}

@@ -231,7 +231,7 @@ export default function Finance() {
                     const transactionData = {
                         userId: user.id,
                         quoteId: quote.id,
-                        transactionDate: quote.approvedAt || quote.updatedAt || new Date().toISOString(),
+                        transactionDate: (quote.approvedAt || quote.updatedAt || new Date().toISOString()).split('T')[0],
                         revenue: quote.finalAmount || quote.totalPrice || 0,
                         estimatedCost: totalCost,
                         estimatedProfit: (quote.finalAmount || quote.totalPrice || 0) - totalCost,
