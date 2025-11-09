@@ -20,6 +20,11 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# Disable automatic trailing slash redirects
+# This prevents 307 redirects that can break CORS preflight requests
+# Frontend can call /api/quotes or /api/quotes/ - both work without redirect
+app.router.redirect_slashes = False
+
 # Get CORS origins list
 cors_origins = settings.cors_origins_list
 
@@ -65,7 +70,24 @@ async def startup_event():
     logger.info(f"  CORS Origins: {cors_origins}")
     logger.info(f"  Frontend Origin Check: https://calculatesmartil.netlify.app in list = {('https://calculatesmartil.netlify.app' in cors_origins)}")
     logger.info("  CORS Middleware Order: Added FIRST (runs before all routes)")
+    logger.info(f"  Trailing Slash Redirects: DISABLED (redirect_slashes=False)")
     logger.info("=" * 60)
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup resources on shutdown"""
+    logger.info("Shutting down application...")
+    # Close httpx clients
+    from app.database import http_client, http_async_client
+    try:
+        http_client.close()
+        await http_async_client.aclose()
+        logger.info("HTTP clients closed successfully")
+    except Exception as e:
+        logger.error(f"Error closing HTTP clients: {e}")
+    logger.info("Application shutdown complete")
+
 
 # Import Routers
 from app.routers import (
