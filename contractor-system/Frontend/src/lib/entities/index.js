@@ -136,7 +136,8 @@ export class Quote {
       const params = {};
 
       if (filters.status) {
-        params.status_filter = filters.status;
+        // Translate Hebrew status to English for API call
+        params.status_filter = toEnglishStatus(filters.status);
       }
       if (filters.client_id) {
         params.client_id = filters.client_id;
@@ -225,7 +226,8 @@ export class Project {
       const params = {};
 
       if (filters.status) {
-        params.status_filter = filters.status;
+        // Translate Hebrew status to English for API call
+        params.status_filter = toEnglishStatus(filters.status);
       }
       if (filters.client_id) {
         params.client_id = filters.client_id;
@@ -238,7 +240,7 @@ export class Project {
       }
 
       const response = await projectsAPI.list(params);
-      
+
       // Backend returns {projects: [...], total: N}
       const projects = response.projects || response || [];
 
