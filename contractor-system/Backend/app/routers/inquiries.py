@@ -37,16 +37,10 @@ async def list_inquiries(
     try:
         query = supabase.table("customer_inquiries").select("*")
         if status_filter:
-            # Map Hebrew status to English for database query
-            status_mapping = {
-                'חדש': 'new',
-                'נוצר קשר': 'contacted',
-                'הומר': 'converted',
-                'סגור': 'closed',
-            }
-            english_status = status_mapping.get(status_filter, status_filter)
-            logger.info(f"[list_inquiries] Status filter: '{status_filter}' → '{english_status}'")
-            query = query.eq("status", english_status)
+            # Frontend translates Hebrew to English before sending
+            # Backend accepts only English status values
+            logger.info(f"[list_inquiries] Filtering by status: '{status_filter}'")
+            query = query.eq("status", status_filter)
         count_response = query.execute()
         total = len(count_response.data)
         response = query.order("created_at", desc=True).range(skip, skip + limit - 1).execute()

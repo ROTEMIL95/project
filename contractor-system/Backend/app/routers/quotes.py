@@ -85,20 +85,10 @@ async def list_quotes(
         query = supabase.table("quotes").select("*").eq("user_id", user_id)
 
         if status_filter:
-            # Map Hebrew status to English for database query
-            # Frontend sends Hebrew labels, but database uses English ENUM values
-            status_mapping = {
-                'אושר': 'approved',
-                'טיוטה': 'draft',
-                'נשלח': 'sent',
-                'נדחה': 'rejected',
-                'בוטל': 'cancelled',
-                'פג תוקף': 'expired',
-            }
-            # Use mapped value if it's Hebrew, otherwise use as-is (for English values)
-            english_status = status_mapping.get(status_filter, status_filter)
-            logger.info(f"[list_quotes] Status filter: '{status_filter}' → '{english_status}'")
-            query = query.eq("status", english_status)
+            # Frontend translates Hebrew to English before sending
+            # Backend accepts only English status values
+            logger.info(f"[list_quotes] Filtering by status: '{status_filter}'")
+            query = query.eq("status", status_filter)
 
         if client_id:
             query = query.eq("client_id", client_id)
