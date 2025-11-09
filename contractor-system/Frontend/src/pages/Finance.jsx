@@ -125,6 +125,10 @@ export default function Finance() {
     const [activeChart, setActiveChart] = useState(null);
 
     const [sortConfig, setSortConfig] = useState({ key: 'transactionDate', direction: 'desc' });
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     // Navigation hook
     const navigate = useNavigate();
@@ -489,6 +493,20 @@ export default function Finance() {
         return sortableItems;
     }, [filteredTransactions, sortConfig, quotes]);
 
+    // Pagination logic
+    const paginatedTransactions = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return sortedTransactions.slice(startIndex, endIndex);
+    }, [sortedTransactions, currentPage, itemsPerPage]);
+
+    const totalPages = Math.ceil(sortedTransactions.length / itemsPerPage);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [timeFilter, profitFilter, revenueFilter, projectTypeFilter]);
+
     const requestSort = (key) => {
         let direction = 'desc';
         if (sortConfig.key === key && sortConfig.direction === 'desc') {
@@ -698,18 +716,24 @@ export default function Finance() {
 
             await FinancialTransaction.update(transactionId, updatedData);
 
-            setTransactions(prev =>
-                prev.map(t =>
-                    t.id === transactionId ? { ...t, ...updatedData } : t
-                )
-            );
+            // Reload transactions from server to ensure data consistency
+            await loadTransactions(currentUser);
 
             setEditingId(null);
             setEditedData({});
+            
+            toast({
+                title: "הצלחה",
+                description: "העסקה עודכנה בהצלחה",
+            });
 
         } catch (error) {
             console.error("Error saving transaction:", error);
-            alert("שגיאה בשמירת השינויים.");
+            toast({
+                title: "שגיאה",
+                description: "שגיאה בשמירת השינויים",
+                variant: "destructive",
+            });
         } finally {
             setIsSaving(false);
         }
@@ -718,11 +742,11 @@ export default function Finance() {
     const handleDeleteClick = async (transactionId) => {
         setIsDeleting(transactionId);
         try {
-            // נסה למחוק את הטרנזקציה
+            // Delete the transaction
             try {
                 await FinancialTransaction.delete(transactionId);
             } catch (error) {
-                // אם השגיאה היא 404, זה אומר שהטרנזקציה כבר נמחקה
+                // If 404, transaction already deleted
                 if (error.message.includes('404') || error.message.includes('not found') || error.message.includes('Entity not found')) {
                     console.log("Transaction already deleted, continuing with cleanup");
                 } else {
@@ -730,20 +754,23 @@ export default function Finance() {
                 }
             }
 
-            // הסר את הטרנזקציה מהרשימה המקומית (בכל מקרה)
-            setTransactions(prevTransactions => 
-                prevTransactions.filter(transaction => transaction.id !== transactionId)
-            );
+            // Reload transactions from server to ensure data consistency
+            await loadTransactions(currentUser);
             
-            alert("הטרנזקציה נמחקה בהצלחה!");
+            toast({
+                title: "הצלחה",
+                description: "העסקה נמחקה בהצלחה",
+            });
         } catch (error) {
             console.error("Error deleting transaction:", error);
-            alert("אירעה שגיאה במחיקת הטרנזקציה. הטרנזקציה עשויה להיות כבר מחוקה.");
+            toast({
+                title: "שגיאה",
+                description: "אירעה שגיאה במחיקת העסקה",
+                variant: "destructive",
+            });
             
-            // גם במקרה של שגיאה, נסה להסיר מהרשימה המקומית למקרה שהטרנזקציה אכן נמחקה
-            setTransactions(prevTransactions => 
-                prevTransactions.filter(transaction => transaction.id !== transactionId)
-            );
+            // Reload anyway to sync with server state
+            await loadTransactions(currentUser);
         } finally {
             setIsDeleting(null);
         }
@@ -1486,7 +1513,7 @@ export default function Finance() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {sortedTransactions.length > 0 ? sortedTransactions.map((transaction) => {
+                                {paginatedTransactions.length > 0 ? paginatedTransactions.map((transaction) => {
                                     const isEditing = editingId === transaction.id;
                                     const quote = quotes.find(q => q.id === transaction.quoteId);
                                     const currentStatus = quote?.status || 'לא מקושר'; // Default for display if no quote
@@ -1736,6 +1763,92 @@ export default function Finance() {
                             </tfoot>
                         </Table>
                     </div>
+
+                    {/* Pagination Controls */}
+                    {sortedTransactions.length > 0 && (
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-700">
+                                    מציג {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, sortedTransactions.length)} מתוך {sortedTransactions.length} עסקאות
+                                </span>
+                                <Select value={itemsPerPage.toString()} onValueChange={(value) => { setItemsPerPage(Number(value)); setCurrentPage(1); }}>
+                                    <SelectTrigger className="w-[100px]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="5">5 שורות</SelectItem>
+                                        <SelectItem value="10">10 שורות</SelectItem>
+                                        <SelectItem value="25">25 שורות</SelectItem>
+                                        <SelectItem value="50">50 שורות</SelectItem>
+                                        <SelectItem value="100">100 שורות</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(1)}
+                                    disabled={currentPage === 1}
+                                >
+                                    ראשון
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    הקודם
+                                </Button>
+                                
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                        let pageNum;
+                                        if (totalPages <= 5) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage <= 3) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage >= totalPages - 2) {
+                                            pageNum = totalPages - 4 + i;
+                                        } else {
+                                            pageNum = currentPage - 2 + i;
+                                        }
+                                        
+                                        return (
+                                            <Button
+                                                key={pageNum}
+                                                variant={currentPage === pageNum ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setCurrentPage(pageNum)}
+                                                className={currentPage === pageNum ? "bg-indigo-600 text-white" : ""}
+                                            >
+                                                {pageNum}
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+                                
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    הבא
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    אחרון
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

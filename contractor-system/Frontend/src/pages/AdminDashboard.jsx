@@ -33,7 +33,7 @@ const adminActions = [
     title: "הגדרות מערכת",
     description: "קביעת פרמטרים והגדרות כלליות",
     icon: <Settings className="w-8 h-8 text-slate-500" />,
-    path: "AdminSettings",
+    path: "Settings",
     color: "slate"
   },
   {
