@@ -11,12 +11,15 @@ import { he } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toHebrewStatus } from '@/lib/statusMapping';
 import { Quote } from '@/lib/entities';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function RecentQuotes({ user }) {
   const [recentQuotes, setRecentQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // Added error state
   const navigate = useNavigate();
+  const { session } = useAuth();
 
   useEffect(() => {
     const fetchRecentQuotes = async () => {
@@ -28,6 +31,19 @@ export default function RecentQuotes({ user }) {
             userId: user.id,
             email: user.email,
           });
+
+          // Ensure session is available before making API calls
+          if (!session) {
+            console.log("[RecentQuotes] No session available, attempting to refresh...");
+            const { data, error } = await supabase.auth.refreshSession();
+            if (error || !data.session) {
+              console.warn("[RecentQuotes] Session refresh failed, showing empty state");
+              setRecentQuotes([]);
+              setLoading(false);
+              return;
+            }
+            console.log("[RecentQuotes] Session refreshed successfully");
+          }
 
           // Check if Quote.filter is available
           if (typeof Quote.filter !== 'function') {
@@ -74,7 +90,7 @@ export default function RecentQuotes({ user }) {
       setLoading(false);
       setRecentQuotes([]);
     }
-  }, [user]);
+  }, [user, session]);
 
   const formatCurrency = (value) => {
     if (typeof value !== 'number') return 'N/A';

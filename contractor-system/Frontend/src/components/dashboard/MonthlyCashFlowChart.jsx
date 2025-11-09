@@ -78,11 +78,16 @@ export default function MonthlyCashFlowChart({ user }) {
         // Verify we have a valid Supabase session before making API calls
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          console.warn("MonthlyCashFlowChart: No active session - user needs to log in");
-          setChartData([]);
-          setStats({ totalIncome: 0, totalExpenses: 0, netFlow: 0 });
-          setLoading(false);
-          return;
+          console.log("MonthlyCashFlowChart: No session available, attempting to refresh...");
+          const { data, error } = await supabase.auth.refreshSession();
+          if (error || !data.session) {
+            console.warn("MonthlyCashFlowChart: Session refresh failed - user needs to log in");
+            setChartData([]);
+            setStats({ totalIncome: 0, totalExpenses: 0, netFlow: 0 });
+            setLoading(false);
+            return;
+          }
+          console.log("MonthlyCashFlowChart: Session refreshed successfully");
         }
 
         console.log("MonthlyCashFlowChart: Fetching quotes for user:", user.email, "status:", 'approved');

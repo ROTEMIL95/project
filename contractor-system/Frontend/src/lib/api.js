@@ -12,6 +12,34 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://project-b88e.onren
 class APIClient {
   constructor(baseURL = API_BASE_URL) {
     this.baseURL = baseURL;
+    this.isRefreshing = false; // Flag to prevent infinite retry loops
+  }
+
+  /**
+   * Refresh the Supabase session
+   * @returns {Promise<{session: object|null, error: object|null}>}
+   */
+  async refreshSession() {
+    try {
+      console.log('[API] Refreshing Supabase session...');
+      const { data, error } = await supabase.auth.refreshSession();
+
+      if (error) {
+        console.error('[API] Session refresh failed:', error);
+        return { session: null, error };
+      }
+
+      if (data?.session) {
+        console.log('[API] Session refreshed successfully');
+        return { session: data.session, error: null };
+      }
+
+      console.warn('[API] Session refresh returned no session');
+      return { session: null, error: new Error('No session returned from refresh') };
+    } catch (error) {
+      console.error('[API] Exception during session refresh:', error);
+      return { session: null, error };
+    }
   }
 
   /**
@@ -44,6 +72,7 @@ class APIClient {
     if (session?.access_token) {
       headers['Authorization'] = `Bearer ${session.access_token}`;
       console.debug('[API] Authorization header added with Supabase access token');
+      console.debug('[API] Token preview:', session.access_token.substring(0, 20) + '...');
     } else {
       console.warn('[API] No access token available - API call will likely fail with 401');
     }
@@ -54,10 +83,11 @@ class APIClient {
   /**
    * Make a request to the API
    * Includes credentials for CORS with authentication
+   * Automatically retries once with refreshed token on 401 errors
    */
-  async request(endpoint, options = {}) {
+  async request(endpoint, options = {}, isRetry = false) {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     // Determine if we need Content-Type header (for requests with bodies)
     const hasBody = options.body !== undefined;
     const headers = await this.getAuthHeaders(hasBody);
@@ -80,6 +110,23 @@ class APIClient {
     try {
       const response = await fetch(url, config);
 
+      // Handle 401 Unauthorized - try to refresh token and retry once
+      if (response.status === 401 && !isRetry && !this.isRefreshing) {
+        console.warn('[API] Got 401 Unauthorized, attempting to refresh token and retry...');
+
+        this.isRefreshing = true;
+        const { session, error } = await this.refreshSession();
+        this.isRefreshing = false;
+
+        if (session && !error) {
+          console.log('[API] Token refreshed, retrying request to:', endpoint);
+          return this.request(endpoint, options, true); // Retry with new token
+        } else {
+          console.error('[API] Token refresh failed, cannot retry request');
+          throw new Error('Session expired - please log in again');
+        }
+      }
+
       // Handle non-JSON responses
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
@@ -97,7 +144,8 @@ class APIClient {
           status: response.status,
           statusText: response.statusText,
           error: errorMessage,
-          url
+          url,
+          isRetry
         });
         throw new Error(errorMessage);
       }
@@ -116,11 +164,13 @@ class APIClient {
           error: error.message,
           url,
           hint: 'Token may be expired or invalid. Try logging out and back in.',
+          isRetry
         });
       } else {
         console.error(`[API] Request failed for ${endpoint}:`, {
           error: error.message,
-          url
+          url,
+          isRetry
         });
       }
       throw error;
