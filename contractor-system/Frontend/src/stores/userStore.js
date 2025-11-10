@@ -193,11 +193,14 @@ export const useUserStore = create((set, get) => ({
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
+      // Only fetch on actual sign in, not on token refresh
+      if (event === 'SIGNED_IN' && !get().user) {
+        // Only fetch if we don't have a user yet (initial sign in)
         get().fetchUser();
       } else if (event === 'SIGNED_OUT') {
         get().clearUser();
       }
+      // Ignore TOKEN_REFRESHED and other events to prevent unnecessary refetches
     });
 
     // Listen for online/offline events
