@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ShoppingCart, X, Trash2, DollarSign, TrendingUp, Info, Paintbrush } from 'lucide-react';
+import { ShoppingCart, X, Trash2, DollarSign, TrendingUp, Info, Paintbrush, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -166,6 +166,106 @@ const ManualCartDetails = ({ item }) => {
       )}
     </div>
   );
+};
+
+// NEW: Render simple area items (paint_simulator, plaster_simulator)
+const renderSimpleAreaItem = (item, onRemoveItem) => {
+    const isPaint = item.source === 'paint_simulator';
+    const isPlaster = item.source === 'plaster_simulator';
+    
+    if (!isPaint && !isPlaster) return null;
+    
+    const paintType = item.paintType || item.plasterType || 'N/A';
+    const layers = item.layers || 1;
+    const area = item.quantity || 0;
+    
+    return (
+        <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border">
+            <div className="flex items-start gap-3">
+                <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                        <Paintbrush className={`h-4 w-4 ${isPaint ? 'text-blue-500' : 'text-orange-500'}`} />
+                        <p className="font-semibold text-gray-800 text-sm">{item.description || 'פריט ללא תיאור'}</p>
+                    </div>
+                    <div className="mt-2 space-y-1 text-xs text-gray-600">
+                        <div className="flex items-center gap-1">
+                            <span className="font-medium">סוג:</span>
+                            <span>{paintType}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Layers className="h-3 w-3" />
+                            <span className="font-medium">שכבות:</span>
+                            <span>{layers}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <span className="font-medium">שטח:</span>
+                            <span>{safeToFixed(area)} מ"ר</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
+                        onClick={() => onRemoveItem && onRemoveItem(item.id)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// NEW: Render room calculator items (paint_room_calc, plaster_room_calc)
+const renderRoomCalcItem = (item, onRemoveItem) => {
+    const isPaint = item.source === 'paint_room_calc';
+    const isPlaster = item.source === 'plaster_room_calc';
+    
+    if (!isPaint && !isPlaster) return null;
+    
+    return (
+        <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border">
+            <div className="flex items-start gap-3">
+                <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                        <Paintbrush className={`h-4 w-4 ${isPaint ? 'text-blue-500' : 'text-orange-500'}`} />
+                        <p className="font-semibold text-gray-800 text-sm">{item.description || 'פריט ללא תיאור'}</p>
+                    </div>
+                    {/* Show breakdown if available */}
+                    {item.rooms && Array.isArray(item.rooms) && item.rooms.length > 0 && (
+                        <div className="mt-2 space-y-1 text-xs text-gray-600">
+                            {item.rooms.map((room, idx) => (
+                                <div key={idx} className="flex justify-between">
+                                    <span>{room.name || `חדר ${idx + 1}`}</span>
+                                    <span>{safeToFixed(room.area || 0)} מ"ר</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {/* Show general info if no breakdown */}
+                    {(!item.rooms || item.rooms.length === 0) && (
+                        <p className="text-xs text-gray-500 mt-1">
+                            {safeToFixed(item.quantity || 0)} {item.unit || 'יח'}
+                        </p>
+                    )}
+                </div>
+                <div className="text-right">
+                    <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
+                        onClick={() => onRemoveItem && onRemoveItem(item.id)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 
@@ -444,6 +544,25 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
 export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToSummary, projectComplexities, onUpdateItem }) {
     const [isOpen, setIsOpen] = useState(false);
 
+    // 🔍 LOGGING: Track all incoming items and their sources
+    React.useEffect(() => {
+        if (items.length > 0) {
+            console.log('🛒 [FloatingCart] Items received:', items.length);
+            items.forEach((item, idx) => {
+                console.log(`  [${idx}] Source: ${item.source || 'unknown'} | Category: ${item.categoryId || 'unknown'} | ID: ${item.id}`);
+            });
+            
+            // Log paint_plaster items specifically
+            const paintPlasterItems = items.filter(i => i.categoryId === 'cat_paint_plaster');
+            if (paintPlasterItems.length > 0) {
+                console.log('🎨 [FloatingCart] Paint/Plaster items:', paintPlasterItems.length);
+                paintPlasterItems.forEach(item => {
+                    console.log(`  - Source: ${item.source} | Desc: ${item.description || 'N/A'}`);
+                });
+            }
+        }
+    }, [items]);
+
     const hasItems = items.length > 0;
 
     // Calculate totals - FIXED: always calculate from items for accuracy
@@ -560,6 +679,12 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                       const isPaintSummary = item.categoryId === 'cat_paint_plaster' &&
                                                         (item.source === 'paint_plaster_category_summary' || Array.isArray(item?.detailedBreakdown));
                                                       
+                                                      // NEW: Check for simple area items
+                                                      const isSimpleAreaItem = item.source === 'paint_simulator' || item.source === 'plaster_simulator';
+                                                      
+                                                      // NEW: Check for room calculator items
+                                                      const isRoomCalcItem = item.source === 'paint_room_calc' || item.source === 'plaster_room_calc';
+                                                      
                                                       if (isManualItem) {
                                                           const userDesc = (item?.manualFormSnapshot?.description || item?.manualMeta?.description || "").trim();
 
@@ -591,6 +716,12 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                           );
                                                       } else if (isPaintSummary) {
                                                             return renderPaintSummary(item, onRemoveItem, paintFallbackRooms, onUpdateItem);
+                                                      } else if (isSimpleAreaItem) {
+                                                            // NEW: Render simple area items with enhanced display
+                                                            return renderSimpleAreaItem(item, onRemoveItem);
+                                                      } else if (isRoomCalcItem) {
+                                                            // NEW: Render room calculator items with breakdown
+                                                            return renderRoomCalcItem(item, onRemoveItem);
                                                       } else {
                                                             return renderItem(item, onRemoveItem);
                                                       }

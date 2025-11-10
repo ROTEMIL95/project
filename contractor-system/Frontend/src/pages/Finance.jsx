@@ -188,7 +188,7 @@ export default function Finance() {
             return [];
         }
         try {
-            const quotesData = await Quote.filter({ user_id: user.id });
+            const quotesData = await Quote.filter({});
             setQuotes(quotesData || []);
             return quotesData || [];
         } catch (err) {

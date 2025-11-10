@@ -53,7 +53,7 @@ export default function RecentQuotes({ user }) {
             return;
           }
 
-          const allQuotes = await Quote.filter({ user_id: user.id });
+          const allQuotes = await Quote.filter({});
           console.log("[RecentQuotes] Fetched quotes:", {
             totalQuotes: allQuotes.length,
             quotes: allQuotes.map(q => ({

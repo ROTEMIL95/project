@@ -149,13 +149,25 @@ export class Quote {
         params.limit = filters.limit;
       }
 
+      console.log('[Quote.filter] Calling API with params:', params);
       const response = await quotesAPI.list(params);
+      console.log('[Quote.filter] API response:', response);
 
       // Backend returns {quotes: [...], total: N}
       const quotes = response.quotes || response || [];
+      console.log('[Quote.filter] Extracted quotes:', quotes.length, 'quotes');
+      if (quotes.length > 0) {
+        console.log('[Quote.filter] First quote raw data:', quotes[0]);
+        console.log('[Quote.filter] First quote keys:', Object.keys(quotes[0]));
+      }
 
       // Convert snake_case keys to camelCase for frontend
-      return quotes.map(quote => convertKeysToCamelCase(quote));
+      const converted = quotes.map(quote => convertKeysToCamelCase(quote));
+      console.log('[Quote.filter] Returning converted quotes:', converted.length);
+      if (converted.length > 0) {
+        console.log('[Quote.filter] First converted quote:', converted[0]);
+      }
+      return converted;
     } catch (error) {
       console.error("Quote.filter error:", error);
       return [];

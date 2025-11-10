@@ -79,7 +79,7 @@ export default function AdminUserProfile() {
         setUser(userData);
 
         // שליפת הצעות המחיר של המשתמש
-        const quotes = await Quote.filter({ user_id: userData.id });
+        const quotes = await Quote.filter({});
         setUserQuotes(quotes);
 
         // שליפת עסקאות פיננסיות של המשתמש (באמצעות הצעות המחיר שלו)

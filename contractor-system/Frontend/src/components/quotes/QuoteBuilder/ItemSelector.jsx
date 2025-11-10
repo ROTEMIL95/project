@@ -2989,6 +2989,25 @@ const ItemSelector = React.forwardRef(({
     // For date pickers, we need the specific category timing
   const categoryTiming = useMemo(() => categoryTimings[currentCategoryForItems] || {}, [categoryTimings, currentCategoryForItems]);
 
+  // 🔧 FIX: Register global function for ManualCalcDialog
+  useEffect(() => {
+    // Register global callback for ManualCalcDialog
+    window.__b44AddItemToQuote = (item) => {
+      console.log('🔧 [ItemSelector] __b44AddItemToQuote called with item:', item);
+      if (onAddItemToQuote && typeof onAddItemToQuote === 'function') {
+        onAddItemToQuote(item);
+      } else {
+        console.warn('⚠️ [ItemSelector] onAddItemToQuote is not available');
+      }
+    };
+    
+    // Cleanup on unmount
+    return () => {
+      if (window.__b44AddItemToQuote) {
+        delete window.__b44AddItemToQuote;
+      }
+    };
+  }, [onAddItemToQuote]);
 
   const COMPLEX_CATEGORIES = useMemo(() => ['cat_paint_plaster', 'cat_tiling'], []);
 
@@ -3239,7 +3258,7 @@ const ItemSelector = React.forwardRef(({
     }));
 
     // Mark category as processed if it has items.
-    if (itemsFromCurrentCategoryComponent.length > 0) {
+    if (itemsFromCurrentCategoryComponent.length > 0 || stagedItemsForCategory.length > 0) {
         setProcessedCategories(prev => {
             if (!prev.includes(categoryIdToSave)) {
                 return [...prev, categoryIdToSave];
@@ -3247,6 +3266,12 @@ const ItemSelector = React.forwardRef(({
             return prev;
         });
     }
+    
+    // 🔧 FIX: Return the saved data so it can be used immediately
+    return {
+        quoteItems: itemsFromCurrentCategoryComponent,
+        stagedManualItems: stagedItemsForCategory
+    };
 
   }, [setSelectedItems, setCategoryDataMap, categoryTimings, setProcessedCategories,
       tilingEditorRef, paintRoomsRef, demolitionManagerRef, electricalManagerRef, stagedManualItems
@@ -3433,6 +3458,7 @@ const ItemSelector = React.forwardRef(({
             stagedManualItems: stagedManualItems, // 🆕 Pass staged manual items
             setStagedManualItems: setStagedManualItems, // 🆕 Pass setState function
             selectedItems: selectedItems, // 🆕 Pass selectedItems to filter manual items
+            onAddItemToQuote: onAddItemToQuote, // 🔧 FIX: Pass callback for PaintSimulatorV2
         };
     } else if (currentCategoryForItems === 'cat_demolition') {
         CategoryComponent = DemolitionCategory;
@@ -3524,23 +3550,33 @@ const ItemSelector = React.forwardRef(({
 
   const handleNextCategory = useCallback(async () => {
     if (currentCategoryForItems) {
-        await saveCurrentCategoryData(currentCategoryForItems);
+        // 🔧 FIX: Get the saved data directly from the return value
+        const savedData = await saveCurrentCategoryData(currentCategoryForItems);
         
-        // ✅ Add items to selectedItems (floating cart) when moving to next category
-        const categoryData = categoryDataMap[currentCategoryForItems];
-        if (categoryData) {
-            const itemsToAdd = categoryData.quoteItems || [];
-            const stagedItems = categoryData.stagedManualItems || [];
+        if (savedData) {
+            const itemsToAdd = savedData.quoteItems || [];
+            const stagedItems = savedData.stagedManualItems || [];
+            
+            console.log('🔍 [handleNextCategory] Saved data:', {
+                categoryId: currentCategoryForItems,
+                quoteItems: itemsToAdd.length,
+                stagedManualItems: stagedItems.length,
+                stagedItemsDetails: stagedItems.map(i => ({ id: i.id, source: i.source, desc: i.description?.substring(0, 50) }))
+            });
             
             setSelectedItems(prevItems => {
                 const otherCategoryItems = prevItems.filter(item => item.categoryId !== currentCategoryForItems);
-                return [...otherCategoryItems, ...itemsToAdd, ...stagedItems];
-            });
-            
-            console.log('[ItemSelector] Added items to floating cart (next category):', {
-                categoryId: currentCategoryForItems,
-                quoteItems: itemsToAdd.length,
-                stagedItems: stagedItems.length
+                const newItems = [...otherCategoryItems, ...itemsToAdd, ...stagedItems];
+                
+                console.log('🛒 [handleNextCategory] Updating cart:', {
+                    categoryId: currentCategoryForItems,
+                    removedItems: prevItems.length - otherCategoryItems.length,
+                    addingQuoteItems: itemsToAdd.length,
+                    addingStagedItems: stagedItems.length,
+                    newTotal: newItems.length
+                });
+                
+                return newItems;
             });
         }
     }
@@ -3550,33 +3586,41 @@ const ItemSelector = React.forwardRef(({
         const nextCategoryId = selectedCategories[currentIndex + 1];
         setCurrentCategoryForItems(nextCategoryId);
     }
-  }, [currentCategoryForItems, selectedCategories, saveCurrentCategoryData, setCurrentCategoryForItems, categoryDataMap, setSelectedItems]);
+  }, [currentCategoryForItems, selectedCategories, saveCurrentCategoryData, setCurrentCategoryForItems, setSelectedItems]);
 
   const handleSaveAndProceed = useCallback(async () => {
     if (currentCategoryForItems) {
-        await saveCurrentCategoryData(currentCategoryForItems);
+        // 🔧 FIX: Get the saved data directly from the return value
+        const savedData = await saveCurrentCategoryData(currentCategoryForItems);
         
-        // ✅ NOW add items to selectedItems (floating cart)
-        const categoryData = categoryDataMap[currentCategoryForItems];
-        if (categoryData) {
-            const itemsToAdd = categoryData.quoteItems || [];
-            const stagedItems = categoryData.stagedManualItems || [];
+        if (savedData) {
+            const itemsToAdd = savedData.quoteItems || [];
+            const stagedItems = savedData.stagedManualItems || [];
+            
+            console.log('🔍 [handleSaveAndProceed] Saved data:', {
+                categoryId: currentCategoryForItems,
+                quoteItems: itemsToAdd.length,
+                stagedManualItems: stagedItems.length
+            });
             
             setSelectedItems(prevItems => {
                 const otherCategoryItems = prevItems.filter(item => item.categoryId !== currentCategoryForItems);
-                return [...otherCategoryItems, ...itemsToAdd, ...stagedItems];
-            });
-            
-            console.log('[ItemSelector] Added items to floating cart:', {
-                categoryId: currentCategoryForItems,
-                quoteItems: itemsToAdd.length,
-                stagedItems: stagedItems.length
+                const newItems = [...otherCategoryItems, ...itemsToAdd, ...stagedItems];
+                
+                console.log('🛒 [handleSaveAndProceed] Added items to cart:', {
+                    categoryId: currentCategoryForItems,
+                    quoteItems: itemsToAdd.length,
+                    stagedItems: stagedItems.length,
+                    newTotal: newItems.length
+                });
+                
+                return newItems;
             });
         }
     }
 
     onProceed();
-  }, [currentCategoryForItems, saveCurrentCategoryData, onProceed, categoryDataMap, setSelectedItems]);
+  }, [currentCategoryForItems, saveCurrentCategoryData, onProceed, setSelectedItems]);
 
   const handleBack = useCallback(async () => {
       if (currentCategoryForItems) {

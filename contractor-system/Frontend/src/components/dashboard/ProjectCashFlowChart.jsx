@@ -37,8 +37,8 @@ export default function ProjectCashFlowChart() {
           return;
         }
 
-        let quotesQuery = { user_id: user.id };
-        
+        let quotesQuery = {};
+
         // פילטר לפי סטטוס
         if (statusFilter === 'approved') {
           quotesQuery.status = 'approved';
@@ -47,7 +47,8 @@ export default function ProjectCashFlowChart() {
         }
 
         const allQuotes = await Quote.filter(quotesQuery);
-        
+        console.log('[ProjectCashFlowChart] Fetched quotes:', allQuotes.length, allQuotes);
+
         // יצירת רשימת פרויקטים לפילטר
         const projectList = allQuotes.map(quote => ({
           id: quote.id,

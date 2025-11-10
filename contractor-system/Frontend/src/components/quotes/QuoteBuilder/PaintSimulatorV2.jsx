@@ -71,22 +71,58 @@ export default function PaintSimulatorV2({
 
     areas.forEach(area => {
       if (area.item && area.area > 0) {
+        const areaValue = parseFloat(area.area);
+        const layersValue = parseInt(area.layers) || 1;
+        
+        // Get user defaults or use fallback values
+        const userDefaults = user?.user_metadata?.paintUserDefaults || {};
+        const workerDailyCost = Number(userDefaults.workerDailyCost) || 500;
+        const desiredProfitPercent = Number(userDefaults.desiredProfitPercent) || 30;
+        
+        // Calculate based on area item data if available, otherwise use defaults
+        const pricePerSqm = area.item?.pricePerSqm || area.item?.customerPrice || 100;
+        const costPerSqm = area.item?.costPerSqm || (pricePerSqm * 0.6);
+        
+        // Base calculations
+        const baseTotalPrice = areaValue * pricePerSqm * layersValue;
+        const baseTotalCost = areaValue * costPerSqm * layersValue;
+        
+        // Estimate material/labor split (60% material, 40% labor is typical)
+        const materialCost = Math.round(baseTotalCost * 0.6);
+        const laborCost = Math.round(baseTotalCost * 0.4);
+        
+        // Calculate profit
+        const profit = baseTotalPrice - baseTotalCost;
+        const profitPercent = baseTotalCost > 0 ? Math.round((profit / baseTotalCost) * 100) : 0;
+        
+        // Estimate work duration (assuming ~20 sqm per day per layer)
+        const workDuration = Math.round((areaValue * layersValue / 20) * 10) / 10;
+        
         const item = {
           id: `${type}_${area.id}_${Date.now()}`,
           categoryId: 'cat_paint_plaster',
           categoryName: 'צבע ושפכטל',
           source: `${type}_simulator`,
-          description: `${area.item.itemName || area.item.name} - ${area.area} מ"ר`,
-          quantity: parseFloat(area.area),
+          description: `${area.item.itemName || area.item.name} - ${areaValue} מ"ר`,
+          quantity: areaValue,
           unit: 'מ"ר',
-          layers: parseInt(area.layers) || 1,
-          unitPrice: 100,
-          totalPrice: parseFloat(area.area) * 100,
-          totalCost: parseFloat(area.area) * 60,
-          profit: parseFloat(area.area) * 40,
-          profitPercent: 40,
-          workDuration: parseFloat(area.area) / 20,
+          layers: layersValue,
+          // NEW: Add type info for FloatingCart display
+          paintType: type === 'paint' ? (area.item.itemName || area.item.name) : undefined,
+          plasterType: type === 'plaster' ? (area.item.itemName || area.item.name) : undefined,
+          // Pricing fields
+          unitPrice: Math.round(baseTotalPrice / areaValue),
+          totalPrice: Math.round(baseTotalPrice),
+          totalCost: Math.round(baseTotalCost),
+          materialCost: materialCost,
+          laborCost: laborCost,
+          profit: Math.round(profit),
+          profitPercent: profitPercent,
+          workDuration: workDuration,
+          // Additional metadata
+          itemData: area.item, // Store full item data for reference
         };
+        console.log(`🎨 [PaintSimulatorV2] Adding ${type} item to quote:`, item);
         onAddItemToQuote(item);
       }
     });
@@ -104,24 +140,44 @@ export default function PaintSimulatorV2({
   };
 
   const handleRoomCalcResult = (result) => {
+    // Ensure all required fields are present
+    const normalizedResult = {
+      ...result,
+      // Ensure required pricing fields exist
+      totalPrice: result.totalPrice || result.totalSellingPrice || 0,
+      totalCost: result.totalCost || result.totalContractorCost || 0,
+      materialCost: result.materialCost || (result.totalCost || 0) * 0.6,
+      laborCost: result.laborCost || (result.totalCost || 0) * 0.4,
+      profit: (result.totalPrice || 0) - (result.totalCost || 0),
+      profitPercent: result.profitPercent || (result.totalCost > 0 ? Math.round(((result.totalPrice - result.totalCost) / result.totalCost) * 100) : 0),
+      // Ensure quantity and unit
+      quantity: result.quantity || result.totalArea || 0,
+      unit: result.unit || 'מ"ר',
+      workDuration: result.workDuration || result.totalWorkDays || 0,
+    };
+    
     if (currentCalcType === 'paint') {
-      onAddItemToQuote({
+      const item = {
         id: `paint_room_${Date.now()}`,
         categoryId: 'cat_paint_plaster',
         categoryName: 'צבע ושפכטל',
         source: 'paint_room_calc',
         description: result.description || 'צבע מחדרים',
-        ...result
-      });
+        ...normalizedResult
+      };
+      console.log('🎨 [PaintSimulatorV2] Adding paint room calc item to quote:', item);
+      onAddItemToQuote(item);
     } else if (currentCalcType === 'plaster') {
-      onAddItemToQuote({
+      const item = {
         id: `plaster_room_${Date.now()}`,
         categoryId: 'cat_paint_plaster',
         categoryName: 'צבע ושפכטל',
         source: 'plaster_room_calc',
         description: result.description || 'שפכטל מחדרים',
-        ...result
-      });
+        ...normalizedResult
+      };
+      console.log('🎨 [PaintSimulatorV2] Adding plaster room calc item to quote:', item);
+      onAddItemToQuote(item);
     }
     setShowRoomCalc(false);
     setCurrentCalcType(null);

@@ -126,7 +126,7 @@ export default function SentQuotes() {
         try {
             if (!user) throw new Error("User context is missing.");
 
-            const fetchedQuotes = await Quote.filter({ user_id: user.id });
+            const fetchedQuotes = await Quote.filter({});
             setQuotes(fetchedQuotes);
         } catch (err) {
             console.error("Error loading quotes:", err);

@@ -101,7 +101,7 @@ export default function MonthlyCashFlowChart({ user }) {
           return;
         }
 
-        const approvedQuotes = await Quote.filter({ user_id: user.id, status: 'approved' });
+        const approvedQuotes = await Quote.filter({ status: 'approved' });
         console.log("MonthlyCashFlowChart: Fetched approved quotes:", approvedQuotes.length);
         
         const today = startOfDay(new Date());

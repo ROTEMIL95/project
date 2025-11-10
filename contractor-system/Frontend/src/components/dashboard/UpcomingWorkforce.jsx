@@ -102,16 +102,24 @@ export default function UpcomingWorkforce() {
             'cat_tiling': userTilingItems,
           };
 
-          const approvedQuotes = await Quote.filter({ 
-            user_id: user.id, 
-            status: 'approved' 
+          const approvedQuotes = await Quote.filter({
+            status: 'approved'
           });
+          console.log('[UpcomingWorkforce] Fetched approved quotes:', approvedQuotes.length, approvedQuotes);
 
           const upcomingCategories = [];
           const today = new Date();
 
           approvedQuotes.forEach(quote => {
             const { categoryTimings = {}, items = [], paymentTerms = [], total_price = 0, created_at, endDate: projectEndDate } = quote;
+            console.log('[UpcomingWorkforce] Processing quote:', {
+              id: quote.id,
+              projectName: quote.projectName,
+              hasCategoryTimings: !!categoryTimings && Object.keys(categoryTimings).length > 0,
+              categoryTimingsKeys: Object.keys(categoryTimings || {}),
+              hasItems: items && items.length > 0,
+              itemsCount: items?.length || 0
+            });
 
             // חישוב תאריך סיום העבודה האחרון בפרויקט
             let latestCategoryEndDate = new Date(0); // Initialize with a very old date
@@ -247,6 +255,7 @@ export default function UpcomingWorkforce() {
           });
 
           upcomingCategories.sort((a, b) => a.daysUntilStart - b.daysUntilStart);
+          console.log('[UpcomingWorkforce] Final upcoming categories:', upcomingCategories.length, upcomingCategories);
           setUpcomingWork(upcomingCategories);
         }
       } catch (error) {

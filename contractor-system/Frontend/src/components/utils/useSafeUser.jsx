@@ -79,9 +79,6 @@ export default function useSafeUser(options = {}) {
 
         // If no session, user is not logged in
         if (!session || !session.access_token) {
-          if (!suppressConsole) {
-            console.log('[useSafeUser] No active session found');
-          }
           setUser(null);
           setError(null);
           setLoading(false);
@@ -96,30 +93,16 @@ export default function useSafeUser(options = {}) {
         if (supabaseUser) {
           try {
             // Call backend API - bypasses PostgREST/RLS issues completely
-            if (!suppressConsole) {
-              console.log('[useSafeUser] Fetching profile from backend API for user:', supabaseUser.id);
-            }
-
             profileData = await userAPI.me();
 
-            if (!suppressConsole && profileData) {
-              console.log('[useSafeUser] Profile loaded successfully from backend:', {
-                userId: supabaseUser.id,
-                email: profileData.email,
-                role: profileData.role,
-                hasConstructionDefaults: !!profileData.construction_defaults,
-                constructionItemsCount: profileData.construction_subcontractor_items?.length || 0,
-              });
-            } else if (!suppressConsole && !profileData) {
-              console.warn('[useSafeUser] Profile is NULL from backend API!', {
-                userId: supabaseUser.id,
-                email: supabaseUser.email,
-              });
+            // Only log errors, not successful operations
+            if (!suppressConsole && !profileData) {
+              console.warn('[useSafeUser] Profile is NULL from backend API', supabaseUser.id);
             }
           } catch (profileError) {
             // If profile doesn't exist yet, continue with null profileData
             if (!suppressConsole) {
-              console.warn('[useSafeUser] Could not load user profile, continuing with auth data only:', profileError);
+              console.error('[useSafeUser] Failed to load profile:', profileError.message || profileError);
             }
           }
         }
@@ -167,9 +150,6 @@ export default function useSafeUser(options = {}) {
         const isNetwork = msg.toLowerCase().includes("network");
         // אם זו לא שגיאת רשת אלא "לא מחובר" – אל תנסה שוב, פשוט החזר null
         const looksLikeUnauth = msg.toLowerCase().includes("not logged") || msg.toLowerCase().includes("unauth") || msg.toLowerCase().includes("session");
-        if (!suppressConsole) {
-          console.warn(`useSafeUser: attempt ${i + 1}/${maxRetries} failed: ${msg}`);
-        }
         if (looksLikeUnauth) {
           setUser(null);
           setError(null); // לא מציגים כשגיאה כדי לא להפחיד משתמש
@@ -210,12 +190,8 @@ export default function useSafeUser(options = {}) {
   // Listen for auth state changes (login/logout)
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!suppressConsole) {
-        console.log('[useSafeUser] Auth state changed:', event);
-      }
-      
-      // When user signs in or token is refreshed, reload the user
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      // When user signs in, reload the user
+      if (event === 'SIGNED_IN') {
         fetchUser();
       }
       // When user signs out, clear the user
@@ -237,8 +213,7 @@ export default function useSafeUser(options = {}) {
   useEffect(() => {
     const onOnline = () => {
       setIsOnline(true);
-      // אם היינו בשגיאה/אופליין – ננסה לרענן אוטומטית
-      fetchUser();
+      // Network is back online - user can manually refresh if needed
     };
     const onOffline = () => {
       setIsOnline(false);

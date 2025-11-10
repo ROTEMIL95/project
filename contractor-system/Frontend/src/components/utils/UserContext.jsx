@@ -1,12 +1,17 @@
 
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useEffect, useContext } from 'react';
 import { supabase } from '@/lib/supabase';
-import useSafeUser from '@/components/utils/useSafeUser';
+import { useUserStore } from '@/stores/userStore';
 
 const UserContext = createContext({ user: null, loading: true, error: null, isOnline: true, refresh: () => {} });
 
 export const UserProvider = ({ children }) => {
-  const { user, loading, error, isOnline, refresh } = useSafeUser({ enableCache: true });
+  // Use Zustand store instead of useSafeUser hook
+  const user = useUserStore((state) => state.user);
+  const loading = useUserStore((state) => state.loading);
+  const error = useUserStore((state) => state.error);
+  const isOnline = useUserStore((state) => state.isOnline);
+  const refresh = useUserStore((state) => state.refresh);
 
   // Listen for user data updates and refresh
   useEffect(() => {

@@ -555,7 +555,23 @@ export default function QuoteCreate() {
           return [...prev, ...itemsToAdd];
         }
       });
-      return; // Don't add to selectedItems yet
+      
+      // 🔧 FIX: Also add manual items to selectedItems for immediate FloatingCart display
+      setSelectedItems(prevItems => {
+        const firstItemId = itemsToAdd[0]?.id;
+        const isEditing = firstItemId && prevItems.some(item => item.id === firstItemId);
+        
+        if (isEditing) {
+          // Replace the existing item
+          console.log('🛒 [FloatingCart] Updating manual item in cart:', firstItemId);
+          return prevItems.map(item => item.id === firstItemId ? itemsToAdd[0] : item);
+        } else {
+          // Add new items to cart
+          console.log('🛒 [FloatingCart] Adding manual items to cart:', itemsToAdd);
+          return [...prevItems, ...itemsToAdd];
+        }
+      });
+      return; // Manual items handled separately
     }
 
     const roomBreakdownKey = itemCategoryId === 'cat_paint_plaster' ? 'paint' :
@@ -1106,7 +1122,7 @@ export default function QuoteCreate() {
           return;
       }
 
-      const quotes = await Quote.filter({ id: quoteId, user_id: userLoadedData.id });
+      const quotes = await Quote.filter({ id: quoteId });
       const existingQuote = quotes[0];
 
       if (existingQuote) {

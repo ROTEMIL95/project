@@ -26,7 +26,7 @@ export default function RevenueChart({ user }) {
         if (user && user.email) {
           console.log("RevenueChart: Fetching quotes for user:", user.email);
 
-          const allQuotes = await Quote.filter({ user_id: user.id });
+          const allQuotes = await Quote.filter({});
           console.log("RevenueChart: Fetched quotes:", allQuotes.length);
 
           const approvedQuotes = allQuotes.filter((q) => q.status === 'approved');

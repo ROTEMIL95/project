@@ -34,7 +34,7 @@ export default function QuoteView() {
           return;
         }
 
-        const fetchedQuotes = await Quote.filter({ id: quoteId, user_id: user.id });
+        const fetchedQuotes = await Quote.filter({ id: quoteId });
         const fetchedQuote = fetchedQuotes[0];
 
         if (fetchedQuote) {
