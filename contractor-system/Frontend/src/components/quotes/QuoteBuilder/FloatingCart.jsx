@@ -312,10 +312,6 @@ const COMPLEXITY_LEVELS = [
 ];
 
 const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => {
-    // 🐛 DEBUG: Log the complete item structure
-    console.log('🎨 [renderPaintSummary] Complete item data:', JSON.parse(JSON.stringify(item)));
-    console.log('🎨 [renderPaintSummary] detailedRoomsData:', JSON.parse(JSON.stringify(item.detailedRoomsData)));
-    console.log('🎨 [renderPaintSummary] detailedBreakdown:', JSON.parse(JSON.stringify(item.detailedBreakdown)));
 
     // Extract room breakdown data - MERGE detailedRoomsData with detailedBreakdown
     let candidateRooms = [];
@@ -486,27 +482,7 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
     return (
         <div key={item.id} className="bg-white rounded-lg shadow-sm border">
             <div className="p-3 flex flex-col gap-3">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                            <Paintbrush className="h-4 w-4 text-indigo-500" />
-                            {item.description || 'צבע ושפכטל'}
-                        </h3>
-                    </div>
-                    <div className="text-right">
-                        <p className="font-bold text-lg text-gray-900">{formatPrice(newTotalWithComplexity)} ₪</p>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
-                            onClick={() => onRemoveItem && onRemoveItem(item.id)}
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </div>
-
-                {/* NEW: complexity summary – only if exists. No dropdowns here */}
+            {/* NEW: complexity summary – only if exists. No dropdowns here */}
                 {hasComplexity && (
                   <div className="bg-indigo-50/40 p-3 rounded-lg border border-indigo-100 space-y-1">
                     <div className="flex justify-between text-[11px] text-gray-700">
@@ -543,7 +519,19 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
                             <div key={`${room.name}-${index}`} className="rounded-md bg-gray-50 px-3 py-2 mb-2">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="font-semibold text-gray-800 text-sm">{room.name}</span>
-                                    <span className="font-bold text-gray-900">{formatPrice(roomPrice)} ₪</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-gray-900">{formatPrice(roomPrice)} ₪</span>
+                                        {index === 0 && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7 text-red-500 hover:bg-red-50"
+                                                onClick={() => onRemoveItem && onRemoveItem(item.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Paint details - use room-specific data */}
@@ -709,32 +697,6 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                       if (isManualItem) {
                                                           const userDesc = (item?.manualFormSnapshot?.description || item?.manualMeta?.description || "").trim();
 
-                                                          return (
-                                                              <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border">
-                                                                  <div className="flex items-start gap-3">
-                                                                      <div className="flex-1">
-                                                                          {/* SHOW ONLY USER DESCRIPTION IF EXISTS */}
-                                                                          {userDesc ? (
-                                                                            <p className="font-semibold text-gray-800 text-sm">{userDesc}</p>
-                                                                          ) : null}
-                                                                      </div>
-                                                                      <div className="text-right">
-                                                                          <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
-                                                                          <Button
-                                                                              variant="ghost"
-                                                                              size="icon"
-                                                                              className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
-                                                                              onClick={() => onRemoveItem && onRemoveItem(item.id)}
-                                                                          >
-                                                                              <Trash2 className="h-4 w-4" />
-                                                                          </Button>
-                                                                      </div>
-                                                                  </div>
-
-                                                                  {/* EXACT SNAPSHOT DETAILS: walls/ceiling with quantities */}
-                                                                  <ManualCartDetails item={item} />
-                                                              </div>
-                                                          );
                                                       } else if (isPaintSummary) {
                                                             return renderPaintSummary(item, onRemoveItem, paintFallbackRooms, onUpdateItem);
                                                       } else if (isSimpleAreaItem) {
@@ -743,9 +705,7 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                       } else if (isRoomCalcItem) {
                                                             // NEW: Render room calculator items with breakdown
                                                             return renderRoomCalcItem(item, onRemoveItem);
-                                                      } else {
-                                                            return renderItem(item, onRemoveItem);
-                                                      }
+                                                      } 
                                                     })}
                                                 </div>
                                             </div>
