@@ -38,7 +38,7 @@ export const electricalConfig = {
   // Form Fields Configuration
   fields: {
     showName: false,  // Item name comes from catalog
-    showDescription: false,
+    showDescription: true,
     showQuantity: true,
     showUnit: false,  // Unit is fixed
     showContractorCost: true,

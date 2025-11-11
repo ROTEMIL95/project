@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X } from 'lucide-react';
-import { getCategoryConfig, getButtonClasses, getSummaryCardClasses } from './categoryConfigs';
+import { getCategoryConfig, getButtonClasses } from './categoryConfigs';
 
 export default function GenericItemDialog({
   category,  // 'electrical', 'plumbing', 'demolition', 'construction'
@@ -136,6 +136,8 @@ export default function GenericItemDialog({
     }
 
     const calc = getCalculations();
+
+    // Build saved item with all necessary fields
     const savedItem = {
       ...(item || {}),
       id: item?.id || `${category}_${Date.now()}`,
@@ -145,16 +147,31 @@ export default function GenericItemDialog({
       quantity: calc.qty,
       contractorCostPerUnit: calc.contractorCostPerUnit,
       clientPricePerUnit: calc.clientPricePerUnit,
-      desiredProfitPercent: calc.profitPercent,
+      profitPercent: calc.profitPercent,
       totalCost: calc.totalCost,
       totalPrice: calc.totalPrice,
-      hoursPerUnit: Number(formData.hoursPerUnit) || undefined,
-      materialCostPerUnit: Number(formData.materialCostPerUnit) || undefined,
-      workDays: calc.workDays || undefined,
       subCategory: config.defaults.subCategory || 'general',
       isActive: true,
-      ignoreQuantity: config.calculations.ignoreQuantity,
     };
+
+    // Add optional fields only if they have values
+    if (formData.hoursPerUnit) {
+      savedItem.hoursPerUnit = Number(formData.hoursPerUnit);
+    }
+
+    if (formData.materialCostPerUnit) {
+      savedItem.materialCostPerUnit = Number(formData.materialCostPerUnit);
+    }
+
+    if (calc.workDays) {
+      savedItem.workDays = calc.workDays;
+    }
+
+    if (config.calculations.ignoreQuantity !== undefined) {
+      savedItem.ignoreQuantity = config.calculations.ignoreQuantity;
+    }
+
+    console.log('Saving item:', savedItem); // Debug log
 
     onSaved && onSaved(savedItem);
     onOpenChange(false);
@@ -174,7 +191,12 @@ export default function GenericItemDialog({
               <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
-          <DialogFieldsRenderer config={config} formData={formData} setFormData={setFormData} calc={calc} fmt={fmt} />
+          <div className="px-6 py-4">
+            {config.dialog.description && (
+              <p className="text-sm text-gray-600 mb-4">{config.dialog.description}</p>
+            )}
+            <DialogFieldsRenderer config={config} formData={formData} setFormData={setFormData} calc={calc} fmt={fmt} />
+          </div>
           <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-end gap-3 rounded-b-2xl">
             <button onClick={() => onOpenChange(false)} className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               ביטול
@@ -213,7 +235,7 @@ function DialogFieldsRenderer({ config, formData, setFormData, calc, fmt }) {
   const updateField = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
 
   return (
-    <div className="space-y-4 py-4">
+    <div className="space-y-4">
       {config.fields.showName && (
         <div>
           <Label htmlFor="name">שם הפריט <span className="text-red-500">*</span></Label>
@@ -221,25 +243,48 @@ function DialogFieldsRenderer({ config, formData, setFormData, calc, fmt }) {
         </div>
       )}
 
-      {config.fields.showQuantity && (
+      {config.fields.showDescription && (
         <div>
-          <Label htmlFor="qty">כמות</Label>
-          <Input id="qty" type="number" min={1} value={formData.quantity} onChange={(e) => updateField('quantity', e.target.value)} />
+          <Label htmlFor="desc">תיאור (אופציונלי)</Label>
+          <Textarea id="desc" value={formData.description} onChange={(e) => updateField('description', e.target.value)} rows={3} placeholder="פרטים נוספים..." className="resize-none" />
         </div>
       )}
 
-      {config.fields.showContractorCost && (
-        <div>
-          <Label htmlFor="cost">עלות קבלן ליחידה (₪)</Label>
-          <Input id="cost" type="number" min={0} value={formData.contractorCost} onChange={(e) => updateField('contractorCost', e.target.value)} />
+      {/* Grid for Quantity and Hours (Demolition style) or separate fields (other categories) */}
+      {config.fields.showQuantity && config.fields.showHoursPerUnit && !config.fields.showContractorCost ? (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="qty">כמות (לתצוגה)</Label>
+            <Input id="qty" type="number" min={1} step="1" value={formData.quantity} onChange={(e) => updateField('quantity', e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="hours">שעות עבודה ליחידה</Label>
+            <Input id="hours" type="number" min={0} step="1" value={formData.hoursPerUnit} onChange={(e) => updateField('hoursPerUnit', e.target.value)} placeholder="1" />
+          </div>
         </div>
-      )}
+      ) : (
+        <>
+          {config.fields.showQuantity && (
+            <div>
+              <Label htmlFor="qty">כמות</Label>
+              <Input id="qty" type="number" min={1} value={formData.quantity} onChange={(e) => updateField('quantity', e.target.value)} />
+            </div>
+          )}
 
-      {config.fields.showHoursPerUnit && (
-        <div>
-          <Label htmlFor="hours">שעות עבודה ליחידה</Label>
-          <Input id="hours" type="number" min={0} value={formData.hoursPerUnit} onChange={(e) => updateField('hoursPerUnit', e.target.value)} />
-        </div>
+          {config.fields.showContractorCost && (
+            <div>
+              <Label htmlFor="cost">עלות קבלן ליחידה (₪)</Label>
+              <Input id="cost" type="number" min={0} value={formData.contractorCost} onChange={(e) => updateField('contractorCost', e.target.value)} />
+            </div>
+          )}
+
+          {config.fields.showHoursPerUnit && (
+            <div>
+              <Label htmlFor="hours">שעות עבודה ליחידה</Label>
+              <Input id="hours" type="number" min={0} step="1" value={formData.hoursPerUnit} onChange={(e) => updateField('hoursPerUnit', e.target.value)} placeholder="1" />
+            </div>
+          )}
+        </>
       )}
 
       {config.fields.showMaterialCost && (
@@ -263,25 +308,30 @@ function DialogFieldsRenderer({ config, formData, setFormData, calc, fmt }) {
         </div>
       )}
 
-      {config.fields.showDescription && (
-        <div>
-          <Label htmlFor="desc">תיאור (אופציונלי)</Label>
-          <Textarea id="desc" value={formData.description} onChange={(e) => updateField('description', e.target.value)} rows={2} />
-        </div>
-      )}
-
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-2 pt-2">
+      <div className="grid grid-cols-3 gap-3 mt-6">
         {config.summary.order.map(type => {
           if (type === 'workDays' && !calc.workDays) return null;
-          const classes = getSummaryCardClasses(type, config);
           const value = type === 'client' ? calc.totalPrice :
                        type === 'contractor' ? calc.totalCost :
                        type === 'profit' ? calc.profit : calc.workDays;
+
+          // Color mapping for summary cards
+          const colorMap = {
+            client: { bg: 'bg-blue-50', border: 'border-blue-200', textLabel: 'text-blue-700', textValue: 'text-blue-900' },
+            contractor: { bg: 'bg-red-50', border: 'border-red-200', textLabel: 'text-red-700', textValue: 'text-red-900' },
+            profit: { bg: 'bg-green-50', border: 'border-green-200', textLabel: 'text-green-700', textValue: 'text-green-900' },
+            workDays: { bg: 'bg-amber-50', border: 'border-amber-200', textLabel: 'text-amber-700', textValue: 'text-amber-900' },
+          };
+
+          const colors = colorMap[type] || colorMap.client;
+
           return (
-            <div key={type} className={classes.wrapper}>
-              <div className={classes.label}>{config.summary.labels[type]}</div>
-              <div className={classes.value}>{type === 'workDays' ? value.toFixed(1) : fmt(value)}</div>
+            <div key={type} className={`${colors.bg} border-2 ${colors.border} rounded-xl p-4 text-center`}>
+              <div className={`text-xs font-medium ${colors.textLabel} mb-1`}>{config.summary.labels[type]}</div>
+              <div className={`text-xl font-bold ${colors.textValue}`}>
+                {type === 'workDays' ? value.toFixed(1) : fmt(value)}
+              </div>
             </div>
           );
         })}

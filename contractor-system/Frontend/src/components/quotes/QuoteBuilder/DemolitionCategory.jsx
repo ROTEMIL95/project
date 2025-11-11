@@ -115,24 +115,57 @@ export default function DemolitionCategory({
   const setComplexity = (id, v) => setComplexityMap((m) => ({ ...m, [id]: v }));
 
   const addItem = (it) => {
-    const profitPercent = (it.profitPercent === 0 || it.profitPercent) 
-      ? Number(it.profitPercent) 
+    // Use existing quantity or profitPercent if already calculated (for manual items)
+    const isManualItem = it.source === "demolition_manual" || it.totalPrice || it.totalCost;
+
+    const profitPercent = (it.profitPercent === 0 || it.profitPercent)
+      ? Number(it.profitPercent)
       : Number(defaults.profitPercent || 30);
-    
+
     const unit = it.unit || "יחידה";
-    const qty = getQty(it.id);
-    const complexity = getComplexity(it.id);
+
+    // For manual items, use the quantity from the item itself, not from qtyMap
+    const qty = isManualItem ? (Number(it.quantity) || 1) : getQty(it.id);
+    const complexity = isManualItem ? 'normal' : getComplexity(it.id);
     const complexityData = COMPLEXITY_LEVELS.find(c => c.id === complexity) || COMPLEXITY_LEVELS[0];
 
-    // NEW: Calculate costs based on hours and labor cost per day
+    // If item already has calculated costs (manual item), use them directly
+    if (isManualItem && it.totalPrice && it.totalCost) {
+      const itemToAdd = {
+        id: `demo_${it.id || 'custom'}_${Date.now()}`,
+        categoryId,
+        categoryName: "הריסה ופינוי",
+        source: it.source || "demolition_manual",
+        name: it.name || "",
+        description: it.description || "",
+        quantity: qty,
+        unit,
+        unitPrice: Math.round(it.totalPrice / qty),
+        totalPrice: it.totalPrice,
+        totalCost: it.totalCost,
+        profit: it.totalPrice - it.totalCost,
+        profitPercent,
+        workDuration: it.workDays || ((Number(it.hoursPerUnit) || 0) * qty / 8),
+        hoursPerUnit: Number(it.hoursPerUnit) || 0,
+        originalHoursPerUnit: Number(it.hoursPerUnit) || 0,
+        complexityLevel: 'normal',
+        complexityMultiplier: 1.0,
+      };
+
+      console.log('Adding manual demolition item:', itemToAdd);
+      onAddItemToQuote && onAddItemToQuote(itemToAdd);
+      return;
+    }
+
+    // Otherwise, calculate costs based on hours and labor cost per day (catalog items)
     const hoursPerUnit = Number(it.hoursPerUnit || 0);
     const laborCostPerDay = Number(defaults.laborCostPerDay || 1000);
     const hoursPerDay = 8; // Standard work day
-    
+
     // Apply complexity multiplier to hours
     const effectiveHours = hoursPerUnit * complexityData.multiplier;
     const unitCost = (effectiveHours / hoursPerDay) * laborCostPerDay;
-    
+
     // Calculate total cost and price
     const totalCost = unitCost * qty;
     const totalPrice = Math.round(totalCost * (1 + profitPercent / 100));
@@ -143,8 +176,9 @@ export default function DemolitionCategory({
       categoryId,
       categoryName: "הריסה ופינוי",
       source: it.source || "demolition_catalog",
-      description: (it.name || "") + (it.description ? ` — ${it.description}` : ""),
-      quantity: qty, // This now correctly reflects the actual quantity
+      name: it.name || "",
+      description: it.description || "",
+      quantity: qty,
       unit,
       unitPrice,
       totalPrice,
@@ -157,7 +191,8 @@ export default function DemolitionCategory({
       complexityLevel: complexity,
       complexityMultiplier: complexityData.multiplier,
     };
-    
+
+    console.log('Adding catalog demolition item:', itemToAdd);
     onAddItemToQuote && onAddItemToQuote(itemToAdd);
   };
 

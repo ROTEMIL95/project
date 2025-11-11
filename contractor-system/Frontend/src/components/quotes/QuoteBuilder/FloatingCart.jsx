@@ -274,13 +274,29 @@ const renderItem = (item, onRemoveItem) => {
     // בדיקה אם זה פריט הריסה עם רמת קושי
     const hasDifficulty = item.source === 'demolition_calculator' && item.difficultyData;
 
+    // Display name with fallbacks
+    const displayName = item.name || item.description || 'פריט ללא שם';
+    const displayDescription = item.description && item.name !== item.description ? item.description : null;
+
+    // Calculate unit price
+    const unitPrice = item.clientPricePerUnit || item.unitPrice || (item.totalPrice && item.quantity ? item.totalPrice / item.quantity : 0);
+
     return (
         <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border flex items-start gap-3">
             <div className="flex-1">
-                <p className="font-semibold text-gray-800 text-sm">{item.description || 'פריט ללא תיאור'}</p>
+                <p className="font-semibold text-gray-800 text-sm">{displayName}</p>
+                {displayDescription && (
+                    <p className="text-xs text-gray-600 mt-0.5">{displayDescription}</p>
+                )}
                 <p className="text-xs text-gray-500 mt-1">
-                    {safeToFixed(item.quantity || 0)} {item.unit || 'יח'} &times; {formatPrice(item.unitPrice || 0)} ₪
+                    {safeToFixed(item.quantity || 0)} {item.unit || 'יח'} &times; {formatPrice(unitPrice)} ₪
                 </p>
+                {/* Display hours if available (for demolition items) */}
+                {item.hoursPerUnit && (
+                    <p className="text-xs text-gray-600 mt-0.5">
+                        שעות עבודה: {safeToFixed(item.hoursPerUnit, 1)} ש"ע
+                    </p>
+                )}
                 {/* הצגת רמת קושי עבור פריטי הריסה */}
                 {hasDifficulty && (
                     <div className="text-xs text-red-600 mt-1">
@@ -482,7 +498,27 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
     return (
         <div key={item.id} className="bg-white rounded-lg shadow-sm border">
             <div className="p-3 flex flex-col gap-3">
-            {/* NEW: complexity summary – only if exists. No dropdowns here */}
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                            <Paintbrush className="h-4 w-4 text-indigo-500" />
+                            {item.name || 'צבע ושפכטל'}
+                        </h3>
+                    </div>
+                    <div className="text-right">
+                        <p className="font-bold text-lg text-gray-900">{formatPrice(newTotalWithComplexity)} ₪</p>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
+                            onClick={() => onRemoveItem && onRemoveItem(item.id)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* NEW: complexity summary – only if exists. No dropdowns here */}
                 {hasComplexity && (
                   <div className="bg-indigo-50/40 p-3 rounded-lg border border-indigo-100 space-y-1">
                     <div className="flex justify-between text-[11px] text-gray-700">
@@ -519,19 +555,7 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
                             <div key={`${room.name}-${index}`} className="rounded-md bg-gray-50 px-3 py-2 mb-2">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="font-semibold text-gray-800 text-sm">{room.name}</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-gray-900">{formatPrice(roomPrice)} ₪</span>
-                                        {index === 0 && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 text-red-500 hover:bg-red-50"
-                                                onClick={() => onRemoveItem && onRemoveItem(item.id)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
+                                    <span className="font-bold text-gray-900">{formatPrice(roomPrice)} ₪</span>
                                 </div>
 
                                 {/* Paint details - use room-specific data */}
@@ -696,7 +720,8 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
 
                                                       if (isManualItem) {
                                                           const userDesc = (item?.manualFormSnapshot?.description || item?.manualMeta?.description || "").trim();
-
+                                                          // TODO: Add manual item rendering
+                                                          return renderItem(item, onRemoveItem);
                                                       } else if (isPaintSummary) {
                                                             return renderPaintSummary(item, onRemoveItem, paintFallbackRooms, onUpdateItem);
                                                       } else if (isSimpleAreaItem) {
@@ -705,7 +730,10 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                       } else if (isRoomCalcItem) {
                                                             // NEW: Render room calculator items with breakdown
                                                             return renderRoomCalcItem(item, onRemoveItem);
-                                                      } 
+                                                      } else {
+                                                            // Default: render as regular item
+                                                            return renderItem(item, onRemoveItem);
+                                                      }
                                                     })}
                                                 </div>
                                             </div>

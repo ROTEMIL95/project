@@ -1286,6 +1286,28 @@ const PaintRoomsManager = React.forwardRef(({
         });
     }, []);
 
+    const manualItemsForCategory = useMemo(() => {
+        const staged = (stagedManualItems || []).filter(item =>
+            item?.categoryId === categoryId && item?.source === 'manual_calc'
+        );
+
+        const persisted = (existingCategoryData?.stagedManualItems || []).filter(item =>
+            item?.categoryId === categoryId && item?.source === 'manual_calc'
+        );
+
+        const manualFromSelected = (selectedItems || []).filter(item =>
+            item?.categoryId === categoryId && item?.source === 'manual_calc'
+        );
+
+        const uniqueMap = new Map();
+        [...staged, ...persisted, ...manualFromSelected].forEach(item => {
+            if (!item?.id) return;
+            uniqueMap.set(item.id, item);
+        });
+
+        return Array.from(uniqueMap.values());
+    }, [stagedManualItems, existingCategoryData?.stagedManualItems, selectedItems, categoryId]);
+
     const totalMetrics = useMemo(() => {
         let baseTotalCostRaw = 0;
         let baseTotalSellingPriceRaw = 0;
@@ -1377,11 +1399,6 @@ const PaintRoomsManager = React.forwardRef(({
             aggregateIndividualMetrics(room.plasterCalculatedMetrics, room.isPlasterDetailed, 'plaster');
         });
 
-        // 🆕 Add staged manual items to totals
-        const stagedPaintItems = (stagedManualItems || []).filter(item =>
-            item.categoryId === categoryId && item.source === 'manual_calc'
-        );
-
         // Track manual item costs separately for proper calculation
         let manualTotalCost = 0;
         let manualTotalPrice = 0;
@@ -1390,7 +1407,7 @@ const PaintRoomsManager = React.forwardRef(({
         let manualLaborCost = 0;
         let manualQuantity = 0;
 
-        stagedPaintItems.forEach(item => {
+        manualItemsForCategory.forEach(item => {
             // Manual items have totalCost already calculated (materialCost + laborCost)
             // We track them separately to avoid double-counting when adding to component sums
             manualTotalCost += Number(item.totalCost) || 0;
@@ -1502,7 +1519,7 @@ const PaintRoomsManager = React.forwardRef(({
                 complexityWorkDaysIncrease: totalPlasterComplexityWorkDaysIncrease
             }
         };
-    }, [rooms, preciseBucketCalculation, preciseWorkDays, stagedManualItems, categoryId]);
+    }, [rooms, preciseBucketCalculation, preciseWorkDays, manualItemsForCategory, categoryId]);
 
     useImperativeHandle(ref, () => ({
         saveData: () => {
@@ -1545,10 +1562,8 @@ const PaintRoomsManager = React.forwardRef(({
                 return items;
             });
 
-            // 2. Get manual items for this category
-            const manualItems = stagedManualItems.filter(item =>
-                item.categoryId === categoryId && item.source === 'manual_calc'
-            );
+            // 2. Get manual items for this category (staged + persisted)
+            const manualItems = manualItemsForCategory;
 
             // 3. Consolidate into ONE summary item if there are catalog items
             let quoteItems;
@@ -1663,11 +1678,14 @@ const PaintRoomsManager = React.forwardRef(({
                 quoteItems = [];
             }
 
-            // 4. Clear staged manual items for this category
-            if (setStagedManualItems && manualItems.length > 0) {
-                setStagedManualItems(prev => prev.filter(item =>
-                    item.categoryId !== categoryId || item.source !== 'manual_calc'
-                ));
+            // 4. Persist staged manual items for this category so they remain available when returning
+            if (setStagedManualItems) {
+                setStagedManualItems(prev => {
+                    const otherCategories = prev.filter(item => item.categoryId !== categoryId);
+                    return manualItems.length > 0
+                        ? [...otherCategories, ...manualItems]
+                        : otherCategories;
+                });
             }
 
             const returnData = {
@@ -1687,7 +1705,7 @@ const PaintRoomsManager = React.forwardRef(({
 
             return returnData;
         }
-    }), [rooms, categoryId, stagedManualItems, setStagedManualItems]);
+    }), [rooms, categoryId, manualItemsForCategory, setStagedManualItems]);
 
 
     useEffect(() => {
@@ -1885,11 +1903,9 @@ const PaintRoomsManager = React.forwardRef(({
 
                                 {/* Manual Items Details Section */}
                                 {(() => {
-                                    const stagedPaintItems = (stagedManualItems || []).filter(item =>
-                                        item.categoryId === categoryId && item.source === 'manual_calc'
-                                    );
+                                    const manualItemsList = manualItemsForCategory;
 
-                                    if (stagedPaintItems.length === 0) return null;
+                                    if (manualItemsList.length === 0) return null;
 
                                     const handleEditManualItem = (item) => {
                                         if (typeof window.__b44OpenManualCalc === 'function') {
@@ -1945,7 +1961,7 @@ const PaintRoomsManager = React.forwardRef(({
                                                 <CollapsibleContent className="pt-3">
                                                     <div className="bg-white rounded-lg border-2 border-purple-300 shadow-sm overflow-hidden">
                                                         <div className="p-4 space-y-3">
-                                                {stagedPaintItems.map((item, index) => {
+                                                {manualItemsList.map((item, index) => {
                                                     const walls = item.manualMeta?.walls || {};
                                                     const ceiling = item.manualMeta?.ceiling || {};
 
@@ -3657,8 +3673,18 @@ const ItemSelector = React.forwardRef(({
   }, [currentCategoryForItems, saveCurrentCategoryData, onProceed, setSelectedItems]);
 
   const handleBack = useCallback(async () => {
+      let savedData = null;
       if (currentCategoryForItems) {
-          await saveCurrentCategoryData(currentCategoryForItems);
+          savedData = await saveCurrentCategoryData(currentCategoryForItems);
+          if (savedData) {
+              const itemsToAdd = savedData.quoteItems || [];
+              const stagedItems = savedData.stagedManualItems || [];
+
+              setSelectedItems(prevItems => {
+                  const otherCategoryItems = prevItems.filter(item => item.categoryId !== currentCategoryForItems);
+                  return [...otherCategoryItems, ...itemsToAdd, ...stagedItems];
+              });
+          }
       }
 
       const currentIndex = selectedCategories.indexOf(currentCategoryForItems);
@@ -3666,7 +3692,7 @@ const ItemSelector = React.forwardRef(({
           const prevCategory = selectedCategories[currentIndex - 1];
           setCurrentCategoryForItems(prevCategory);
       }
-  }, [selectedCategories, currentCategoryForItems, saveCurrentCategoryData, setCurrentCategoryForItems]);
+  }, [selectedCategories, currentCategoryForItems, saveCurrentCategoryData, setCurrentCategoryForItems, setSelectedItems]);
 
   const nextCategory = useMemo(() => {
     const currentIndex = orderedCategories.findIndex(c => c.id === currentCategoryForItems);
