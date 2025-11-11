@@ -271,9 +271,19 @@ const renderRoomCalcItem = (item, onRemoveItem) => {
 
 // פונקציה לעיבוד פריט בודד (לא מורכב או ידני)
 const renderItem = (item, onRemoveItem) => {
+    // 🐛 DEBUG: Log item details
+    console.log('🔍 [FloatingCart renderItem] Rendering generic item:', {
+        id: item.id,
+        source: item.source || 'NO SOURCE',
+        categoryId: item.categoryId || 'NO CATEGORY',
+        description: item.description || 'NO DESCRIPTION',
+        type: item.type || 'NO TYPE',
+        fullItem: item
+    });
+
     // בדיקה אם זה פריט הריסה עם רמת קושי
     const hasDifficulty = item.source === 'demolition_calculator' && item.difficultyData;
-    
+
     return (
         <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border flex items-start gap-3">
             <div className="flex-1">
@@ -453,7 +463,7 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
                     <div>
                         <h3 className="font-bold text-gray-800 flex items-center gap-2">
                             <Paintbrush className="h-4 w-4 text-indigo-500" />
-                            סיכום קטגוריית צבע ושפכטל
+                            {item.description || 'צבע ושפכטל'}
                         </h3>
                         <div className="mt-1 text-xs text-gray-700 space-y-0.5">
                             <div>
@@ -557,7 +567,8 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
             if (paintPlasterItems.length > 0) {
                 console.log('🎨 [FloatingCart] Paint/Plaster items:', paintPlasterItems.length);
                 paintPlasterItems.forEach(item => {
-                    console.log(`  - Source: ${item.source} | Desc: ${item.description || 'N/A'}`);
+                    console.log(`  - Source: ${item.source || 'MISSING SOURCE'} | Desc: ${item.description || 'MISSING DESCRIPTION'} | Type: ${item.type || 'N/A'}`);
+                    console.log('    Full item:', item);
                 });
             }
         }
@@ -678,13 +689,29 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                       const isManualItem = isManualCalcItem(item);
                                                       const isPaintSummary = item.categoryId === 'cat_paint_plaster' &&
                                                         (item.source === 'paint_plaster_category_summary' || Array.isArray(item?.detailedBreakdown));
-                                                      
+
                                                       // NEW: Check for simple area items
                                                       const isSimpleAreaItem = item.source === 'paint_simulator' || item.source === 'plaster_simulator';
-                                                      
+
                                                       // NEW: Check for room calculator items
                                                       const isRoomCalcItem = item.source === 'paint_room_calc' || item.source === 'plaster_room_calc';
-                                                      
+
+                                                      // 🐛 DEBUG: Log which render path each item takes
+                                                      console.log('🎨 [FloatingCart] Item render decision:', {
+                                                        id: item.id,
+                                                        source: item.source || 'NO SOURCE',
+                                                        categoryId: item.categoryId || 'NO CATEGORY',
+                                                        description: item.description || 'NO DESCRIPTION',
+                                                        isManualItem,
+                                                        isPaintSummary,
+                                                        isSimpleAreaItem,
+                                                        isRoomCalcItem,
+                                                        renderPath: isManualItem ? 'MANUAL' :
+                                                                   isPaintSummary ? 'PAINT_SUMMARY' :
+                                                                   isSimpleAreaItem ? 'SIMPLE_AREA' :
+                                                                   isRoomCalcItem ? 'ROOM_CALC' : 'GENERIC'
+                                                      });
+
                                                       if (isManualItem) {
                                                           const userDesc = (item?.manualFormSnapshot?.description || item?.manualMeta?.description || "").trim();
 

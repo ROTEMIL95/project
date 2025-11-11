@@ -1572,12 +1572,28 @@ const PaintRoomsManager = React.forwardRef(({
                 const totalLaborCost = catalogTotalLaborCost + manualTotalLaborCost;
                 const totalMaterialCost = catalogTotalMaterialCost + manualTotalMaterialCost;
 
+                // Generate description from room names
+                let generatedDescription = 'צבע ושפכטל';
+                if (rooms && rooms.length > 0) {
+                    const roomNames = rooms.map(room => room.name).filter(Boolean);
+                    if (roomNames.length > 0) {
+                        if (roomNames.length === 1) {
+                            generatedDescription = roomNames[0];
+                        } else if (roomNames.length <= 3) {
+                            generatedDescription = roomNames.join(', ');
+                        } else {
+                            generatedDescription = `${roomNames.slice(0, 2).join(', ')} ועוד ${roomNames.length - 2}`;
+                        }
+                    }
+                }
+
                 // Create consolidated summary item
                 const consolidatedItem = {
                     id: `cat_paint_plaster_summary_${Date.now()}`,
                     categoryId: categoryId,
                     categoryName: 'צבע וטיח',
                     name: 'סיכום צבע ושפכטל',
+                    description: generatedDescription,
                     source: 'paint_plaster_category_summary',
                     totalCost: catalogTotalCost + manualTotalCost,
                     totalSellingPrice: catalogTotalPrice + manualTotalPrice,
@@ -1605,11 +1621,29 @@ const PaintRoomsManager = React.forwardRef(({
                 const manualTotalLaborCost = manualItems.reduce((sum, item) => sum + (Number(item.laborCost) || 0), 0);
                 const manualTotalMaterialCost = manualItems.reduce((sum, item) => sum + (Number(item.materialCost) || 0), 0);
 
+                // Generate description from manual item descriptions
+                let manualDescription = 'פריטים ידניים';
+                if (manualItems.length > 0) {
+                    const itemDescriptions = manualItems
+                        .map(item => item.description || item.name)
+                        .filter(Boolean);
+                    if (itemDescriptions.length > 0) {
+                        if (itemDescriptions.length === 1) {
+                            manualDescription = itemDescriptions[0];
+                        } else if (itemDescriptions.length <= 3) {
+                            manualDescription = itemDescriptions.join(', ');
+                        } else {
+                            manualDescription = `${itemDescriptions.slice(0, 2).join(', ')} ועוד ${itemDescriptions.length - 2}`;
+                        }
+                    }
+                }
+
                 const consolidatedItem = {
                     id: `cat_paint_plaster_summary_${Date.now()}`,
                     categoryId: categoryId,
                     categoryName: 'צבע וטיח',
                     name: 'סיכום צבע ושפכטל (ידני)',
+                    description: manualDescription,
                     source: 'paint_plaster_category_summary',
                     totalCost: manualTotalCost,
                     totalSellingPrice: manualTotalPrice,

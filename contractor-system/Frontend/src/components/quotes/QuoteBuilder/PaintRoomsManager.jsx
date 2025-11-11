@@ -501,13 +501,21 @@ export default React.forwardRef(function PaintRoomsManager({
                 <Button
                   type="button"
                   onClick={() => handleAddItemToQuote({
+                    id: `plaster_${room.id}_${Date.now()}`,
                     type: 'plaster',
+                    source: 'plaster_room_manager',
+                    categoryId: 'cat_paint_plaster',
+                    categoryName: 'צבע ושפכטל',
                     description: `שפכטל באזור ${room.name || `אזור ${index + 1}`}`,
                     unit: 'מ"ר',
                     quantity: (room.plasterRoomsData.wallArea ?? 0) + (room.plasterRoomsData.ceilingArea ?? 0),
                     unitPrice: Math.max(room.plasterRoomsData.plasterPricePerMeterWalls ?? 0, room.plasterRoomsData.plasterPricePerMeterCeiling ?? 0),
                     totalPrice: ((room.plasterRoomsData.wallArea ?? 0) * (room.plasterRoomsData.plasterPricePerMeterWalls ?? 0)) +
-                                ((room.plasterRoomsData.ceilingArea ?? 0) * (room.plasterRoomsData.plasterPricePerMeterCeiling ?? 0))
+                                ((room.plasterRoomsData.ceilingArea ?? 0) * (room.plasterRoomsData.plasterPricePerMeterCeiling ?? 0)),
+                    totalCost: (((room.plasterRoomsData.wallArea ?? 0) * (room.plasterRoomsData.plasterPricePerMeterWalls ?? 0)) +
+                                ((room.plasterRoomsData.ceilingArea ?? 0) * (room.plasterRoomsData.plasterPricePerMeterCeiling ?? 0))) * 0.7,
+                    wallArea: room.plasterRoomsData.wallArea ?? 0,
+                    ceilingArea: room.plasterRoomsData.ceilingArea ?? 0
                   })}
                   className="w-full mt-4 bg-gray-600 hover:bg-gray-700"
                 >
