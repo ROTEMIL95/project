@@ -1,8 +1,4 @@
-/**
- * TilingManualItemDialog - Manual Tiling Item Dialog for Quote Builder Step 3
- */
-
-import { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +22,7 @@ export default function TilingManualItemDialog({
     workDuration: 0,
   });
 
-  // NEW: Toggle between days/hours
+  // Toggle between days/hours
   const [timeUnit, setTimeUnit] = useState('days'); // 'days' or 'hours'
 
   const prevOpenRef = useRef(open);
@@ -52,7 +48,7 @@ export default function TilingManualItemDialog({
   const profitPercent = Number(defaults.desiredProfitPercent) || 30;
   const laborCostPerDay = Number(defaults.laborCostPerDay) || 1000;
 
-  // FIXED: Calculate labor cost based on selected time unit
+  // Calculate labor cost based on selected time unit
   const laborCost = useMemo(() => {
     const duration = Number(formData.workDuration) || 0;
     if (timeUnit === 'hours') {
@@ -120,13 +116,13 @@ export default function TilingManualItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-6" dir="rtl">
-        <DialogHeader className="pb-4">
+      <DialogContent className="max-w-md" dir="rtl">
+        <DialogHeader className="pb-2">
           <DialogTitle className="text-lg font-bold">הוספת פריט ריצוף וחיפוי ידני</DialogTitle>
           <p className="text-xs text-gray-500">לדוגמה: קרמיקה באזור המטבח.</p>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-3 py-2">
           <div>
             <Label htmlFor="name" className="text-sm flex items-center gap-1">
               שם הפריט <span className="text-red-500">*</span>
@@ -202,7 +198,7 @@ export default function TilingManualItemDialog({
                 placeholder="0"
                 className="flex-1 h-9"
               />
-              {/* NEW: Toggle buttons for days/hours */}
+              {/* Toggle buttons for days/hours */}
               <div className="flex bg-gray-100 rounded-md p-0.5">
                 <button
                   type="button"
@@ -258,7 +254,7 @@ export default function TilingManualItemDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 pt-4">
+        <DialogFooter className="gap-2 pt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="h-9">
             ביטול
           </Button>

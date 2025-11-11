@@ -4049,40 +4049,19 @@ const ItemSelector = React.forwardRef(({
       <TilingManualItemDialog
         open={showTilingManualDialog}
         onOpenChange={setShowTilingManualDialog}
-        onSaved={(savedItem) => {
-          console.log('[TilingManualItemDialog] Saved item:', savedItem);
-          
-          // Calculate profit and other missing fields
-          const totalCost = Number(savedItem.totalCost) || 0;
-          const totalPrice = Number(savedItem.totalPrice) || 0;
-          const profit = totalPrice - totalCost;
-          
-          // Estimate material cost as 60% of total cost, labor as 40%
-          const estimatedMaterialCost = totalCost * 0.6;
-          const estimatedLaborCost = totalCost * 0.4;
-          
-          // Estimate work days based on quantity (assuming 20 sqm per day for tiling)
-          const quantity = Number(savedItem.quantity) || 0;
-          const estimatedWorkDays = quantity > 0 ? quantity / 20 : 0;
-          
+        onAdd={(savedItem) => {
           // Add to stagedManualItems with proper source and all required fields
           const itemWithMetadata = {
             ...savedItem,
             categoryId: 'cat_tiling',
             source: 'tiling_manual',
             id: savedItem.id || `tiling_manual_${Date.now()}`,
-            // Add missing fields for summary calculation
-            profit: profit,
-            workDuration: savedItem.workDays || estimatedWorkDays,
-            materialCost: savedItem.materialCostPerUnit ? (savedItem.materialCostPerUnit * quantity) : estimatedMaterialCost,
-            laborCost: savedItem.materialCostPerUnit ? (totalCost - (savedItem.materialCostPerUnit * quantity)) : estimatedLaborCost,
           };
-          
-          console.log('[TilingManualItemDialog] Item with metadata:', itemWithMetadata);
+
           setStagedManualItems(prev => [...prev, itemWithMetadata]);
-          setShowTilingManualDialog(false);
         }}
         defaults={userForData?.user_metadata?.tilingUserDefaults || {}}
+        workTypes={tilingWorkTypes}
       />
     </>
   );

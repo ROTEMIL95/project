@@ -112,7 +112,10 @@ export default function ElectricalCategory({
     const unit = it.unit || "יחידה";
     const unitCost = Number(it.contractorCostPerUnit || 0);
     const unitPrice = Number(it.clientPricePerUnit || calcClientPrice(unitCost, pp));
-    const qty = getQty(it.id);
+
+    // For manual items, use quantity from the item itself; for catalog items, use qtyMap
+    const isManualItem = it.source === "electrical_manual" || it.totalPrice || it.totalCost;
+    const qty = isManualItem ? (Number(it.quantity) || 1) : getQty(it.id);
 
     // Calculate totals - if ignoreQuantity flag exists, use it, otherwise multiply by quantity
     const totalCost = it.ignoreQuantity ? unitCost : unitCost * qty;
@@ -123,29 +126,40 @@ export default function ElectricalCategory({
       categoryId,
       categoryName: "חשמל",
       source: it.source || "electrical_catalog",
-      description: (it.name || "") + (it.description ? ` — ${it.description}` : ""),
+      name: it.name || "",
+      description: it.description || "",
       quantity: qty, // This now correctly reflects the actual quantity
       unit,
       unitPrice,
       totalPrice,
       totalCost,
       profit: totalPrice - totalCost,
+      contractorCostPerUnit: unitCost,
+      clientPricePerUnit: unitPrice,
+      profitPercent: pp,
       // Pass the ignoreQuantity flag along if it was set on the item
       ...(it.ignoreQuantity !== undefined && { ignoreQuantity: it.ignoreQuantity }),
     };
+
+    console.log('Adding electrical item:', itemToAdd);
     onAddItemToQuote && onAddItemToQuote(itemToAdd);
   };
 
-  // UPDATED: manual item uses addItem and ignoreQuantity
+  // UPDATED: manual item - item already has totalCost and totalPrice calculated
   const handleManualItemAdd = (item) => {
-    const patched = {
+    // Item already has all calculations done in the dialog
+    // Don't recalculate - just add it directly to the quote
+    const itemToAdd = {
       ...item,
-      id: `manual_${Date.now()}`, // Generate a unique ID for the manual item
+      id: `el_manual_${Date.now()}`,
+      categoryId,
+      categoryName: "חשמל",
       source: "electrical_manual",
-      ignoreQuantity: true
     };
-    addItem(patched);
-    setShowAddDialog(false); // Changed from setShowManual
+
+    console.log('Adding manual electrical item (pre-calculated):', itemToAdd);
+    onAddItemToQuote && onAddItemToQuote(itemToAdd);
+    setShowAddDialog(false);
   };
 
   // Summary for this category from selectedItems
@@ -154,14 +168,16 @@ export default function ElectricalCategory({
     (acc, it) => {
       const price = Number(it.totalPrice) || 0;
       const cost = Number(it.totalCost) || 0;
+      const quantity = Number(it.quantity) || 1;
       acc.price += price;
       acc.cost += cost;
       acc.profit += (price - cost);
+      acc.quantity += quantity;
       return acc;
     },
-    { price: 0, cost: 0, profit: 0 }
+    { price: 0, cost: 0, profit: 0, quantity: 0 }
   );
-  const itemsCount = electricalItems.length;
+  const itemsCount = summary.quantity; // Sum of quantities, not item count
 
   return (
     <>
@@ -460,7 +476,7 @@ export default function ElectricalCategory({
       <ElectricalManualItemDialog
         open={showAddDialog} // Changed from showManual
         onOpenChange={setShowAddDialog} // Changed from setShowManual
-        onAdd={handleManualItemAdd}
+        onSaved={handleManualItemAdd}
         defaults={{ desiredProfitPercent: defaults.desiredProfitPercent || 40 }}
         defaultSubcat={subcatFilter}
       />

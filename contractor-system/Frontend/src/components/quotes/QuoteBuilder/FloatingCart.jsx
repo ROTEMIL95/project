@@ -635,16 +635,27 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
     // NEW: fallback from project breakdowns (advanced calc)
     const paintFallbackRooms = projectComplexities?.roomBreakdowns?.paint || [];
 
-    // NEW: Calculate total quantity - ONLY for items with unit "יחידה"
+    // NEW: Calculate total quantity
     const totalQuantity = items.reduce((sum, item) => {
-      // Only count items where unit is exactly "יחידה"
+      // Exclude summary items
+      if (item.source?.includes('summary') || item.source?.includes('category_summary')) {
+        return sum;
+      }
+
+      // For items with "יחידה" unit, count the actual quantity
       if (item.unit === "יחידה") {
         return sum + (Number(item.quantity) || 1);
       }
+
+      // For items with other units (מ"ר, מ"ק, מטר רץ, etc.), count as 1 item
+      if (item.unit) {
+        return sum + 1;
+      }
+
       return sum;
     }, 0);
-    
-    // If no "יחידה" items exist, fall back to item count
+
+    // If no countable items exist, fall back to item count
     const badgeCount = totalQuantity > 0 ? totalQuantity : items.length;
 
     return (
