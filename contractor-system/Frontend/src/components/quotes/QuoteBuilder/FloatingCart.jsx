@@ -629,8 +629,20 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
     const profit = totalPrice - totalCost;
     const profitPercent = totalCost > 0 ? ((profit / totalCost) * 100).toFixed(1) : '0.0';
 
-    // NEW: compute grouping once
-    const { order: categoriesOrder, map: categoriesMap } = groupItemsByCategory(items);
+    // Filter out only the consolidated category summary items (not individual room items)
+    const displayItems = items.filter(item =>
+      item.source !== 'paint_plaster_category_summary'
+    );
+
+    console.log('🛒 [FloatingCart] Items filtering:', {
+      totalItems: items.length,
+      displayItems: displayItems.length,
+      removed: items.length - displayItems.length,
+      allSources: items.map(it => ({ id: it.id, source: it.source, name: it.name }))
+    });
+
+    // NEW: compute grouping once (using filtered items)
+    const { order: categoriesOrder, map: categoriesMap } = groupItemsByCategory(displayItems);
 
     // NEW: fallback from project breakdowns (advanced calc)
     const paintFallbackRooms = projectComplexities?.roomBreakdowns?.paint || [];
@@ -642,8 +654,8 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
         return sum;
       }
 
-      // For items with "יחידה" unit, count the actual quantity
-      if (item.unit === "יחידה") {
+      // For items with "יחידה" or "נקודה" unit, count the actual quantity
+      if (item.unit === "יחידה" || item.unit === "נקודה") {
         return sum + (Number(item.quantity) || 1);
       }
 

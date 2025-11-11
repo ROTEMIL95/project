@@ -1631,7 +1631,8 @@ const PaintRoomsManager = React.forwardRef(({
                     manualItemsCount: filteredManualItems.length,
                 };
 
-                quoteItems = [consolidatedItem];
+                // Return only the individual catalog items (no consolidated summary)
+                quoteItems = catalogItems;
             } else if (manualItems.length > 0) {
                 // If only manual items exist, still consolidate them
                 // BUT: Filter out manual_calc items that were already added directly to cart
@@ -2832,41 +2833,21 @@ const TilingCategoryEditorLocalWrapper = React.forwardRef(({
                 }
             }
 
-            // Get manual items for tiling category
-            const manualItems = Array.isArray(stagedManualItems) 
-                ? stagedManualItems.filter(item =>
-                    item.categoryId === categoryId &&
-                    (item.source === 'tiling_manual' || item.source === 'tiling_area_autosave' || item.source === 'manual_calc')
-                  )
-                : [];
-
             console.log('[TilingCategoryEditorLocalWrapper] saveData called:', {
                 catalogItemsCount: catalogItems.length,
-                manualItemsCount: manualItems.length,
-                catalogItems: catalogItems,
-                manualItems: manualItems
+                catalogItems: catalogItems
             });
 
-            // Return ALL items (catalog + manual) individually, not consolidated
-            const allItems = [...catalogItems, ...manualItems];
-
-            // Clear staged manual items for this category after including them
-            if (setStagedManualItems && manualItems.length > 0) {
-                setStagedManualItems(prev => Array.isArray(prev) 
-                    ? prev.filter(item =>
-                        item.categoryId !== categoryId ||
-                        !(item.source === 'tiling_manual' || item.source === 'tiling_area_autosave' || item.source === 'manual_calc')
-                      )
-                    : []
-                );
-            }
+            // ✅ FIX: Do NOT include stagedManualItems here!
+            // Manual items are already in selectedItems via onAddItemToQuote
+            // Only return catalog items (area-based items) from TilingCategoryEditor
 
             return {
-                quoteItems: allItems,
+                quoteItems: catalogItems,
                 rawRooms: rawRooms
             };
         }
-    }), [categoryId, stagedManualItems, setStagedManualItems]);
+    }), [categoryId]);
 
 
     return (
@@ -3042,9 +3023,11 @@ const ItemSelector = React.forwardRef(({
 
   // עדכון הקריאה לדיאלוג הריצוף הידני
   const [showTilingManualDialog, setShowTilingManualDialog] = useState(false);
+  const [editingTilingItem, setEditingTilingItem] = useState(null);
 
   // State for tiling summary collapsible
   const [isTilingSummaryOpen, setIsTilingSummaryOpen] = useState(true);
+  const [isTilingManualItemsOpen, setIsTilingManualItemsOpen] = useState(true);
 
   // CHANGED: State for showing/hiding dates section - default to FALSE (closed)
   const [showDates, setShowDates] = React.useState(false);
@@ -3103,17 +3086,24 @@ const ItemSelector = React.forwardRef(({
       .map(c => ({ id: c.id, name: c.name }));
   }, [AVAILABLE_CATEGORIES, selectedCategories]);
 
+  // State for categoryDataMap - must be before tilingCategorySummary
+  const [categoryDataMap, setCategoryDataMap] = useState({});
+
   // חישוב סיכום כולל לריצוף - כולל פריטים ידניים
   const tilingCategorySummary = useMemo(() => {
-    const tilingItems = selectedItems.filter(item => item.categoryId === 'cat_tiling');
-
-    // 🆕 Include staged manual items for real-time summary
-    const stagedTilingItems = (stagedManualItems || []).filter(item =>
-      item.categoryId === 'cat_tiling' &&
-      (item.source === 'tiling_manual' || item.source === 'tiling_area_autosave' || item.source === 'manual_calc')
+    // ✅ Only include manual items from selectedItems (items added via dialog)
+    const manualTilingItems = selectedItems.filter(item =>
+      item.categoryId === 'cat_tiling' && item.source === 'tiling_manual'
     );
 
-    if (tilingItems.length === 0 && stagedTilingItems.length === 0) {
+    // 🆕 Include items from TilingCategoryEditor (from categoryDataMap) - these are area-based items
+    const tilingCategoryData = categoryDataMap['cat_tiling'];
+    const localTilingItems = tilingCategoryData?.quoteItems || [];
+
+    // Combine: manual items (from dialog) + area items (from TilingCategoryEditor)
+    const allItems = [...manualTilingItems, ...localTilingItems];
+
+    if (allItems.length === 0) {
       return {
         totalArea: 0,
         totalMaterialCost: 0,
@@ -3126,8 +3116,8 @@ const ItemSelector = React.forwardRef(({
       };
     }
 
-    // Calculate totals from catalog items
-    const catalogTotals = tilingItems.reduce((acc, item) => {
+    // Calculate totals from all items
+    return allItems.reduce((acc, item) => {
       return {
         totalArea: acc.totalArea + (Number(item.quantity) || 0),
         totalMaterialCost: acc.totalMaterialCost + (Number(item.materialCost) || 0),
@@ -3135,7 +3125,7 @@ const ItemSelector = React.forwardRef(({
         totalContractorCost: acc.totalContractorCost + (Number(item.totalCost) || 0),
         totalClientPrice: acc.totalClientPrice + (Number(item.totalPrice) || 0),
         totalProfit: acc.totalProfit + (Number(item.profit) || 0),
-        totalWorkDays: acc.totalWorkDays + (Number(item.workDuration) || 0),
+        totalWorkDays: acc.totalWorkDays + (Number(item.workDuration) || Number(item.workDays) || 0),
         itemCount: acc.itemCount + 1
       };
     }, {
@@ -3148,42 +3138,7 @@ const ItemSelector = React.forwardRef(({
       totalWorkDays: 0,
       itemCount: 0
     });
-
-    // Calculate totals from staged manual items
-    const manualTotals = stagedTilingItems.reduce((acc, item) => {
-      return {
-        totalArea: acc.totalArea + (Number(item.quantity) || 0),
-        totalMaterialCost: acc.totalMaterialCost + (Number(item.materialCost) || 0),
-        totalLaborCost: acc.totalLaborCost + (Number(item.laborCost) || 0),
-        totalContractorCost: acc.totalContractorCost + (Number(item.totalCost) || 0),
-        totalClientPrice: acc.totalClientPrice + (Number(item.totalPrice) || 0),
-        totalProfit: acc.totalProfit + (Number(item.profit) || 0),
-        totalWorkDays: acc.totalWorkDays + (Number(item.workDuration) || 0),
-        itemCount: acc.itemCount + 1
-      };
-    }, {
-      totalArea: 0,
-      totalMaterialCost: 0,
-      totalLaborCost: 0,
-      totalContractorCost: 0,
-      totalClientPrice: 0,
-      totalProfit: 0,
-      totalWorkDays: 0,
-      itemCount: 0
-    });
-
-    // Combine both totals
-    return {
-      totalArea: catalogTotals.totalArea + manualTotals.totalArea,
-      totalMaterialCost: catalogTotals.totalMaterialCost + manualTotals.totalMaterialCost,
-      totalLaborCost: catalogTotals.totalLaborCost + manualTotals.totalLaborCost,
-      totalContractorCost: catalogTotals.totalContractorCost + manualTotals.totalContractorCost,
-      totalClientPrice: catalogTotals.totalClientPrice + manualTotals.totalClientPrice,
-      totalProfit: catalogTotals.totalProfit + manualTotals.totalProfit,
-      totalWorkDays: catalogTotals.totalWorkDays + manualTotals.totalWorkDays,
-      itemCount: catalogTotals.itemCount + manualTotals.itemCount
-    };
-  }, [selectedItems, stagedManualItems]);
+  }, [selectedItems, stagedManualItems, categoryDataMap]);
 
 
   const normalizeRoomsForBreakdown = useCallback((raw) => {
@@ -3214,8 +3169,6 @@ const ItemSelector = React.forwardRef(({
   const paintRoomsRef = useRef(null);
   const demolitionManagerRef = useRef(null);
   const electricalManagerRef = useRef(null);
-
-  const [categoryDataMap, setCategoryDataMap] = useState({});
 
   const handleUpdateItems = useCallback((data) => {
       setCategoryDataMap(prev => {
@@ -3279,6 +3232,14 @@ const ItemSelector = React.forwardRef(({
                 rooms: savedPaintData?.rawRooms || [],
                 items: savedPaintData?.quoteItems || []
             };
+
+            console.log('🎨 [ItemSelector] Saved paint data:', {
+                quoteItemsCount: itemsFromCurrentCategoryComponent.length,
+                roomsCount: categorySpecificDataForMap.rooms.length,
+                items: itemsFromCurrentCategoryComponent
+            });
+        } else {
+            console.warn('[ItemSelector] paintRoomsRef.current.saveData not available');
         }
     } else if (categoryIdToSave === 'cat_demolition') {
         if (demolitionManagerRef.current && typeof demolitionManagerRef.current.saveData === 'function') {
@@ -3904,98 +3865,221 @@ const ItemSelector = React.forwardRef(({
             <>
               <HideTilingCatalogAdd />
               <TilingAutoSaveOnAddArea onAddItemToQuote={onAddItemToQuote} />
-              {/* סיכום קטגוריה - כמו צבע ושפכטל */}
-              {tilingCategorySummary.itemCount > 0 && (
-                <div className="mt-6 p-0">
-                  <Collapsible open={isTilingSummaryOpen} onOpenChange={setIsTilingSummaryOpen}>
-                    <CollapsibleTrigger asChild>
-                      <button className="w-full bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 rounded-lg border-2 border-orange-300 p-3 hover:shadow-md transition-all duration-300 cursor-pointer">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                            <Building className="w-5 h-5 ml-2 text-orange-600" />
-                            סיכום כולל לקטגוריית ריצוף וחיפוי
-                          </h3>
-                          {isTilingSummaryOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </div>
-                      </button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pt-3">
-                      <div className="bg-white rounded-lg border-2 border-orange-300 shadow-sm overflow-hidden">
-                        <div className="p-4 space-y-4">
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200">
-                              <div className="text-xl font-bold text-blue-800">
-                                ₪{formatPrice(tilingCategorySummary.totalClientPrice || 0)}
-                              </div>
-                              <div className="text-sm text-blue-600 font-medium">מחיר ללקוח</div>
-                              <div className="text-xs text-blue-500">
-                                {tilingCategorySummary.totalArea > 0
-                                  ? `₪${formatPrice(tilingCategorySummary.totalClientPrice / tilingCategorySummary.totalArea)} למ"ר`
-                                  : ''}
-                              </div>
-                            </div>
-                            <div className="bg-gradient-to-br from-orange-50 to-red-100 p-3 rounded-lg border border-orange-200">
-                              <div className="text-xl font-bold text-orange-800">
-                                ₪{formatPrice(tilingCategorySummary.totalContractorCost || 0)}
-                              </div>
-                              <div className="text-sm text-orange-600 font-medium">עלות קבלן</div>
-                              <div className="text-xs text-orange-500">
-                                {tilingCategorySummary.totalArea > 0
-                                  ? `₪${formatPrice(tilingCategorySummary.totalContractorCost / tilingCategorySummary.totalArea)} למ"ר`
-                                  : ''}
-                              </div>
-                            </div>
-                            <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg border border-green-200">
-                              <div className="text-xl font-bold text-green-800">
-                                ₪{formatPrice(tilingCategorySummary.totalProfit || 0)}
-                              </div>
-                              <div className="text-sm text-green-600 font-medium">רווח</div>
-                              <div className="text-xs text-green-500">
-                                {tilingCategorySummary.totalContractorCost > 0
-                                  ? `${((tilingCategorySummary.totalProfit / tilingCategorySummary.totalContractorCost) * 100).toFixed(1)}%`
-                                  : '0%'}
-                                {tilingCategorySummary.totalArea > 0
-                                  ? ` | ₪${formatPrice(tilingCategorySummary.totalProfit / tilingCategorySummary.totalArea)} למ"ר`
-                                  : ''}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="border-t pt-3">
-                            <h4 className="font-semibold text-gray-700 mb-3 text-center">פירוט עלויות כללי:</h4>
-                            <div className="grid grid-cols-3 gap-2 text-center">
-                              <div className="bg-gray-100 p-2 rounded-lg">
-                                <div className="text-base font-bold text-gray-800">
-                                  ₪{formatPrice(tilingCategorySummary.totalMaterialCost || 0)}
-                                </div>
-                                <div className="text-xs text-gray-500">עלות חומרים</div>
-                              </div>
-                              <div className="bg-gray-100 p-2 rounded-lg">
-                                <div className="text-base font-bold text-gray-800">
-                                  ₪{formatPrice(tilingCategorySummary.totalLaborCost || 0)}
-                                </div>
-                                <div className="text-xs text-gray-500">עלויות עובדים</div>
-                              </div>
-                              <div className="bg-gray-100 p-2 rounded-lg">
-                                <div className="text-base font-bold text-gray-800">
-                                  {(tilingCategorySummary.totalWorkDays || 0).toFixed(1)}
-                                </div>
-                                <div className="text-xs text-gray-500">ימי עבודה</div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </div>
-              )}
             </>
           )}
 
           <div className="flex-grow">
             {renderCategoryEditor()}
           </div>
+
+          {/* סיכום קטגוריה לריצוף - בתחתית הדף */}
+          {currentCategoryForItems === 'cat_tiling' && tilingCategorySummary.itemCount > 0 && (
+            <div className="mt-6 p-0">
+              <Collapsible open={isTilingSummaryOpen} onOpenChange={setIsTilingSummaryOpen}>
+                <CollapsibleTrigger asChild>
+                  <button className="w-full bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 rounded-lg border-2 border-orange-300 p-3 hover:shadow-md transition-all duration-300 cursor-pointer">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-bold text-gray-800 flex items-center">
+                        <Building className="w-5 h-5 ml-2 text-orange-600" />
+                        סיכום כולל לקטגוריית ריצוף וחיפוי
+                      </h3>
+                      {isTilingSummaryOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </div>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3">
+                  <div className="bg-white rounded-lg border-2 border-orange-300 shadow-sm overflow-hidden">
+                    <div className="p-4 space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200">
+                          <div className="text-xl font-bold text-blue-800">
+                            ₪{formatPrice(tilingCategorySummary.totalClientPrice || 0)}
+                          </div>
+                          <div className="text-sm text-blue-600 font-medium">מחיר ללקוח</div>
+                          <div className="text-xs text-blue-500">
+                            {tilingCategorySummary.totalArea > 0
+                              ? `₪${formatPrice(tilingCategorySummary.totalClientPrice / tilingCategorySummary.totalArea)} למ"ר`
+                              : ''}
+                          </div>
+                        </div>
+                        <div className="bg-gradient-to-br from-orange-50 to-red-100 p-3 rounded-lg border border-orange-200">
+                          <div className="text-xl font-bold text-orange-800">
+                            ₪{formatPrice(tilingCategorySummary.totalContractorCost || 0)}
+                          </div>
+                          <div className="text-sm text-orange-600 font-medium">עלות קבלן</div>
+                          <div className="text-xs text-orange-500">
+                            {tilingCategorySummary.totalArea > 0
+                              ? `₪${formatPrice(tilingCategorySummary.totalContractorCost / tilingCategorySummary.totalArea)} למ"ר`
+                              : ''}
+                          </div>
+                        </div>
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg border border-green-200">
+                          <div className="text-xl font-bold text-green-800">
+                            ₪{formatPrice(tilingCategorySummary.totalProfit || 0)}
+                          </div>
+                          <div className="text-sm text-green-600 font-medium">רווח</div>
+                          <div className="text-xs text-green-500">
+                            {tilingCategorySummary.totalContractorCost > 0
+                              ? `${((tilingCategorySummary.totalProfit / tilingCategorySummary.totalContractorCost) * 100).toFixed(1)}%`
+                              : '0%'}
+                            {tilingCategorySummary.totalArea > 0
+                              ? ` | ₪${formatPrice(tilingCategorySummary.totalProfit / tilingCategorySummary.totalArea)} למ"ר`
+                              : ''}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-3">
+                        <h4 className="font-semibold text-gray-700 mb-3 text-center">פירוט עלויות כללי:</h4>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-gray-100 p-2 rounded-lg">
+                            <div className="text-base font-bold text-gray-800">
+                              ₪{formatPrice(tilingCategorySummary.totalMaterialCost || 0)}
+                            </div>
+                            <div className="text-xs text-gray-500">עלות חומרים</div>
+                          </div>
+                          <div className="bg-gray-100 p-2 rounded-lg">
+                            <div className="text-base font-bold text-gray-800">
+                              ₪{formatPrice(tilingCategorySummary.totalLaborCost || 0)}
+                            </div>
+                            <div className="text-xs text-gray-500">עלויות עובדים</div>
+                          </div>
+                          <div className="bg-gray-100 p-2 rounded-lg">
+                            <div className="text-base font-bold text-gray-800">
+                              {(tilingCategorySummary.totalWorkDays || 0).toFixed(1)}
+                            </div>
+                            <div className="text-xs text-gray-500">ימי עבודה</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* פריטים ידניים לריצוף - בתוך הסיכום */}
+                      {(() => {
+            const manualTilingItems = selectedItems.filter(item =>
+              item.categoryId === 'cat_tiling' && item.source === 'tiling_manual'
+            );
+
+            if (manualTilingItems.length === 0) return null;
+
+            const handleEditTilingManualItem = (item) => {
+              // Set editing item and open dialog
+              setEditingTilingItem(item);
+              setShowTilingManualDialog(true);
+            };
+
+            const handleDeleteTilingManualItem = (itemToDelete) => {
+              setSelectedItems(prev => prev.filter(item => item.id !== itemToDelete.id));
+            };
+
+            return (
+              <div className="border-t mt-4 pt-4">
+                <Collapsible open={isTilingManualItemsOpen} onOpenChange={setIsTilingManualItemsOpen}>
+                  <CollapsibleTrigger asChild>
+                    <button className="w-full bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 rounded-lg border border-orange-200 p-2 hover:shadow-sm transition-all duration-300 cursor-pointer">
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-base font-semibold text-gray-800 flex items-center">
+                          <Edit className="w-4 h-4 ml-2 text-orange-600" />
+                          פריטים ידניים ({manualTilingItems.length})
+                        </h4>
+                        {isTilingManualItemsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </div>
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-3">
+                    <div className="space-y-3">
+                        {manualTilingItems.map((item, index) => (
+                          <div key={item.id || index} className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg p-4 border-2 border-orange-200 relative">
+                            {/* Action Buttons */}
+                            <div className="absolute top-3 left-3 flex gap-2">
+                              {/* Edit Button */}
+                              <button
+                                onClick={() => handleEditTilingManualItem(item)}
+                                className="p-1.5 rounded-md bg-white/80 hover:bg-white border border-orange-300 hover:border-orange-400 text-orange-700 hover:text-orange-900 transition-all shadow-sm hover:shadow-md"
+                                title="ערוך פריט"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              {/* Delete Button */}
+                              <button
+                                onClick={() => handleDeleteTilingManualItem(item)}
+                                className="p-1.5 rounded-md bg-white/80 hover:bg-red-50 border border-red-300 hover:border-red-400 text-red-600 hover:text-red-700 transition-all shadow-sm hover:shadow-md"
+                                title="מחק פריט"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+
+                            {/* Description */}
+                            <div className="mb-3 pb-2 border-b border-orange-200 pr-20">
+                              <h5 className="font-semibold text-gray-800 text-sm">{item.name || item.description}</h5>
+                              {item.description && item.name !== item.description && (
+                                <p className="text-xs text-gray-600 mt-1">{item.description}</p>
+                              )}
+                            </div>
+
+                            {/* Item Details */}
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                              <div className="bg-white/60 rounded p-2 text-xs">
+                                <div className="font-semibold text-gray-700 mb-1">כמות:</div>
+                                <div className="text-gray-600">{item.quantity} {item.unit || 'מ"ר'}</div>
+                              </div>
+                              <div className="bg-white/60 rounded p-2 text-xs">
+                                <div className="font-semibold text-gray-700 mb-1">ימי עבודה:</div>
+                                <div className="text-gray-600">{(item.workDuration || 0).toFixed(1)}</div>
+                              </div>
+                            </div>
+
+                            {/* Cost Breakdown */}
+                            <div className="grid grid-cols-2 gap-2 mb-2">
+                              <div className="bg-white/80 rounded p-2 text-center">
+                                <div className="text-xs text-gray-600 mb-1">עלות חומרים</div>
+                                <div className="text-sm font-bold text-gray-800">
+                                  ₪{formatPrice(item.materialCost || 0)}
+                                </div>
+                              </div>
+                              <div className="bg-white/80 rounded p-2 text-center">
+                                <div className="text-xs text-gray-600 mb-1">עלות עבודה</div>
+                                <div className="text-sm font-bold text-gray-800">
+                                  ₪{formatPrice(item.laborCost || 0)}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Summary Row */}
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-gradient-to-br from-blue-100 to-blue-200 rounded p-2 text-center border border-blue-300">
+                                <div className="text-xs text-blue-700 mb-1">מחיר ללקוח</div>
+                                <div className="text-base font-bold text-blue-900">
+                                  ₪{formatPrice(item.totalPrice || 0)}
+                                </div>
+                              </div>
+                              <div className="bg-gradient-to-br from-orange-100 to-orange-200 rounded p-2 text-center border border-orange-300">
+                                <div className="text-xs text-orange-700 mb-1">עלות קבלן</div>
+                                <div className="text-base font-bold text-orange-900">
+                                  ₪{formatPrice(item.totalCost || 0)}
+                                </div>
+                              </div>
+                              <div className="bg-gradient-to-br from-green-100 to-green-200 rounded p-2 text-center border border-green-300">
+                                <div className="text-xs text-green-700 mb-1">רווח</div>
+                                <div className="text-base font-bold text-green-900">
+                                  ₪{formatPrice(item.profit || 0)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
+            );
+          })()}
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+          )}
         </CardContent>
 
         <CardFooter className="flex justify-between border-t p-4 bg-gray-50/50">
@@ -4048,17 +4132,42 @@ const ItemSelector = React.forwardRef(({
 
       <TilingManualItemDialog
         open={showTilingManualDialog}
-        onOpenChange={setShowTilingManualDialog}
+        onOpenChange={(isOpen) => {
+          setShowTilingManualDialog(isOpen);
+          if (!isOpen) {
+            setEditingTilingItem(null); // Clear editing item when dialog closes
+          }
+        }}
+        editingItem={editingTilingItem}
         onAdd={(savedItem) => {
-          // Add to stagedManualItems with proper source and all required fields
-          const itemWithMetadata = {
-            ...savedItem,
-            categoryId: 'cat_tiling',
-            source: 'tiling_manual',
-            id: savedItem.id || `tiling_manual_${Date.now()}`,
-          };
+          if (editingTilingItem) {
+            // Update existing item
+            setSelectedItems(prev => prev.map(item =>
+              item.id === editingTilingItem.id
+                ? {
+                    ...savedItem,
+                    categoryId: 'cat_tiling',
+                    categoryName: 'ריצוף וחיפוי',
+                    source: 'tiling_manual',
+                    id: editingTilingItem.id, // Keep the same ID
+                  }
+                : item
+            ));
+            setEditingTilingItem(null);
+          } else {
+            // Add new item
+            const itemWithMetadata = {
+              ...savedItem,
+              categoryId: 'cat_tiling',
+              categoryName: 'ריצוף וחיפוי',
+              source: 'tiling_manual',
+              id: savedItem.id || `tiling_manual_${Date.now()}`,
+            };
 
-          setStagedManualItems(prev => [...prev, itemWithMetadata]);
+            if (onAddItemToQuote) {
+              onAddItemToQuote(itemWithMetadata);
+            }
+          }
         }}
         defaults={userForData?.user_metadata?.tilingUserDefaults || {}}
         workTypes={tilingWorkTypes}

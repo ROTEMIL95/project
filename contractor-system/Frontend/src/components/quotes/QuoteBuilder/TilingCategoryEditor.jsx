@@ -461,6 +461,7 @@ export default React.forwardRef(function TilingCategoryEditor({
   setStagedManualItems,         // ✅ ADD: Manual items setter
   initialRooms = [],            // ✅ ADD: For restoration
   existingCategoryData,         // ✅ ADD: Existing category data
+  onUpdateCategoryData,         // ✅ NEW: Callback to update parent's categoryDataMap
 }, ref) {
   const [tilingItems, setTilingItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -998,6 +999,18 @@ export default React.forwardRef(function TilingCategoryEditor({
     };
   }, [localItems, calculatedItemsMetrics, currentCategorySummaryMetrics, categoryId]);
 
+  // ✅ NEW: Live update parent's categoryDataMap whenever localItems or metrics change
+  useEffect(() => {
+    if (onUpdateCategoryData && typeof onUpdateCategoryData === 'function') {
+      const data = saveData();
+      onUpdateCategoryData({
+        categoryId: categoryId,
+        quoteItems: data.quoteItems,
+        rooms: data.rawRooms
+      });
+    }
+  }, [localItems, calculatedItemsMetrics, onUpdateCategoryData, saveData, categoryId]);
+
   // For proper ref exposure, this component needs to be wrapped with React.forwardRef.
   useImperativeHandle(ref, () => ({
     saveData
@@ -1393,15 +1406,6 @@ export default React.forwardRef(function TilingCategoryEditor({
               </p>
             </div>
           </div>
-        </div>
-
-        <div className="p-6 bg-gray-50 border-t">
-          <TilingSummaryCard
-            metrics={currentCategorySummaryMetrics}
-            onToggleRoundWorkDays={setPreciseWorkDays}
-            isWorkDaysRounded={preciseWorkDays}
-            formatPrice={formatPrice} />
-
         </div>
       </div>
 

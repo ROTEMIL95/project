@@ -11,6 +11,7 @@ export default function TilingManualItemDialog({
   open,
   onOpenChange,
   onAdd,
+  editingItem = null,
   defaults = {},
   workTypes = [],
 }) {
@@ -29,17 +30,35 @@ export default function TilingManualItemDialog({
 
   useEffect(() => {
     if (open && !prevOpenRef.current) {
-      setFormData({
-        name: '',
-        description: '',
-        quantity: 0,
-        materialCost: 0,
-        workDuration: 0,
-      });
-      setTimeUnit('days');
+      if (editingItem) {
+        // Load data from editing item
+        // Calculate material cost per unit (divide total by quantity)
+        const materialCostPerUnit = editingItem.quantity > 0
+          ? (editingItem.materialCost || 0) / editingItem.quantity
+          : (editingItem.materialCost || 0);
+
+        setFormData({
+          name: editingItem.name || '',
+          description: editingItem.description || '',
+          quantity: editingItem.quantity || 0,
+          materialCost: materialCostPerUnit,
+          workDuration: editingItem.workDuration || 0,
+        });
+        setTimeUnit('days');
+      } else {
+        // Reset form for new item
+        setFormData({
+          name: '',
+          description: '',
+          quantity: 0,
+          materialCost: 0,
+          workDuration: 0,
+        });
+        setTimeUnit('days');
+      }
     }
     prevOpenRef.current = open;
-  }, [open]);
+  }, [open, editingItem]);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -62,9 +81,11 @@ export default function TilingManualItemDialog({
   }, [formData.workDuration, laborCostPerDay, timeUnit]);
 
   const totalCost = useMemo(() => {
-    const material = Number(formData.materialCost) || 0;
-    return material + laborCost;
-  }, [formData.materialCost, laborCost]);
+    const materialCostPerUnit = Number(formData.materialCost) || 0;
+    const quantity = Number(formData.quantity) || 0;
+    const totalMaterialCost = materialCostPerUnit * quantity;
+    return totalMaterialCost + laborCost;
+  }, [formData.materialCost, formData.quantity, laborCost]);
 
   const totalPrice = useMemo(() => {
     return Math.round(totalCost * (1 + profitPercent / 100));
@@ -89,12 +110,17 @@ export default function TilingManualItemDialog({
       return;
     }
 
+    const materialCostPerUnit = Number(formData.materialCost) || 0;
+    const quantity = Number(formData.quantity) || 0;
+    const totalMaterialCost = materialCostPerUnit * quantity;
+
     const itemToAdd = {
+      id: `tiling_manual_${Date.now()}`,
       name: formData.name,
       description: formData.description,
-      quantity: Number(formData.quantity) || 0,
+      quantity: quantity,
       unit: 'מ״ר',
-      materialCost: Number(formData.materialCost) || 0,
+      materialCost: totalMaterialCost, // Total material cost (not per unit)
       laborCost: laborCost,
       totalCost: totalCost,
       totalPrice: totalPrice,
@@ -116,13 +142,15 @@ export default function TilingManualItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" dir="rtl">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="text-lg font-bold">הוספת פריט ריצוף וחיפוי ידני</DialogTitle>
+      <DialogContent className="max-w-md p-6" dir="rtl">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-lg font-bold">
+            {editingItem ? 'עריכת פריט ריצוף וחיפוי' : 'הוספת פריט ריצוף וחיפוי ידני'}
+          </DialogTitle>
           <p className="text-xs text-gray-500">לדוגמה: קרמיקה באזור המטבח.</p>
         </DialogHeader>
 
-        <div className="space-y-3 py-2">
+        <div className="space-y-4 py-2">
           <div>
             <Label htmlFor="name" className="text-sm flex items-center gap-1">
               שם הפריט <span className="text-red-500">*</span>
@@ -169,7 +197,7 @@ export default function TilingManualItemDialog({
 
             <div>
               <Label htmlFor="materialCost" className="text-sm">
-                עלות חומרים (ש"ח)
+                עלות חומרים למ"ר (ש"ח)
               </Label>
               <Input
                 id="materialCost"
@@ -180,6 +208,11 @@ export default function TilingManualItemDialog({
                 placeholder="0"
                 className="mt-1 h-9"
               />
+              {formData.materialCost > 0 && formData.quantity > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  עלות חומרים כוללת: {formatPrice((Number(formData.materialCost) || 0) * (Number(formData.quantity) || 0))}
+                </p>
+              )}
             </div>
           </div>
 
@@ -259,7 +292,7 @@ export default function TilingManualItemDialog({
             ביטול
           </Button>
           <Button onClick={handleSubmit} className="bg-orange-600 hover:bg-orange-700 h-9">
-            הוסיף להצעה
+            {editingItem ? 'עדכן פריט' : 'הוסף להצעה'}
           </Button>
         </DialogFooter>
       </DialogContent>
