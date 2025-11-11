@@ -271,16 +271,6 @@ const renderRoomCalcItem = (item, onRemoveItem) => {
 
 // פונקציה לעיבוד פריט בודד (לא מורכב או ידני)
 const renderItem = (item, onRemoveItem) => {
-    // 🐛 DEBUG: Log item details
-    console.log('🔍 [FloatingCart renderItem] Rendering generic item:', {
-        id: item.id,
-        source: item.source || 'NO SOURCE',
-        categoryId: item.categoryId || 'NO CATEGORY',
-        description: item.description || 'NO DESCRIPTION',
-        type: item.type || 'NO TYPE',
-        fullItem: item
-    });
-
     // בדיקה אם זה פריט הריסה עם רמת קושי
     const hasDifficulty = item.source === 'demolition_calculator' && item.difficultyData;
 
@@ -322,20 +312,38 @@ const COMPLEXITY_LEVELS = [
 ];
 
 const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => {
-    // Extract room breakdown data - handle both old and new structures
+    // 🐛 DEBUG: Log the complete item structure
+    console.log('🎨 [renderPaintSummary] Complete item data:', JSON.parse(JSON.stringify(item)));
+    console.log('🎨 [renderPaintSummary] detailedRoomsData:', JSON.parse(JSON.stringify(item.detailedRoomsData)));
+    console.log('🎨 [renderPaintSummary] detailedBreakdown:', JSON.parse(JSON.stringify(item.detailedBreakdown)));
+
+    // Extract room breakdown data - MERGE detailedRoomsData with detailedBreakdown
     let candidateRooms = [];
-    
-    if (Array.isArray(item?.detailedRoomsData) && item.detailedRoomsData.length > 0) {
-        // New structure: rooms array with roomBreakdown inside each room
-        candidateRooms = item.detailedRoomsData.flatMap(room => {
-            if (Array.isArray(room?.roomBreakdown) && room.roomBreakdown.length > 0) {
-                return room.roomBreakdown;
-            }
-            return [];
+
+    // detailedBreakdown has the item details (itemName, quantity, prices)
+    // detailedRoomsData has the layers info (paintLayers, paintQuantity)
+    const breakdownItems = Array.isArray(item?.detailedBreakdown) ? item.detailedBreakdown : [];
+    const roomsData = Array.isArray(item?.detailedRoomsData) ? item.detailedRoomsData : [];
+
+    // Merge the two arrays by matching room IDs or names
+    if (breakdownItems.length > 0) {
+        candidateRooms = breakdownItems.map((breakdownItem, idx) => {
+            // Find matching room data
+            const roomData = roomsData.find(rd =>
+                rd.id?.toString() === breakdownItem.id?.toString().split('_')[0] ||
+                rd.name === breakdownItem.roomName
+            ) || roomsData[idx] || {};
+
+            // Merge both objects
+            return {
+                ...breakdownItem,
+                paintLayers: roomData.paintLayers || breakdownItem.paintLayers || breakdownItem.layers || 0,
+                paintQuantity: roomData.paintQuantity || breakdownItem.paintQuantity || breakdownItem.quantity || 0
+            };
         });
-    } else if (Array.isArray(item?.detailedBreakdown) && item.detailedBreakdown.length > 0) {
-        // Old structure: flat array of items
-        candidateRooms = item.detailedBreakdown;
+    } else if (roomsData.length > 0) {
+        // Fallback: use roomsData if no breakdown
+        candidateRooms = roomsData;
     }
 
     const roomsRaw = (Array.isArray(fallbackRooms) && fallbackRooms.length > (candidateRooms?.length || 0))
@@ -394,11 +402,27 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
     ]);
 
     const rooms = roomsRaw.map((r, idx) => {
+        // 🐛 DEBUG: Log each room's complete data
+        console.log(`🎨 [renderPaintSummary] Room ${idx}:`, JSON.parse(JSON.stringify(r)));
+
         // Check if this is a manual item
         const isManualItem = r?.source === 'manual_calc';
-        
+
+        // Extract paint data - detailedBreakdown has the actual item details
+        const paintItemName = r?.itemName || r?.name || null;
+        const paintLayers = Number(r?.layers || r?.paintLayers || 0);
+        const paintQuantity = Number(r?.quantity || r?.paintQuantity || 0);
+
+        console.log(`🔍 [Room ${idx}] Extracted paint data:`, {
+            paintItemName,
+            paintLayers,
+            paintQuantity,
+            source: r?.source,
+            rawItem: r
+        });
+
         const wallsArea = Number(firstPositive([
-            r?.paintQuantity, r?.calculatedWallArea, r?.wallArea, r?.wallAreaSqM, r?.wallsArea, r?.wallsNetArea, r?.wallAreaAfterOpenings
+            r?.quantity, r?.paintQuantity, r?.calculatedWallArea, r?.wallArea, r?.wallAreaSqM, r?.wallsArea, r?.wallsNetArea, r?.wallAreaAfterOpenings
         ]));
         const ceilingAreaCandidate = Number(firstPositive([
             r?.ceilingArea, r?.calculatedCeilingArea, r?.ceilingAreaSqM, r?.ceilingNetArea, r?.ceilingAreaAfterOpenings
@@ -407,21 +431,24 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
         const ceilingArea = includeCeiling ? ceilingAreaCandidate : 0;
 
         const metricPrice = firstPositive([
+            r?.totalSellingPrice,                             // detailedBreakdown items
             r?.totalPrice,                                    // Manual items
-            r?.totalSellingPrice,                             // Manual items
-            r?.paintCalculatedMetrics?.totalSellingPrice,     // Room items
             r?.metrics?.totalSellingPrice,                    // Room items
             r?.price,
             r?.sellingPrice
         ]);
 
         return {
-            name: r?.description || r?.name || r?.roomName || r?.roomType || `אזור ${idx + 1}`,
+            name: r?.roomName || r?.description || r?.name || r?.roomType || `אזור ${idx + 1}`,
             wallsArea,
             ceilingArea,
             includeCeiling,
             metricPrice,
-            isManualItem
+            isManualItem,
+            // NEW: Add paint-specific details
+            paintItemName,
+            paintLayers,
+            paintQuantity
         };
     });
 
@@ -465,18 +492,6 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
                             <Paintbrush className="h-4 w-4 text-indigo-500" />
                             {item.description || 'צבע ושפכטל'}
                         </h3>
-                        <div className="mt-1 text-xs text-gray-700 space-y-0.5">
-                            <div>
-                                <span className="font-medium">קירות: </span>
-                                <span>{globalWallPaintName}{globalWallLayers ? ` (${safeToFixed(globalWallLayers, 0)} שכבות)` : ""}</span>
-                            </div>
-                            {anyCeilingSelected && (
-                              <div>
-                                  <span className="font-medium">תקרה: </span>
-                                  <span>{globalCeilingPaintName}{globalCeilingLayers ? ` (${safeToFixed(globalCeilingLayers, 0)} שכבות)` : ""}</span>
-                              </div>
-                            )}
-                        </div>
                     </div>
                     <div className="text-right">
                         <p className="font-bold text-lg text-gray-900">{formatPrice(newTotalWithComplexity)} ₪</p>
@@ -525,21 +540,35 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
                         const roomPrice = room.metricPrice > 0 ? room.metricPrice : proportionalPrice;
 
                         return (
-                            <div key={`${room.name}-${index}`} className="text-xs text-gray-700 border-b border-gray-100 pb-2 last:border-b-0 last:pb-0">
-                                <div className="flex justify-between items-center">
-                                    <span className="font-semibold text-gray-800">{room.name}</span>
+                            <div key={`${room.name}-${index}`} className="rounded-md bg-gray-50 px-3 py-2 mb-2">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="font-semibold text-gray-800 text-sm">{room.name}</span>
                                     <span className="font-bold text-gray-900">{formatPrice(roomPrice)} ₪</span>
                                 </div>
+
+                                {/* Paint details - use room-specific data */}
                                 {room.wallsArea > 0 && (
-                                    <div className="flex justify-between items-center mt-1">
-                                        <span>קירות</span>
-                                        <span className="font-mono">{safeToFixed(room.wallsArea)} מ"ר</span>
+                                    <div className="text-xs text-gray-600 mt-1">
+                                        <div className="font-medium text-gray-700">צבע</div>
+                                        <div>
+                                            {room.paintItemName && <span>סוג: {room.paintItemName}</span>}
+                                            {!room.paintItemName && globalWallPaintName && <span>סוג: {globalWallPaintName}</span>}
+                                            {room.paintLayers > 0 && <span> • שכבות: {room.paintLayers}</span>}
+                                            {room.paintLayers === 0 && globalWallLayers > 0 && <span> • שכבות: {safeToFixed(globalWallLayers, 0)}</span>}
+                                            <span> • כמות: {safeToFixed(room.wallsArea)} מ"ר</span>
+                                        </div>
                                     </div>
                                 )}
+
+                                {/* Ceiling section - if enabled */}
                                 {room.includeCeiling && room.ceilingArea > 0 && (
-                                    <div className="flex justify-between items-center mt-1">
-                                        <span>תקרה</span>
-                                        <span className="font-mono">{safeToFixed(room.ceilingArea)} מ"ר</span>
+                                    <div className="text-xs text-gray-600 mt-1">
+                                        <div className="font-medium text-gray-700">תקרה</div>
+                                        <div>
+                                            {globalCeilingPaintName && <span>סוג: {globalCeilingPaintName}</span>}
+                                            {globalCeilingLayers > 0 && <span> • שכבות: {safeToFixed(globalCeilingLayers, 0)}</span>}
+                                            <span> • כמות: {safeToFixed(room.ceilingArea)} מ"ר</span>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -554,25 +583,6 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
 export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToSummary, projectComplexities, onUpdateItem }) {
     const [isOpen, setIsOpen] = useState(false);
 
-    // 🔍 LOGGING: Track all incoming items and their sources
-    React.useEffect(() => {
-        if (items.length > 0) {
-            console.log('🛒 [FloatingCart] Items received:', items.length);
-            items.forEach((item, idx) => {
-                console.log(`  [${idx}] Source: ${item.source || 'unknown'} | Category: ${item.categoryId || 'unknown'} | ID: ${item.id}`);
-            });
-            
-            // Log paint_plaster items specifically
-            const paintPlasterItems = items.filter(i => i.categoryId === 'cat_paint_plaster');
-            if (paintPlasterItems.length > 0) {
-                console.log('🎨 [FloatingCart] Paint/Plaster items:', paintPlasterItems.length);
-                paintPlasterItems.forEach(item => {
-                    console.log(`  - Source: ${item.source || 'MISSING SOURCE'} | Desc: ${item.description || 'MISSING DESCRIPTION'} | Type: ${item.type || 'N/A'}`);
-                    console.log('    Full item:', item);
-                });
-            }
-        }
-    }, [items]);
 
     const hasItems = items.length > 0;
 
@@ -695,22 +705,6 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
 
                                                       // NEW: Check for room calculator items
                                                       const isRoomCalcItem = item.source === 'paint_room_calc' || item.source === 'plaster_room_calc';
-
-                                                      // 🐛 DEBUG: Log which render path each item takes
-                                                      console.log('🎨 [FloatingCart] Item render decision:', {
-                                                        id: item.id,
-                                                        source: item.source || 'NO SOURCE',
-                                                        categoryId: item.categoryId || 'NO CATEGORY',
-                                                        description: item.description || 'NO DESCRIPTION',
-                                                        isManualItem,
-                                                        isPaintSummary,
-                                                        isSimpleAreaItem,
-                                                        isRoomCalcItem,
-                                                        renderPath: isManualItem ? 'MANUAL' :
-                                                                   isPaintSummary ? 'PAINT_SUMMARY' :
-                                                                   isSimpleAreaItem ? 'SIMPLE_AREA' :
-                                                                   isRoomCalcItem ? 'ROOM_CALC' : 'GENERIC'
-                                                      });
 
                                                       if (isManualItem) {
                                                           const userDesc = (item?.manualFormSnapshot?.description || item?.manualMeta?.description || "").trim();
