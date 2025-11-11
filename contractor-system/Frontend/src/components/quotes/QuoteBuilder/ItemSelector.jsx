@@ -1602,6 +1602,10 @@ const PaintRoomsManager = React.forwardRef(({
                     }
                 }
 
+                // Filter out manual items that were already added directly to cart
+                // (items with source 'manual_calc' are added individually when created)
+                const filteredManualItems = manualItems.filter(item => item.source !== 'manual_calc');
+
                 // Create consolidated summary item
                 const consolidatedItem = {
                     id: `cat_paint_plaster_summary_${Date.now()}`,
@@ -1620,60 +1624,68 @@ const PaintRoomsManager = React.forwardRef(({
                     materialCost: totalMaterialCost,
                     quantity: catalogTotalQuantity,
                     unit: 'מ"ר',
-                    // Store detailed breakdown for reference
-                    detailedBreakdown: [...catalogItems, ...manualItems],
+                    // Store detailed breakdown for reference - exclude manual_calc items (already in cart)
+                    detailedBreakdown: [...catalogItems, ...filteredManualItems],
                     detailedRoomsData: rooms, // Keep room structure
                     catalogItemsCount: catalogItems.length,
-                    manualItemsCount: manualItems.length,
+                    manualItemsCount: filteredManualItems.length,
                 };
 
                 quoteItems = [consolidatedItem];
             } else if (manualItems.length > 0) {
                 // If only manual items exist, still consolidate them
-                const manualTotalCost = manualItems.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
-                const manualTotalPrice = manualItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
-                const manualTotalWorkDays = manualItems.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
-                const manualTotalLaborCost = manualItems.reduce((sum, item) => sum + (Number(item.laborCost) || 0), 0);
-                const manualTotalMaterialCost = manualItems.reduce((sum, item) => sum + (Number(item.materialCost) || 0), 0);
+                // BUT: Filter out manual_calc items that were already added directly to cart
+                const filteredManualItems = manualItems.filter(item => item.source !== 'manual_calc');
 
-                // Generate description from manual item descriptions
-                let manualDescription = 'פריטים ידניים';
-                if (manualItems.length > 0) {
-                    const itemDescriptions = manualItems
-                        .map(item => item.description || item.name)
-                        .filter(Boolean);
-                    if (itemDescriptions.length > 0) {
-                        if (itemDescriptions.length === 1) {
-                            manualDescription = itemDescriptions[0];
-                        } else if (itemDescriptions.length <= 3) {
-                            manualDescription = itemDescriptions.join(', ');
-                        } else {
-                            manualDescription = `${itemDescriptions.slice(0, 2).join(', ')} ועוד ${itemDescriptions.length - 2}`;
+                // If all manual items were already added directly, don't create a summary
+                if (filteredManualItems.length === 0) {
+                    quoteItems = [];
+                } else {
+                    const manualTotalCost = filteredManualItems.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
+                    const manualTotalPrice = filteredManualItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
+                    const manualTotalWorkDays = filteredManualItems.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
+                    const manualTotalLaborCost = filteredManualItems.reduce((sum, item) => sum + (Number(item.laborCost) || 0), 0);
+                    const manualTotalMaterialCost = filteredManualItems.reduce((sum, item) => sum + (Number(item.materialCost) || 0), 0);
+
+                    // Generate description from manual item descriptions
+                    let manualDescription = 'פריטים ידניים';
+                    if (filteredManualItems.length > 0) {
+                        const itemDescriptions = filteredManualItems
+                            .map(item => item.description || item.name)
+                            .filter(Boolean);
+                        if (itemDescriptions.length > 0) {
+                            if (itemDescriptions.length === 1) {
+                                manualDescription = itemDescriptions[0];
+                            } else if (itemDescriptions.length <= 3) {
+                                manualDescription = itemDescriptions.join(', ');
+                            } else {
+                                manualDescription = `${itemDescriptions.slice(0, 2).join(', ')} ועוד ${itemDescriptions.length - 2}`;
+                            }
                         }
                     }
+
+                    const consolidatedItem = {
+                        id: `cat_paint_plaster_summary_${Date.now()}`,
+                        categoryId: categoryId,
+                        categoryName: 'צבע וטיח',
+                        name: 'סיכום צבע ושפכטל (ידני)',
+                        description: manualDescription,
+                        source: 'paint_plaster_category_summary',
+                        totalCost: manualTotalCost,
+                        totalSellingPrice: manualTotalPrice,
+                        totalPrice: manualTotalPrice,
+                        totalProfit: manualTotalPrice - manualTotalCost,
+                        totalWorkDays: manualTotalWorkDays,
+                        workDuration: manualTotalWorkDays,
+                        laborCost: manualTotalLaborCost,
+                        materialCost: manualTotalMaterialCost,
+                        detailedBreakdown: filteredManualItems,
+                        catalogItemsCount: 0,
+                        manualItemsCount: filteredManualItems.length,
+                    };
+
+                    quoteItems = [consolidatedItem];
                 }
-
-                const consolidatedItem = {
-                    id: `cat_paint_plaster_summary_${Date.now()}`,
-                    categoryId: categoryId,
-                    categoryName: 'צבע וטיח',
-                    name: 'סיכום צבע ושפכטל (ידני)',
-                    description: manualDescription,
-                    source: 'paint_plaster_category_summary',
-                    totalCost: manualTotalCost,
-                    totalSellingPrice: manualTotalPrice,
-                    totalPrice: manualTotalPrice,
-                    totalProfit: manualTotalPrice - manualTotalCost,
-                    totalWorkDays: manualTotalWorkDays,
-                    workDuration: manualTotalWorkDays,
-                    laborCost: manualTotalLaborCost,
-                    materialCost: manualTotalMaterialCost,
-                    detailedBreakdown: manualItems,
-                    catalogItemsCount: 0,
-                    manualItemsCount: manualItems.length,
-                };
-
-                quoteItems = [consolidatedItem];
             } else {
                 quoteItems = [];
             }

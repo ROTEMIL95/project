@@ -274,9 +274,13 @@ const renderItem = (item, onRemoveItem) => {
     // בדיקה אם זה פריט הריסה עם רמת קושי
     const hasDifficulty = item.source === 'demolition_calculator' && item.difficultyData;
 
-    // Display name with fallbacks
+    // Display name - prefer name over description
     const displayName = item.name || item.description || 'פריט ללא שם';
-    const displayDescription = item.description && item.name !== item.description ? item.description : null;
+
+    // Only show description if it's different from name and exists
+    const hasDescription = item.description && item.description.trim() &&
+                          item.name && item.name.trim() &&
+                          item.description !== item.name;
 
     // Calculate unit price
     const unitPrice = item.clientPricePerUnit || item.unitPrice || (item.totalPrice && item.quantity ? item.totalPrice / item.quantity : 0);
@@ -285,18 +289,29 @@ const renderItem = (item, onRemoveItem) => {
         <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border flex items-start gap-3">
             <div className="flex-1">
                 <p className="font-semibold text-gray-800 text-sm">{displayName}</p>
-                {displayDescription && (
-                    <p className="text-xs text-gray-600 mt-0.5">{displayDescription}</p>
+
+                {/* Only show description if it's truly different from name */}
+                {hasDescription && (
+                    <p className="text-xs text-gray-600 mt-0.5">{item.description}</p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">
-                    {safeToFixed(item.quantity || 0)} {item.unit || 'יח'} &times; {formatPrice(unitPrice)} ₪
-                </p>
-                {/* Display hours if available (for demolition items) */}
-                {item.hoursPerUnit && (
-                    <p className="text-xs text-gray-600 mt-0.5">
-                        שעות עבודה: {safeToFixed(item.hoursPerUnit, 1)} ש"ע
-                    </p>
-                )}
+
+                {/* Condensed info line */}
+                <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                    <span>{safeToFixed(item.quantity || 0, 0)} {item.unit || 'יח'}</span>
+                    {item.hoursPerUnit && (
+                        <>
+                            <span>•</span>
+                            <span>{safeToFixed(item.hoursPerUnit, 1)} ש"ע</span>
+                        </>
+                    )}
+                    {unitPrice > 0 && (
+                        <>
+                            <span>•</span>
+                            <span>{formatPrice(unitPrice)} ₪</span>
+                        </>
+                    )}
+                </div>
+
                 {/* הצגת רמת קושי עבור פריטי הריסה */}
                 {hasDifficulty && (
                     <div className="text-xs text-red-600 mt-1">
@@ -413,11 +428,14 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
         item?.layers?.ceiling
     ]);
 
-    const rooms = roomsRaw.map((r, idx) => {
+    // Filter out manual_calc items that were already added directly to cart
+    const filteredRoomsRaw = roomsRaw.filter(r => r?.source !== 'manual_calc');
+
+    const rooms = filteredRoomsRaw.map((r, idx) => {
         // 🐛 DEBUG: Log each room's complete data
         console.log(`🎨 [renderPaintSummary] Room ${idx}:`, JSON.parse(JSON.stringify(r)));
 
-        // Check if this is a manual item
+        // Check if this is a manual item (should never happen after filtering above)
         const isManualItem = r?.source === 'manual_calc';
 
         // Extract paint data - detailedBreakdown has the actual item details
@@ -718,10 +736,31 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                       // NEW: Check for room calculator items
                                                       const isRoomCalcItem = item.source === 'paint_room_calc' || item.source === 'plaster_room_calc';
 
+                                                      // Manual calc items - render with details
                                                       if (isManualItem) {
-                                                          const userDesc = (item?.manualFormSnapshot?.description || item?.manualMeta?.description || "").trim();
-                                                          // TODO: Add manual item rendering
-                                                          return renderItem(item, onRemoveItem);
+                                                          return (
+                                                              <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border">
+                                                                  <div className="flex items-start gap-3">
+                                                                      <div className="flex-1">
+                                                                          <p className="font-semibold text-gray-800 text-sm">
+                                                                              {item.name || item.description || 'עבודה ידנית'}
+                                                                          </p>
+                                                                          <ManualCartDetails item={item} />
+                                                                      </div>
+                                                                      <div className="text-right">
+                                                                          <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
+                                                                          <Button
+                                                                              variant="ghost"
+                                                                              size="icon"
+                                                                              className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
+                                                                              onClick={() => onRemoveItem && onRemoveItem(item.id)}
+                                                                          >
+                                                                              <Trash2 className="h-4 w-4" />
+                                                                          </Button>
+                                                                      </div>
+                                                                  </div>
+                                                              </div>
+                                                          );
                                                       } else if (isPaintSummary) {
                                                             return renderPaintSummary(item, onRemoveItem, paintFallbackRooms, onUpdateItem);
                                                       } else if (isSimpleAreaItem) {
