@@ -193,12 +193,12 @@ const renderSimpleAreaItem = (item, onRemoveItem) => {
                         </div>
                     </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex items-center gap-2">
                     <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
+                        className="h-7 w-7 text-red-500 hover:bg-red-50"
                         onClick={() => onRemoveItem && onRemoveItem(item.id)}
                     >
                         <Trash2 className="h-4 w-4" />
@@ -242,12 +242,12 @@ const renderRoomCalcItem = (item, onRemoveItem) => {
                         </p>
                     )}
                 </div>
-                <div className="text-right">
+                <div className="text-right flex items-center gap-2">
                     <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
+                        className="h-7 w-7 text-red-500 hover:bg-red-50"
                         onClick={() => onRemoveItem && onRemoveItem(item.id)}
                     >
                         <Trash2 className="h-4 w-4" />
@@ -270,12 +270,12 @@ const renderPaintRoomDetail = (item, onRemoveItem) => {
                     <span>{safeToFixed(item.quantity || 0, 0)} מ"ר</span>
                 </div>
             </div>
-            <div className="text-right">
+            <div className="text-right flex items-center gap-2">
                 <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
+                    className="h-7 w-7 text-red-500 hover:bg-red-50"
                     onClick={() => onRemoveItem && onRemoveItem(item.id)}
                 >
                     <Trash2 className="h-4 w-4" />
@@ -336,12 +336,12 @@ const renderItem = (item, onRemoveItem) => {
                     </div>
                 )}
             </div>
-            <div className="text-right">
+            <div className="text-right flex items-center gap-2">
                 <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
+                    className="h-7 w-7 text-red-500 hover:bg-red-50"
                     onClick={() => onRemoveItem && onRemoveItem(item.id)}
                 >
                     <Trash2 className="h-4 w-4" />
@@ -789,12 +789,12 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                                       <p className="font-semibold text-gray-800 text-sm">{itemName}</p>
                                                                       <ManualCartDetails item={item} />
                                                                   </div>
-                                                                  <div className="text-right">
+                                                                  <div className="text-right flex items-center gap-2">
                                                                       <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
                                                                       <Button
                                                                           variant="ghost"
                                                                           size="icon"
-                                                                          className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
+                                                                          className="h-7 w-7 text-red-500 hover:bg-red-50"
                                                                           onClick={() => onRemoveItem && onRemoveItem(item.id)}
                                                                       >
                                                                           <Trash2 className="h-4 w-4" />

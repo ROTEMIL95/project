@@ -198,7 +198,7 @@ function PagesContent() {
     }
 
     return (
-        <Layout currentPageName={currentPage}>
+        <Layout key={location.pathname} currentPageName={currentPage}>
             <Routes>
                     <Route path="/" element={<Dashboard />} />
                 
