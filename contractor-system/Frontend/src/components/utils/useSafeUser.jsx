@@ -6,7 +6,7 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-const CACHE_KEY = "b44_user_cache_v1";
+const CACHE_KEY = "b44_user_cache_v2"; // v2: Added additional_cost_defaults support
 
 /**
  * useSafeUser
@@ -137,7 +137,9 @@ export default function useSafeUser(options = {}) {
             // Demolition category data
             demolitionItems: profileData?.demolition_items || [],
             demolitionDefaults: profileData?.demolition_defaults || {},
-          }
+          },
+          // Additional cost defaults (for step 4 in quote creation)
+          additional_cost_defaults: profileData?.additional_cost_defaults || { profitPercent: 20, fixedCosts: [] }
         } : null;
 
         setUser(u);

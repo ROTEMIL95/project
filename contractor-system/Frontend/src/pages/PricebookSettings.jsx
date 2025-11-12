@@ -302,49 +302,55 @@ export default function PricebookSettings() {
   }, [user, userLoading]);
 
   const handleSave = useCallback(async () => {
+    // Helper function to safely parse numbers, ignoring whitespace
+    const parseNumber = (val) => {
+      const trimmed = String(val || "").trim();
+      return trimmed === "" ? 0 : (Number(trimmed) || 0);
+    };
+
     const payload = {
-      desiredDailyProfit: Number(generalSettings.desiredDailyProfit) || 0,
+      desiredDailyProfit: parseNumber(generalSettings.desiredDailyProfit),
       paintUserDefaults: {
-        workerDailyCost: Number(paint.workerDailyCost) || 0,
-        desiredProfitPercent: Number(paint.desiredProfitPercent) || 0,
+        workerDailyCost: parseNumber(paint.workerDailyCost),
+        desiredProfitPercent: parseNumber(paint.desiredProfitPercent),
         expenseTiming: {
           labor: {
             type: paintExpenseTiming.labor.type,
-            dayOfMonth: Number(paintExpenseTiming.labor.dayOfMonth) || 1
+            dayOfMonth: parseNumber(paintExpenseTiming.labor.dayOfMonth) || 1
           },
           materials: {
             type: paintExpenseTiming.materials.type,
-            daysBefore: Number(paintExpenseTiming.materials.daysBefore) || 0
+            daysBefore: parseNumber(paintExpenseTiming.materials.daysBefore)
           }
         }
       },
       tilingUserDefaults: {
         ...(user?.tilingUserDefaults || {}),
-        laborCostPerDay: Number(tiling.laborCostPerDay) || 0,
-        desiredProfitPercent: Number(tiling.desiredProfitPercent) || 0,
+        laborCostPerDay: parseNumber(tiling.laborCostPerDay),
+        desiredProfitPercent: parseNumber(tiling.desiredProfitPercent),
         expenseTiming: {
           labor: {
             type: tilingExpenseTiming.labor.type,
-            dayOfMonth: Number(tilingExpenseTiming.labor.dayOfMonth) || 1
+            dayOfMonth: parseNumber(tilingExpenseTiming.labor.dayOfMonth) || 1
           },
           materials: {
             type: tilingExpenseTiming.materials.type,
-            daysBefore: Number(tilingExpenseTiming.materials.daysBefore) || 0
+            daysBefore: parseNumber(tilingExpenseTiming.materials.daysBefore)
           }
         }
       },
       demolitionDefaults: {
-        laborCostPerDay: Number(demo.laborCostPerDay) || 0,
-        profitPercent: Number(demo.profitPercent) || 0,
+        laborCostPerDay: parseNumber(demo.laborCostPerDay),
+        profitPercent: parseNumber(demo.profitPercent),
         expenseTiming: {
           labor: {
             type: demoExpenseTiming.labor.type,
-            dayOfMonth: Number(demoExpenseTiming.labor.dayOfMonth) || 1
+            dayOfMonth: parseNumber(demoExpenseTiming.labor.dayOfMonth) || 1
           }
         }
       },
       plumbingDefaults: {
-        desiredProfitPercent: Number(plumb.desiredProfitPercent) || 0,
+        desiredProfitPercent: parseNumber(plumb.desiredProfitPercent),
         expenseTiming: {
           payment: {
             type: plumbExpenseTiming.payment.type
@@ -352,7 +358,7 @@ export default function PricebookSettings() {
         }
       },
       electricalDefaults: {
-        desiredProfitPercent: Number(elec.desiredProfitPercent) || 0,
+        desiredProfitPercent: parseNumber(elec.desiredProfitPercent),
         expenseTiming: {
           payment: {
             type: elecExpenseTiming.payment.type
@@ -360,25 +366,25 @@ export default function PricebookSettings() {
         }
       },
       constructionDefaults: {
-        desiredProfitPercent: Number(construct.desiredProfitPercent) || 0,
-        workerCostPerUnit: Number(construct.workerCostPerUnit) || 0,
+        desiredProfitPercent: parseNumber(construct.desiredProfitPercent),
+        workerCostPerUnit: parseNumber(construct.workerCostPerUnit),
         expenseTiming: {
           labor: {
             type: constructExpenseTiming.labor.type,
-            dayOfMonth: Number(constructExpenseTiming.labor.dayOfMonth) || 1
+            dayOfMonth: parseNumber(constructExpenseTiming.labor.dayOfMonth) || 1
           },
           materials: {
             type: constructExpenseTiming.materials.type,
-            daysBefore: Number(constructExpenseTiming.materials.daysBefore) || 0
+            daysBefore: parseNumber(constructExpenseTiming.materials.daysBefore)
           }
         }
       },
       additionalCostDefaults: {
-        profitPercent: Number(additionalCostDefaults.profitPercent) || 0,
+        profitPercent: parseNumber(additionalCostDefaults.profitPercent),
         fixedCosts: additionalCostDefaults.fixedCosts.map(fc => ({
           id: fc.id,
           description: fc.description,
-          contractorCost: Number(fc.contractorCost) || 0,
+          contractorCost: parseNumber(fc.contractorCost),
           timing: fc.timing || 'project_start'
         }))
       },
@@ -391,7 +397,7 @@ export default function PricebookSettings() {
       const { error } = await supabase
         .from('user_profiles')
         .update({
-          desired_daily_profit: Number(payload.desiredDailyProfit) || null,
+          desired_daily_profit: payload.desiredDailyProfit || null,
           paint_user_defaults: payload.paintUserDefaults,
           tiling_user_defaults: payload.tilingUserDefaults,
           demolition_defaults: payload.demolitionDefaults,

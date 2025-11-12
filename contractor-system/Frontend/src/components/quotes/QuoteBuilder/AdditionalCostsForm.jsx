@@ -68,19 +68,22 @@ export default function AdditionalCostsForm({ projectComplexities = {}, onUpdate
 
     const [additionalCosts, setAdditionalCosts] = useState([]);
 
-    // 🆕 Load defaults from useSafeUser
+    // 🆕 Load defaults from user_profiles table (additional_cost_defaults)
     useEffect(() => {
-        if (!userLoading) {
-            if (user && user.user_metadata) {
-                const defaults = user.user_metadata.additionalCostDefaults || {
-                    profitPercent: 20,
-                    fixedCosts: []
-                };
-                setUserDefaults(defaults);
-                console.log('[AdditionalCostsForm] Loaded defaults from useSafeUser:', defaults);
-            } else {
-                setUserDefaults({ profitPercent: 20, fixedCosts: [] });
-            }
+        if (!userLoading && user) {
+            console.log('[AdditionalCostsForm] 🔍 Full user object:', user);
+            console.log('[AdditionalCostsForm] 🔍 user.additional_cost_defaults:', user.additional_cost_defaults);
+
+            // Load from additional_cost_defaults column in user_profiles
+            const defaults = user.additional_cost_defaults || {
+                profitPercent: 20,
+                fixedCosts: []
+            };
+            setUserDefaults(defaults);
+            console.log('[AdditionalCostsForm] ✅ Loaded defaults from user_profiles:', defaults);
+            setLoadingDefaults(false);
+        } else if (!userLoading && !user) {
+            setUserDefaults({ profitPercent: 20, fixedCosts: [] });
             setLoadingDefaults(false);
         }
     }, [user, userLoading]);
