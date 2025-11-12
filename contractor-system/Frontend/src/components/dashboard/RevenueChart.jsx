@@ -30,11 +30,36 @@ export default function RevenueChart({ user }) {
           console.log("RevenueChart: Fetched quotes:", allQuotes.length);
 
           const approvedQuotes = allQuotes.filter((q) => q.status === 'approved');
-          const totalRevenue = approvedQuotes.reduce((sum, quote) => sum + (quote.totalPrice || quote.finalAmount || 0), 0);
+          console.log('[RevenueChart] 📊 Approved quotes:', approvedQuotes.length);
+          console.log('[RevenueChart] 📋 Full approved quotes data:', approvedQuotes);
+
+          const totalRevenue = approvedQuotes.reduce((sum, quote) => {
+            const revenue = quote.totalPrice || quote.finalAmount || quote.totalAmount || 0;
+            console.log('[RevenueChart] 💵 Revenue for quote:', { id: quote.id, totalPrice: quote.totalPrice, finalAmount: quote.finalAmount, totalAmount: quote.totalAmount, revenue });
+            return sum + revenue;
+          }, 0);
+
           const totalProfit = approvedQuotes.reduce((sum, quote) => {
-            const profit = (quote.profitAmount || (quote.totalPrice - quote.totalCost) || 0);
+            const totalPrice = quote.totalPrice || quote.finalAmount || 0;
+            const totalCost = quote.totalCost || quote.estimatedCost || 0;
+            const profit = quote.profitAmount || (totalPrice - totalCost) || 0;
+
+            console.log('[RevenueChart] 💰 Processing quote for profit:', {
+              id: quote.id,
+              profitAmount: quote.profitAmount,
+              totalPrice: quote.totalPrice,
+              finalAmount: quote.finalAmount,
+              totalCost: quote.totalCost,
+              estimatedCost: quote.estimatedCost,
+              calculatedTotalPrice: totalPrice,
+              calculatedTotalCost: totalCost,
+              calculatedProfit: profit
+            });
+
             return sum + Math.max(0, profit);
           }, 0);
+
+          console.log('[RevenueChart] 📈 Total stats:', { totalRevenue, totalProfit });
 
           const sentQuotes = allQuotes.filter((q) => q.status === 'sent' || q.status === 'approved');
           const closingRate = sentQuotes.length > 0 ? approvedQuotes.length / sentQuotes.length * 100 : 0;
@@ -63,11 +88,12 @@ export default function RevenueChart({ user }) {
             const monthKey = `${quoteDate.getFullYear()}-${String(quoteDate.getMonth() + 1).padStart(2, '0')}`;
 
             if (monthlyData[monthKey]) {
-              const revenue = quote.totalPrice || quote.finalAmount || 0;
-              const profit = quote.profitAmount || (quote.totalPrice - quote.totalCost) || 0;
+              const totalPrice = quote.totalPrice || quote.finalAmount || 0;
+              const totalCost = quote.totalCost || quote.estimatedCost || 0;
+              const profit = quote.profitAmount || (totalPrice - totalCost) || 0;
 
-              monthlyData[monthKey].revenue += revenue;
-              monthlyData[monthKey].profit += profit;
+              monthlyData[monthKey].revenue += totalPrice;
+              monthlyData[monthKey].profit += Math.max(0, profit);
             }
           });
 

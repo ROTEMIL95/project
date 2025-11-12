@@ -103,6 +103,17 @@ export default function MonthlyCashFlowChart({ user }) {
 
         const approvedQuotes = await Quote.filter({ status: 'approved' });
         console.log("MonthlyCashFlowChart: Fetched approved quotes:", approvedQuotes.length);
+        console.log('[MonthlyCashFlowChart] 📊 Approved quotes data:', approvedQuotes.map(q => ({
+          id: q.id,
+          projectName: q.projectName,
+          totalPrice: q.totalPrice,
+          finalAmount: q.finalAmount,
+          totalCost: q.totalCost,
+          estimatedCost: q.estimatedCost,
+          hasPaymentTerms: !!q.paymentTerms && q.paymentTerms.length > 0,
+          hasCategoryTimings: !!q.categoryTimings && Object.keys(q.categoryTimings).length > 0,
+          hasItems: !!q.items && q.items.length > 0
+        })));
         
         const today = startOfDay(new Date());
         const rangeDays = parseInt(range, 10) || 30;
@@ -169,15 +180,25 @@ export default function MonthlyCashFlowChart({ user }) {
             paymentTerms = [],
             categoryTimings = {},
             items = [],
-            totalCost = 0
+            totalCost = 0,
+            estimatedCost = 0
           } = quote;
 
           const total_price = finalAmount || totalPrice;
-          const total_cost = totalCost;
-          
+          const total_cost = totalCost || estimatedCost || 0;
+
           const projectPaymentTerms = (paymentTerms && paymentTerms.length > 0) ? paymentTerms : user.defaultPaymentTerms;
 
-          // חישוב הכנסות (ללא שינוי)
+          console.log('[MonthlyCashFlowChart] 💰 Processing quote:', {
+            id: quote.id,
+            projectName: quote.projectName,
+            total_price,
+            total_cost,
+            hasPaymentTerms: !!projectPaymentTerms && projectPaymentTerms.length > 0,
+            hasCategoryTimings: Object.keys(categoryTimings).length > 0
+          });
+
+          // חישוב הכנסות - עם fallback אם אין payment terms
           if (projectPaymentTerms && projectPaymentTerms.length > 0) {
             let latestCategoryEndDate = new Date(0);
             Object.values(categoryTimings).forEach(timing => {
@@ -233,8 +254,38 @@ export default function MonthlyCashFlowChart({ user }) {
                 }
               }
             });
+          } else if (total_price > 0) {
+            // Fallback: אם אין payment terms, הצג הכנסה אחת בתאריך היצירה
+            const approvalDate = new Date(quote.createdAt || today);
+            console.log('[MonthlyCashFlowChart] 📅 Income fallback - checking dates:', {
+              quoteId: quote.id,
+              createdAt: quote.createdAt,
+              approvalDate: approvalDate.toISOString(),
+              today: today.toISOString(),
+              endDateRange: endDateRange.toISOString(),
+              isWithinInterval: isWithinInterval(approvalDate, { start: today, end: endDateRange })
+            });
+            if (isWithinInterval(approvalDate, { start: today, end: endDateRange })) {
+              const dateKey = format(approvalDate, 'yyyy-MM-dd');
+              if (dailyDataMap.has(dateKey)) {
+                const current = dailyDataMap.get(dateKey);
+                current.income += total_price;
+                current.incomeItems.push({
+                  quoteId: quote.id,
+                  projectName: quote.projectName || 'פרויקט ללא שם',
+                  clientName: quote.clientName || '',
+                  amount: total_price,
+                  percentage: 100,
+                  label: 'תשלום מלא',
+                  source: 'תשלום מלא (ללא תנאי תשלום מוגדרים)'
+                });
+                dailyDataMap.set(dateKey, current);
+                totalIncomeSum += total_price;
+                console.log('[MonthlyCashFlowChart] ✅ Added fallback income:', total_price);
+              }
+            }
           }
-          
+
           // חישוב הוצאות - עם תזמון דינמי עבור כל הקטגוריות
           let totalCategoryCostsSum = 0;
           let earliestStartDate = null;
@@ -468,6 +519,38 @@ export default function MonthlyCashFlowChart({ user }) {
             }
           });
 
+          // Fallback: אם אין category timings כלל, הצג הוצאה אחת בתאריך היצירה
+          if (Object.keys(categoryTimings).length === 0 && total_cost > 0) {
+            const creationDate = new Date(quote.createdAt || today);
+            console.log('[MonthlyCashFlowChart] 📅 Expense fallback - checking dates:', {
+              quoteId: quote.id,
+              createdAt: quote.createdAt,
+              creationDate: creationDate.toISOString(),
+              today: today.toISOString(),
+              endDateRange: endDateRange.toISOString(),
+              isWithinInterval: isWithinInterval(creationDate, { start: today, end: endDateRange })
+            });
+            if (isWithinInterval(creationDate, { start: today, end: endDateRange })) {
+              const dateKey = format(creationDate, 'yyyy-MM-dd');
+              if (dailyDataMap.has(dateKey)) {
+                const current = dailyDataMap.get(dateKey);
+                current.expenses += total_cost;
+                current.expenseItems.push({
+                  quoteId: quote.id,
+                  projectName: quote.projectName || 'פרויקט ללא שם',
+                  clientName: quote.clientName || '',
+                  categoryId: 'general',
+                  categoryName: 'הוצאות כלליות',
+                  amount: total_cost,
+                  source: 'הוצאות משוערות (ללא תזמון מוגדר)'
+                });
+                dailyDataMap.set(dateKey, current);
+                totalExpensesSum += total_cost;
+                console.log('[MonthlyCashFlowChart] ✅ Added fallback expense:', total_cost);
+              }
+            }
+          }
+
           // הוצאות נוספות (אם יש)
           const remainingCost = Math.max(0, (total_cost || 0) - totalCategoryCostsSum);
           if (remainingCost > 0 && categorySummaries.length > 0) {
@@ -546,7 +629,17 @@ export default function MonthlyCashFlowChart({ user }) {
           }
         });
         
-        setChartData(Array.from(dailyDataMap.values()));
+        const finalChartData = Array.from(dailyDataMap.values());
+        console.log('[MonthlyCashFlowChart] 📈 Final stats:', {
+          totalIncome: totalIncomeSum,
+          totalExpenses: totalExpensesSum,
+          netFlow: totalIncomeSum - totalExpensesSum,
+          chartDataPoints: finalChartData.length,
+          daysWithIncome: finalChartData.filter(d => d.income > 0).length,
+          daysWithExpenses: finalChartData.filter(d => d.expenses > 0).length
+        });
+
+        setChartData(finalChartData);
         setStats({ totalIncome: totalIncomeSum, totalExpenses: totalExpensesSum, netFlow: totalIncomeSum - totalExpensesSum });
       } catch (error) {
         console.error("MonthlyCashFlowChart: Failed to calculate monthly cash flow:", error);
