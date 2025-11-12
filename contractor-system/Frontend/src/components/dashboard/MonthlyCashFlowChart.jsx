@@ -255,18 +255,13 @@ export default function MonthlyCashFlowChart({ user }) {
               }
             });
           } else if (total_price > 0) {
-            // Fallback: אם אין payment terms, הצג הכנסה אחת בתאריך היצירה
-            const approvalDate = new Date(quote.createdAt || today);
-            console.log('[MonthlyCashFlowChart] 📅 Income fallback - checking dates:', {
+            // Fallback: אם אין payment terms, הצג הכנסה היום
+            console.log('[MonthlyCashFlowChart] 📅 Income fallback - using today:', {
               quoteId: quote.id,
-              createdAt: quote.createdAt,
-              approvalDate: approvalDate.toISOString(),
-              today: today.toISOString(),
-              endDateRange: endDateRange.toISOString(),
-              isWithinInterval: isWithinInterval(approvalDate, { start: today, end: endDateRange })
+              total_price,
+              displayDate: today.toISOString()
             });
-            if (isWithinInterval(approvalDate, { start: today, end: endDateRange })) {
-              const dateKey = format(approvalDate, 'yyyy-MM-dd');
+            const dateKey = format(today, 'yyyy-MM-dd');
               if (dailyDataMap.has(dateKey)) {
                 const current = dailyDataMap.get(dateKey);
                 current.income += total_price;
@@ -283,7 +278,6 @@ export default function MonthlyCashFlowChart({ user }) {
                 totalIncomeSum += total_price;
                 console.log('[MonthlyCashFlowChart] ✅ Added fallback income:', total_price);
               }
-            }
           }
 
           // חישוב הוצאות - עם תזמון דינמי עבור כל הקטגוריות
@@ -519,19 +513,14 @@ export default function MonthlyCashFlowChart({ user }) {
             }
           });
 
-          // Fallback: אם אין category timings כלל, הצג הוצאה אחת בתאריך היצירה
+          // Fallback: אם אין category timings כלל, הצג הוצאה היום
           if (Object.keys(categoryTimings).length === 0 && total_cost > 0) {
-            const creationDate = new Date(quote.createdAt || today);
-            console.log('[MonthlyCashFlowChart] 📅 Expense fallback - checking dates:', {
+            console.log('[MonthlyCashFlowChart] 📅 Expense fallback - using today:', {
               quoteId: quote.id,
-              createdAt: quote.createdAt,
-              creationDate: creationDate.toISOString(),
-              today: today.toISOString(),
-              endDateRange: endDateRange.toISOString(),
-              isWithinInterval: isWithinInterval(creationDate, { start: today, end: endDateRange })
+              total_cost,
+              displayDate: today.toISOString()
             });
-            if (isWithinInterval(creationDate, { start: today, end: endDateRange })) {
-              const dateKey = format(creationDate, 'yyyy-MM-dd');
+            const dateKey = format(today, 'yyyy-MM-dd');
               if (dailyDataMap.has(dateKey)) {
                 const current = dailyDataMap.get(dateKey);
                 current.expenses += total_cost;
@@ -548,7 +537,6 @@ export default function MonthlyCashFlowChart({ user }) {
                 totalExpensesSum += total_cost;
                 console.log('[MonthlyCashFlowChart] ✅ Added fallback expense:', total_cost);
               }
-            }
           }
 
           // הוצאות נוספות (אם יש)

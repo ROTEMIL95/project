@@ -297,8 +297,11 @@ export default function UpcomingWorkforce() {
                     <div className="text-center py-10 text-gray-500">
                          <Calendar className="h-12 w-12 mx-auto mb-4 opacity-40" />
                         <p className="font-semibold">לא נמצאו עבודות מתוכננות</p>
-                        <p className="text-sm mt-1">
-                            המערכת מציגה כאן את כל הפרויקטים המאושרים שתאריך ההתחלה שלהם הוא מהיום והלאה.
+                        <p className="text-sm mt-2 max-w-md mx-auto">
+                            קומפוננט זה מציג פרויקטים מאושרים עם <span className="font-medium text-gray-700">תזמון קטגוריות מוגדר</span>.
+                        </p>
+                        <p className="text-xs mt-3 text-gray-400 max-w-md mx-auto">
+                            כדי לראות נתונים כאן, יש להגדיר תאריכי התחלה וסיום לכל קטגוריה בהצעת מחיר (שלב 5 - "סיכום ואישור").
                         </p>
                     </div>
                 </CardContent>

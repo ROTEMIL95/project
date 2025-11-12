@@ -108,15 +108,23 @@ export default function ProjectCashFlowChart() {
         // activeProjectsCount removed as filteredQuotes.length is used directly
 
         filteredQuotes.forEach(quote => {
-          const { 
-            total_price = 0, 
-            paymentTerms = [], 
-            categoryTimings = {}, 
-            items = [], 
+          const {
+            total_price = 0,
+            totalPrice = 0,
+            finalAmount = 0,
+            paymentTerms = [],
+            categoryTimings = {},
+            items = [],
             total_cost = 0,
+            totalCost = 0,
+            estimatedCost = 0,
             startDate: quoteStartDate, // תאריך התחלה מוגדר בהצעה
             created_at
           } = quote;
+
+          // נורמליזציה של שמות שדות
+          const normalizedPrice = finalAmount || totalPrice || total_price || 0;
+          const normalizedCost = totalCost || total_cost || estimatedCost || 0;
           
           const projectPaymentTerms = user.defaultPaymentTerms || paymentTerms;
 
@@ -135,7 +143,7 @@ export default function ProjectCashFlowChart() {
 
             projectPaymentTerms.forEach((term, index) => {
               let paymentDate;
-              const paymentAmount = (total_price * term.percentage) / 100;
+              const paymentAmount = (normalizedPrice * term.percentage) / 100;
               
               if (index === 0) paymentDate = approvalDate;
               else if (index === projectPaymentTerms.length - 1) paymentDate = finalPaymentDate;
@@ -157,12 +165,31 @@ export default function ProjectCashFlowChart() {
                 }
               }
             });
+          } else if (quote.status === 'approved' && normalizedPrice > 0) {
+            // Fallback: אם אין payment terms, הצג הכנסה בחודש הנוכחי
+            const currentMonthKey = format(startOfMonth(today), 'yyyy-MM');
+            if (monthlyDataMap.has(currentMonthKey)) {
+              const monthData = monthlyDataMap.get(currentMonthKey);
+              monthData.income += normalizedPrice;
+              if (!monthData.projects.includes(quote.projectName)) {
+                monthData.projects.push(quote.projectName);
+              }
+              totalIncomeSum += normalizedPrice;
+              console.log('[ProjectCashFlowChart] ✅ Added fallback income for quote:', quote.id, normalizedPrice);
+            }
           }
-          
+
           // חישוב הוצאות - רק עבור הצעות מאושרות
           if (quote.status === 'approved') {
-            const totalProjectCost = total_cost;
+            const totalProjectCost = normalizedCost;
             let distributedCost = 0;
+
+            console.log('[ProjectCashFlowChart] 💰 Processing quote:', {
+              id: quote.id,
+              projectName: quote.projectName,
+              normalizedCost,
+              hasCategoryTimings: Object.keys(categoryTimings).length > 0
+            });
 
             // חישוב הוצאות לפי קטגוריות ותאריכי עבודה בפועל
             Object.entries(categoryTimings).forEach(([categoryId, timing]) => {
@@ -188,6 +215,16 @@ export default function ProjectCashFlowChart() {
                 }
               }
             });
+
+            // Fallback: אם אין category timings כלל, הצג הוצאה בחודש הנוכחי
+            if (Object.keys(categoryTimings).length === 0 && totalProjectCost > 0) {
+              const currentMonthKey = format(startOfMonth(today), 'yyyy-MM');
+              if (monthlyDataMap.has(currentMonthKey)) {
+                monthlyDataMap.get(currentMonthKey).expenses += totalProjectCost;
+                totalExpensesSum += totalProjectCost;
+                console.log('[ProjectCashFlowChart] ✅ Added fallback expense for quote:', quote.id, totalProjectCost);
+              }
+            }
 
             // אם יש עלות שלא חולקה (עלויות כלליות), נחלק אותה על כל התקופה
             const remainingCost = totalProjectCost - distributedCost;
@@ -263,7 +300,16 @@ export default function ProjectCashFlowChart() {
           ...month,
           netFlow: month.income - month.expenses
         }));
-        
+
+        console.log('[ProjectCashFlowChart] 📊 Final results:', {
+          totalIncome: totalIncomeSum,
+          totalExpenses: totalExpensesSum,
+          netFlow: totalIncomeSum - totalExpensesSum,
+          activeProjects: filteredQuotes.length,
+          chartDataPoints: finalData.length,
+          monthsWithExpenses: finalData.filter(m => m.expenses > 0).length
+        });
+
         setChartData(finalData);
         setStats({
           totalIncome: totalIncomeSum,
