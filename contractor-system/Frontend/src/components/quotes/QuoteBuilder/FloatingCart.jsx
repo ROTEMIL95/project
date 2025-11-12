@@ -132,7 +132,7 @@ const extractManualParts = (item) => {
   return { walls, ceiling, totalPrice };
 };
 
-// Renders the manual details block inside cart for a single item
+// Renders the manual details block inside cart for a single item (without prices)
 const ManualCartDetails = ({ item }) => {
   const { walls, ceiling } = extractManualParts(item);
 
@@ -141,27 +141,17 @@ const ManualCartDetails = ({ item }) => {
   }
 
   return (
-    <div className="mt-2 space-y-1 text-sm">
+    <div className="mt-1 space-y-1 text-xs text-gray-600">
       {walls.enabled && (
-        <div className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2">
-          <div className="text-gray-700">
-            <div className="font-medium">{walls.label}</div>
-            <div className="text-gray-600">
-              {walls.type ? `סוג: ${walls.type}` : "סוג: —"} • שכבות: {walls.layers || 0} • כמות: {walls.area || 0} מ״ר
-            </div>
-          </div>
-          <div className="font-semibold text-gray-800">₪ {formatPrice(walls.price)}</div>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-700">{walls.label}:</span>
+          <span>{walls.type ? `סוג ${walls.type}` : "—"} • {walls.layers || 0} שכבות • {walls.area || 0} מ״ר</span>
         </div>
       )}
       {ceiling.enabled && (
-        <div className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2">
-          <div className="text-gray-700">
-            <div className="font-medium">{ceiling.label}</div>
-            <div className="text-gray-600">
-              {ceiling.type ? `סוג: ${ceiling.type}` : "סוג: —"} • שכבות: {ceiling.layers || 0} • כמות: {ceiling.area || 0} מ״ר
-            </div>
-          </div>
-          <div className="font-semibold text-gray-800">₪ {formatPrice(ceiling.price)}</div>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-700">{ceiling.label}:</span>
+          <span>{ceiling.type ? `סוג ${ceiling.type}` : "—"} • {ceiling.layers || 0} שכבות • {ceiling.area || 0} מ״ר</span>
         </div>
       )}
     </div>
@@ -268,6 +258,32 @@ const renderRoomCalcItem = (item, onRemoveItem) => {
     );
 };
 
+
+// NEW: Render paint/plaster room detail items (simple single-room items)
+const renderPaintRoomDetail = (item, onRemoveItem) => {
+    return (
+        <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border flex items-start gap-3">
+            <div className="flex-1">
+                <p className="font-semibold text-gray-800 text-sm">{item.name}</p>
+                <p className="text-xs text-gray-600 mt-0.5">{item.description}</p>
+                <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                    <span>{safeToFixed(item.quantity || 0, 0)} מ"ר</span>
+                </div>
+            </div>
+            <div className="text-right">
+                <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
+                    onClick={() => onRemoveItem && onRemoveItem(item.id)}
+                >
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+    );
+};
 
 // פונקציה לעיבוד פריט בודד (לא מורכב או ידני)
 const renderItem = (item, onRemoveItem) => {
@@ -759,28 +775,30 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                       // NEW: Check for room calculator items
                                                       const isRoomCalcItem = item.source === 'paint_room_calc' || item.source === 'plaster_room_calc';
 
-                                                      // Manual calc items - render with details
+                                                      // NEW: Check for paint room detail items
+                                                      const isPaintRoomDetail = item.source === 'paint_room_detail';
+
+                                                      // Manual calc items - render with simple styling matching paint room detail
                                                       if (isManualItem) {
+                                                          // Extract clean item name - remove extra details that are shown in ManualCartDetails
+                                                          const itemName = item.description || item.name || 'עבודה ידנית';
+
                                                           return (
-                                                              <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border">
-                                                                  <div className="flex items-start gap-3">
-                                                                      <div className="flex-1">
-                                                                          <p className="font-semibold text-gray-800 text-sm">
-                                                                              {item.name || item.description || 'עבודה ידנית'}
-                                                                          </p>
-                                                                          <ManualCartDetails item={item} />
-                                                                      </div>
-                                                                      <div className="text-right">
-                                                                          <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
-                                                                          <Button
-                                                                              variant="ghost"
-                                                                              size="icon"
-                                                                              className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
-                                                                              onClick={() => onRemoveItem && onRemoveItem(item.id)}
-                                                                          >
-                                                                              <Trash2 className="h-4 w-4" />
-                                                                          </Button>
-                                                                      </div>
+                                                              <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border flex items-start gap-3">
+                                                                  <div className="flex-1">
+                                                                      <p className="font-semibold text-gray-800 text-sm">{itemName}</p>
+                                                                      <ManualCartDetails item={item} />
+                                                                  </div>
+                                                                  <div className="text-right">
+                                                                      <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
+                                                                      <Button
+                                                                          variant="ghost"
+                                                                          size="icon"
+                                                                          className="h-7 w-7 mt-1 text-red-500 hover:bg-red-50"
+                                                                          onClick={() => onRemoveItem && onRemoveItem(item.id)}
+                                                                      >
+                                                                          <Trash2 className="h-4 w-4" />
+                                                                      </Button>
                                                                   </div>
                                                               </div>
                                                           );
@@ -792,6 +810,9 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                       } else if (isRoomCalcItem) {
                                                             // NEW: Render room calculator items with breakdown
                                                             return renderRoomCalcItem(item, onRemoveItem);
+                                                      } else if (isPaintRoomDetail) {
+                                                            // NEW: Render paint room detail items with simple styling
+                                                            return renderPaintRoomDetail(item, onRemoveItem);
                                                       } else {
                                                             // Default: render as regular item
                                                             return renderItem(item, onRemoveItem);

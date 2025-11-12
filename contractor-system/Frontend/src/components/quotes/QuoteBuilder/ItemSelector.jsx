@@ -1534,29 +1534,45 @@ const PaintRoomsManager = React.forwardRef(({
             const catalogItems = rooms.flatMap(room => {
                 const items = [];
                 if (room.isPaintSelected && room.paintCalculatedMetrics) {
+                    const metrics = room.paintCalculatedMetrics;
+                    const layers = room.paintLayers || 0;
                     items.push({
-                        ...room.paintCalculatedMetrics,
-                        id: `${room.id}_paint`, // Unique ID for this specific quote item
-                        name: `צבע - ${room.name}`, // Display name for quote
+                        ...metrics,
+                        id: `${room.id}_paint`,
+                        name: room.name, // Just room name
+                        description: `${layers} שכבות - ${metrics.itemName || 'עבודת צבע'}`,
                         categoryId: categoryId,
                         categoryName: 'צבע וטיח',
-                        roomName: room.name, // Link to the room name
-                        source: 'paint_room_detail', // Specific source for filtering later
+                        roomName: room.name,
+                        source: 'paint_room_detail',
                         complexity: room.paintComplexity,
                         customComplexityDescription: room.paintCustomComplexityDescription,
+                        unit: 'מ"ר',
+                        totalPrice: metrics.totalSellingPrice || metrics.totalPrice || 0,
+                        totalCost: metrics.totalCost || 0,
+                        profit: (metrics.totalSellingPrice || metrics.totalPrice || 0) - (metrics.totalCost || 0),
+                        workDuration: metrics.totalWorkDays || 0,
                     });
                 }
                 if (room.isPlasterSelected && room.plasterCalculatedMetrics) {
+                    const metrics = room.plasterCalculatedMetrics;
+                    const layers = room.plasterLayers || 0;
                     items.push({
-                        ...room.plasterCalculatedMetrics,
-                        id: `${room.id}_plaster`, // Unique ID for this specific quote item
-                        name: `טיח - ${room.name}`, // Display name for quote
+                        ...metrics,
+                        id: `${room.id}_plaster`,
+                        name: room.name, // Just room name
+                        description: `${layers} שכבות - ${metrics.itemName || 'עבודת טיח'}`,
                         categoryId: categoryId,
                         categoryName: 'צבע וטיח',
-                        roomName: room.name, // Link to the room name
-                        source: 'paint_room_detail', // Specific source for filtering later
+                        roomName: room.name,
+                        source: 'paint_room_detail',
                         complexity: room.plasterComplexity,
                         customComplexityDescription: room.plasterCustomComplexityDescription,
+                        unit: 'מ"ר',
+                        totalPrice: metrics.totalSellingPrice || metrics.totalPrice || 0,
+                        totalCost: metrics.totalCost || 0,
+                        profit: (metrics.totalSellingPrice || metrics.totalPrice || 0) - (metrics.totalCost || 0),
+                        workDuration: metrics.totalWorkDays || 0,
                     });
                 }
                 return items;

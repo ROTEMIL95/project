@@ -213,7 +213,8 @@ export default function ManualCalcDialog() {
     // Use existing ID if editing, otherwise create new ID
     const isEditing = ctxRef.current?.editingItemId;
     const nowId = isEditing || `manual_${form.workType}_${Date.now()}`;
-    const description = buildDescription();
+    // Use simple description - just the user's input or a default name
+    const description = form.description?.trim() || (form.workType === "plaster" ? "עבודה ידנית - שפכטל" : "עבודה ידנית - צבע");
 
     // Price split by areas (for table rows)
     const totalAreaForSplit = (form.wallsEnabled ? qtyWalls : 0) + (form.ceilingEnabled ? qtyCeiling : 0);
