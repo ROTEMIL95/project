@@ -111,10 +111,16 @@ export default function UpcomingWorkforce() {
           const today = new Date();
 
           approvedQuotes.forEach(quote => {
-            const { categoryTimings = {}, items = [], paymentTerms = [], total_price = 0, created_at, endDate: projectEndDate } = quote;
+            // Try both camelCase and snake_case - the API might return snake_case
+            const categoryTimings = quote.categoryTimings || quote.category_timings || {};
+            const { items = [], paymentTerms = [], finalAmount = 0, createdAt, endDate: projectEndDate } = quote;
+
             console.log('[UpcomingWorkforce] Processing quote:', {
               id: quote.id,
               projectName: quote.projectName,
+              categoryTimings_camel: quote.categoryTimings,
+              category_timings_snake: quote.category_timings,
+              final: categoryTimings,
               hasCategoryTimings: !!categoryTimings && Object.keys(categoryTimings).length > 0,
               categoryTimingsKeys: Object.keys(categoryTimings || {}),
               hasItems: items && items.length > 0,
@@ -122,7 +128,7 @@ export default function UpcomingWorkforce() {
             });
 
             // חישוב תאריך סיום העבודה האחרון בפרויקט
-            let latestCategoryEndDate = new Date(0); // Initialize with a very old date
+            let latestCategoryEndDate = new Date(0);
             Object.values(categoryTimings).forEach(timing => {
               if (timing.endDate) {
                 const catEndDate = new Date(timing.endDate);
@@ -131,10 +137,10 @@ export default function UpcomingWorkforce() {
                 }
               }
             });
-            
+
             // אם אין תאריכי סיום לקטגוריות, נשתמש בתאריך סיום הפרויקט הכללי או בתאריך היצירה
-            const fallbackEndDate = projectEndDate ? new Date(projectEndDate) : (created_at ? new Date(created_at) : today);
-            if (latestCategoryEndDate.getTime() === new Date(0).getTime() || isNaN(latestCategoryEndDate.getTime())) { 
+            const fallbackEndDate = projectEndDate ? new Date(projectEndDate) : (createdAt ? new Date(createdAt) : today);
+            if (latestCategoryEndDate.getTime() === new Date(0).getTime() || isNaN(latestCategoryEndDate.getTime())) {
                 latestCategoryEndDate = fallbackEndDate;
             }
             // If fallbackEndDate itself is invalid, use today.
@@ -143,7 +149,7 @@ export default function UpcomingWorkforce() {
             }
 
             // חישוב תאריכים עבור תנאי התשלום - עם קדימות לתאריכים ידניים
-            const approvalDate = new Date(created_at || today); // Use created_at if available, otherwise today
+            const approvalDate = new Date(createdAt || today);
             const finalPaymentDate = addWeeks(latestCategoryEndDate, 1);
 
             const paymentTermsWithDates = (paymentTerms || []).map((term, index) => {
@@ -245,8 +251,8 @@ export default function UpcomingWorkforce() {
                     recommendation1,
                     recommendation2,
                     costDetails,
-                    paymentTerms: paymentTermsWithDates, // שימוש במערך המעודכן עם תאריכים
-                    total_price: total_price || 0,
+                    paymentTerms: paymentTermsWithDates,
+                    finalAmount: finalAmount || 0,
                     quoteId: quote.id
                   });
                 }
@@ -463,7 +469,7 @@ export default function UpcomingWorkforce() {
                                             <span className="text-gray-600 truncate flex-1">{term.milestone} ({term.percentage}%)</span>
                                             <div className="flex items-center gap-3 text-right">
                                                 <span className="font-bold text-gray-800 w-20 text-left">
-                                                    {formatPrice((work.total_price * term.percentage) / 100)} ₪
+                                                    {formatPrice((work.finalAmount * term.percentage) / 100)} ₪
                                                 </span>
                                                 <span className="font-mono text-gray-500 w-14 text-right">{term.paymentDate}</span>
                                             </div>

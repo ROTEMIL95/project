@@ -12,33 +12,77 @@ const toCamelCase = (str) => {
 };
 
 // Helper function to convert object keys from camelCase to snake_case
-const convertKeysToSnakeCase = (obj) => {
+// JSONB fields that should NOT be recursively converted when SAVING
+const JSONB_FIELDS_SAVE = ['projectComplexities', 'project_complexities', 'items', 'paymentTerms', 'payment_terms'];
+
+const convertKeysToSnakeCase = (obj, parentKey = null) => {
   if (obj === null || obj === undefined) return obj;
   if (typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) return obj.map(item => convertKeysToSnakeCase(item));
-  
+  if (Array.isArray(obj)) return obj.map(item => convertKeysToSnakeCase(item, parentKey));
+
   const converted = {};
   for (const [key, value] of Object.entries(obj)) {
     const snakeKey = toSnakeCase(key);
-    converted[snakeKey] = typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? convertKeysToSnakeCase(value)
-      : value;
+
+    // Check if this is a JSONB field that should not be recursively converted
+    const isJSONBField = JSONB_FIELDS_SAVE.includes(key) || JSONB_FIELDS_SAVE.includes(snakeKey);
+
+    if (isJSONBField) {
+      // Keep JSONB fields as-is (don't convert nested keys)
+      converted[snakeKey] = value;
+    } else {
+      // Recursively convert other fields (including categoryTimings)
+      converted[snakeKey] = typeof value === 'object' && value !== null && !Array.isArray(value)
+        ? convertKeysToSnakeCase(value, key)
+        : value;
+    }
   }
   return converted;
 };
 
 // Helper function to convert object keys from snake_case to camelCase
-const convertKeysToCamelCase = (obj) => {
+const convertKeysToCamelCase = (obj, debugKey = null) => {
   if (obj === null || obj === undefined) return obj;
   if (typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) return obj.map(item => convertKeysToCamelCase(item));
-  
+  if (Array.isArray(obj)) return obj.map(item => convertKeysToCamelCase(item, debugKey));
+
   const converted = {};
+  const processedKeys = new Set(); // Track which camelCase keys we've already set
+
   for (const [key, value] of Object.entries(obj)) {
     const camelKey = toCamelCase(key);
-    converted[camelKey] = typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? convertKeysToCamelCase(value)
-      : value;
+
+    // Skip this key if we've already processed its camelCase equivalent
+    // This prevents empty camelCase columns from overwriting converted snake_case data
+    if (processedKeys.has(camelKey)) {
+      console.log(`[convertKeysToCamelCase] Skipping duplicate key: ${key} (already have ${camelKey})`);
+      continue;
+    }
+
+    // Debug log for category_timings
+    if (key === 'category_timings') {
+      console.log('[convertKeysToCamelCase] Found category_timings!', {
+        originalKey: key,
+        camelKey: camelKey,
+        value: value,
+        valueType: typeof value
+      });
+    }
+
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      const convertedValue = convertKeysToCamelCase(value, key);
+
+      // Debug log for converted category_timings
+      if (key === 'category_timings') {
+        console.log('[convertKeysToCamelCase] Converted category_timings value:', convertedValue);
+      }
+
+      converted[camelKey] = convertedValue;
+      processedKeys.add(camelKey);
+    } else {
+      converted[camelKey] = value;
+      processedKeys.add(camelKey);
+    }
   }
   return converted;
 };
@@ -156,17 +200,25 @@ export class Quote {
       // Backend returns {quotes: [...], total: N}
       const quotes = response.quotes || response || [];
       console.log('[Quote.filter] Extracted quotes:', quotes.length, 'quotes');
-      if (quotes.length > 0) {
-        console.log('[Quote.filter] First quote raw data:', quotes[0]);
-        console.log('[Quote.filter] First quote keys:', Object.keys(quotes[0]));
-      }
+      quotes.forEach((quote, idx) => {
+        console.log(`[Quote.filter] RAW Quote ${idx + 1} - ${quote.project_name || quote.projectName}:`, {
+          id: quote.id,
+          category_timings: quote.category_timings,
+          hasCategoryTimings: !!quote.category_timings && Object.keys(quote.category_timings).length > 0
+        });
+      });
 
       // Convert snake_case keys to camelCase for frontend
       const converted = quotes.map(quote => convertKeysToCamelCase(quote));
       console.log('[Quote.filter] Returning converted quotes:', converted.length);
-      if (converted.length > 0) {
-        console.log('[Quote.filter] First converted quote:', converted[0]);
-      }
+      converted.forEach((quote, idx) => {
+        console.log(`[Quote.filter] Quote ${idx + 1} - ${quote.projectName}:`, {
+          id: quote.id,
+          hasCategoryTimings: !!quote.categoryTimings && Object.keys(quote.categoryTimings).length > 0,
+          categoryTimingsKeys: Object.keys(quote.categoryTimings || {}),
+          categoryTimings: quote.categoryTimings
+        });
+      });
       return converted;
     } catch (error) {
       console.error("Quote.filter error:", error);
@@ -202,6 +254,9 @@ export class Quote {
     try {
       // Convert camelCase keys to snake_case for database
       const snakeCaseUpdates = convertKeysToSnakeCase(updates);
+      console.log('[Quote.update] 🔄 Original updates:', updates);
+      console.log('[Quote.update] 🔄 Converted to snake_case:', snakeCaseUpdates);
+      console.log('[Quote.update] 🔄 categoryTimings in converted:', snakeCaseUpdates.category_timings);
       const data = await quotesAPI.update(id, snakeCaseUpdates);
       // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;

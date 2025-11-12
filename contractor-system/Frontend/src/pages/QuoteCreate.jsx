@@ -1325,13 +1325,18 @@ export default function QuoteCreate() {
   };
 
   const handleCategoryTimingChange = (categoryId, field, value) => {
-    setCategoryTimings(prev => ({
+    console.log('[QuoteCreate] 📅 Category timing changed:', { categoryId, field, value });
+    setCategoryTimings(prev => {
+      const updated = {
         ...prev,
         [categoryId]: {
             ...prev[categoryId],
             [field]: value
         }
-    }));
+      };
+      console.log('[QuoteCreate] 📅 Updated categoryTimings:', updated);
+      return updated;
+    });
   };
 
   const toggleCategory = (categoryId) => {
@@ -1461,6 +1466,9 @@ export default function QuoteCreate() {
         tilingWorkTypes: tilingWorkTypes, // New state
         tiling_items: userTilingItems, // ✅ Use snake_case for database column
       };
+
+      console.log('[QuoteCreate] 💾 Saving quote with categoryTimings:', categoryTimings);
+      console.log('[QuoteCreate] 💾 Full quoteDataToSave:', quoteDataToSave);
 
       let savedQuote;
       if (existingQuoteId) { // Renamed from editingQuoteId

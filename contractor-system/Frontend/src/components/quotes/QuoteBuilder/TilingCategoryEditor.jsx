@@ -1255,7 +1255,7 @@ export default React.forwardRef(function TilingCategoryEditor({
                               </div>
                               <div className="flex justify-between text-xs">
                                 <span className="text-gray-600">ימי עבודה:</span>
-                                <span className="font-semibold text-gray-800">{itemMetrics.quantityWorkDays.toFixed(2)}</span>
+                                <span className="font-semibold text-gray-800">{(itemMetrics.quantityWorkDays || 0).toFixed(2)}</span>
                               </div>
                               <div className="flex justify-between text-xs">
                                 <span className="text-gray-600">עלות עובדים:</span>
