@@ -749,16 +749,25 @@ export default function CostCalculator() {
 
     // שמירת ברירות מחדל לריצוף + החלה אופציונלית על כל הפריטים השמורים עם חישוב אוטומטי
     const handleSaveTilingQuickDefaults = async (partialDefaults, options = {}) => {
+        console.log('[CostCalculator] 📥 Received data to save:', partialDefaults);
+        console.log('[CostCalculator] 📋 Current userTilingDefaults:', userTilingDefaults);
+
         const merged = {
             ...(userTilingDefaults || {}),
             ...partialDefaults,
         };
+
+        console.log('[CostCalculator] 🔀 Merged data:', merged);
+
         if (typeof User.updateMyUserData === 'function') {
             await User.updateMyUserData({ tilingUserDefaults: merged });
+            console.log('[CostCalculator] ✅ Database updated successfully');
         } else {
             console.log('User.updateMyUserData not available - backend not connected');
         }
-        setUserTilingDefaults(merged);
+        // Force update with a new object reference to trigger re-render
+        setUserTilingDefaults({ ...merged });
+        console.log('[CostCalculator] 🔄 State updated with new object reference');
 
         // החלת ההגדרות על כל פריטי הריצוף השמורים (ללא כניסה לפריטים)
         if (options.applyToExisting) {
@@ -1256,6 +1265,7 @@ export default function CostCalculator() {
             <CardContent className="p-0 md:p-4">
                 {/* בלוק ראשי מהיר: עלות עובד + אחוז רווח רצוי */}
                 <TilingQuickDefaults
+                    key={JSON.stringify(userTilingDefaults)}
                     defaults={userTilingDefaults || {}}
                     onSave={handleSaveTilingQuickDefaults}
                 />

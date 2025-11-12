@@ -16,11 +16,26 @@ export default function TilingQuickDefaults({ defaults, onSave }) {
   // REMOVED: applyToExisting toggle (now always true by default)
 
   React.useEffect(() => {
+    console.log('[TilingQuickDefaults] 🔄 useEffect triggered - updating data from defaults:', defaults);
+
+    // Support both camelCase and snake_case from database
+    const laborCostMethod = defaults?.laborCostMethod || defaults?.labor_cost_method || "perDay";
+    const laborCostPerDay = defaults?.laborCostPerDay ?? defaults?.labor_cost_per_day ?? "";
+    const laborCostPerSqM = defaults?.laborCostPerSqM ?? defaults?.labor_cost_per_sqm ?? defaults?.labor_cost_per_sq_m ?? "";
+    const desiredProfitPercent = defaults?.desiredProfitPercent ?? defaults?.desired_profit_percent ?? "";
+
+    console.log('[TilingQuickDefaults] 📊 Parsed values:', {
+      laborCostMethod,
+      laborCostPerDay,
+      laborCostPerSqM,
+      desiredProfitPercent
+    });
+
     setData({
-      laborCostMethod: defaults?.laborCostMethod || "perDay",
-      laborCostPerDay: defaults?.laborCostPerDay ?? "",
-      laborCostPerSqM: defaults?.laborCostPerSqM ?? "",
-      desiredProfitPercent: defaults?.desiredProfitPercent ?? ""
+      laborCostMethod,
+      laborCostPerDay,
+      laborCostPerSqM,
+      desiredProfitPercent
     });
     // setApplyToExisting(false); // REMOVED
   }, [defaults]);
@@ -39,12 +54,25 @@ export default function TilingQuickDefaults({ defaults, onSave }) {
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave({
+
+    // Helper function to safely parse numbers, ignoring whitespace
+    const parseNumber = (val) => {
+      const trimmed = String(val || "").trim();
+      return trimmed === "" ? undefined : (Number(trimmed) || undefined);
+    };
+
+    const dataToSave = {
       laborCostMethod: data.laborCostMethod,
-      laborCostPerDay: data.laborCostPerDay === "" ? undefined : Number(data.laborCostPerDay),
-      laborCostPerSqM: data.laborCostPerSqM === "" ? undefined : Number(data.laborCostPerSqM),
-      desiredProfitPercent: data.desiredProfitPercent === "" ? undefined : Number(data.desiredProfitPercent),
-    }, { applyToExisting: true }); // ALWAYS apply to all items
+      laborCostPerDay: parseNumber(data.laborCostPerDay),
+      laborCostPerSqM: parseNumber(data.laborCostPerSqM),
+      desiredProfitPercent: parseNumber(data.desiredProfitPercent),
+    };
+
+    console.log('[TilingQuickDefaults] 💾 Saving data:', dataToSave);
+
+    await onSave(dataToSave, { applyToExisting: true }); // ALWAYS apply to all items
+
+    console.log('[TilingQuickDefaults] ✅ Save completed');
     setSaving(false);
   };
 

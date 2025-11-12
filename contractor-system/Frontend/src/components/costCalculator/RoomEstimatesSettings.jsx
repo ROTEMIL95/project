@@ -133,7 +133,7 @@ export default function RoomEstimatesSettings({ isOpen, onClose, onSave }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto p-6" dir="rtl">
         <DialogHeader className="pb-4">
           <DialogTitle className="text-2xl font-bold">הגדרות אומדן חללים</DialogTitle>
           <DialogDescription>
