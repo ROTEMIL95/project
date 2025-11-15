@@ -1499,18 +1499,31 @@ const PaintRoomsManager = React.forwardRef(({
             }
         });
 
-        // 🆕 Total material and labor costs = catalog + manual
-        const finalMaterialCost = catalogMaterialCost + manualMaterialCost;
-        const finalLaborCost = catalogLaborCost + manualLaborCost;
-
-
-        // Work days calculation
+        // Work days calculation - calculate before labor cost adjustment
         let finalWorkDaysValue;
         if (sumExactWorkDays > 0) {
             finalWorkDaysValue = preciseWorkDays ? sumExactWorkDays : Math.ceil(sumExactWorkDays);
         } else {
             finalWorkDaysValue = sumExactWorkDays;
         }
+
+        // 🔧 FIX: Adjust labor cost based on preciseWorkDays setting
+        // When preciseWorkDays is false, we need to recalculate labor cost based on rounded work days
+        let adjustedCatalogLaborCost = catalogLaborCost;
+        let adjustedManualLaborCost = manualLaborCost;
+
+        if (!preciseWorkDays && sumExactWorkDays > 0) {
+            // Calculate the ratio between rounded and exact work days
+            const workDaysRatio = finalWorkDaysValue / sumExactWorkDays;
+
+            // Adjust labor costs proportionally
+            adjustedCatalogLaborCost = catalogLaborCost * workDaysRatio;
+            adjustedManualLaborCost = manualLaborCost * workDaysRatio;
+        }
+
+        // 🆕 Total material and labor costs = catalog + manual (with adjusted labor)
+        const finalMaterialCost = catalogMaterialCost + manualMaterialCost;
+        const finalLaborCost = adjustedCatalogLaborCost + adjustedManualLaborCost;
 
         const sumNonMaterialCosts = finalLaborCost + sumOtherCosts;
         const finalCalculatedTotalCost = finalMaterialCost + sumNonMaterialCosts;

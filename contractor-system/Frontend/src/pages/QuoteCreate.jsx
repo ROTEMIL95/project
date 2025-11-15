@@ -2054,8 +2054,17 @@ export default function QuoteCreate() {
               </div>
             </CardContent>
 
-            <CardFooter className="border-t p-4">
-              <Button onClick={() => setCurrentStep(2)} className="ml-auto text-base px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700">
+            <CardFooter className="border-t p-4 flex justify-between">
+              <Button
+                variant="outline"
+                onClick={() => handleSaveQuote(true)}
+                disabled={isLoadingUser}
+                className="text-base px-6 py-2.5"
+              >
+                {isLoadingUser ? <Loader2 className="animate-spin ml-2" /> : <Save className="ml-2 h-4 w-4" />}
+                שמור כטיוטה
+              </Button>
+              <Button onClick={() => setCurrentStep(2)} className="text-base px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700">
                 הבא: בחירת קטגוריות
                 <ArrowLeft className="mr-2 h-4 w-4" />
               </Button>
@@ -2078,10 +2087,21 @@ export default function QuoteCreate() {
               />
             </CardContent>
             <CardFooter className="flex justify-between border-t p-4">
-              <Button variant="outline" onClick={() => setCurrentStep(1)} className="text-base px-6 py-2.5">
-                <ArrowRight className="ml-2 h-4 w-4" />
-                הקודם
-              </Button>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setCurrentStep(1)} className="text-base px-6 py-2.5">
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                  הקודם
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleSaveQuote(true)}
+                  disabled={isLoadingUser}
+                  className="text-base px-6 py-2.5"
+                >
+                  {isLoadingUser ? <Loader2 className="animate-spin ml-2" /> : <Save className="ml-2 h-4 w-4" />}
+                  שמור כטיוטה
+                </Button>
+              </div>
               <Button onClick={() => {
                 if (selectedCategories.length > 0) {
                   setProcessedCategories([]);
@@ -2110,6 +2130,8 @@ export default function QuoteCreate() {
               await saveItemsFromCurrentStep();
               setCurrentStep(5);
             }}
+            onSaveDraft={() => handleSaveQuote(true)}
+            isSaving={isLoadingUser}
           />
         );
       case 5:

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, ArrowLeft, ArrowRight, Calculator, Edit2, Lock } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, ArrowRight, Calculator, Edit2, Lock, Save, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import useSafeUser from "@/components/utils/useSafeUser";
 
@@ -19,7 +19,7 @@ const defaultCosts = [
     { id: 'cleaning', description: 'ניקיון כללי', contractorCost: 0, cost: 0, isFixed: true, color: 'purple' },
 ];
 
-export default function AdditionalCostsForm({ projectComplexities = {}, onUpdateProjectComplexities, onBack, onNext }) {
+export default function AdditionalCostsForm({ projectComplexities = {}, onUpdateProjectComplexities, onBack, onNext, onSaveDraft, isSaving = false }) {
     const { user, loading: userLoading } = useSafeUser();
     const [userDefaults, setUserDefaults] = useState(null);
     const [loadingDefaults, setLoadingDefaults] = useState(true);
@@ -337,10 +337,23 @@ export default function AdditionalCostsForm({ projectComplexities = {}, onUpdate
             </CardContent>
             
             <CardFooter className="flex justify-between border-t p-4">
-                <Button variant="outline" onClick={onBack} className="text-base px-6 py-2.5">
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                    הקודם
-                </Button>
+                <div className="flex gap-3">
+                    <Button variant="outline" onClick={onBack} className="text-base px-6 py-2.5">
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                        הקודם
+                    </Button>
+                    {onSaveDraft && (
+                        <Button
+                            variant="outline"
+                            onClick={onSaveDraft}
+                            disabled={isSaving}
+                            className="text-base px-6 py-2.5"
+                        >
+                            {isSaving ? <Loader2 className="animate-spin ml-2" /> : <Save className="ml-2 h-4 w-4" />}
+                            שמור כטיוטה
+                        </Button>
+                    )}
+                </div>
                 <Button onClick={onNext} className="text-base px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700">
                     הבא: סיכום סופי
                     <ArrowLeft className="mr-2 h-4 w-4" />
