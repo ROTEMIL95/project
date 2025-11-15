@@ -1487,10 +1487,18 @@ export default function QuoteCreate() {
         description: `הצעת המחיר "${projectInfo.projectName || 'ללא שם'}" ${isDraft ? 'נשמרה' : 'נשלחה'} בהצלחה.`,
       });
 
-      // If not a draft, show share dialog instead of immediate redirect
+      // If not a draft, show share dialog for new quotes, navigate immediately for existing quotes
       if (!isDraft) {
-        setSavedQuoteId(savedQuote?.id || existingQuoteId);
-        setShowShareDialog(true);
+        if (existingQuoteId) {
+          // For existing quotes, navigate immediately after update
+          setTimeout(() => {
+            navigate(createPageUrl('SentQuotes'));
+          }, 500);
+        } else {
+          // For new quotes, show share dialog
+          setSavedQuoteId(savedQuote?.id || existingQuoteId);
+          setShowShareDialog(true);
+        }
       } else {
         // For drafts, navigate immediately
         setTimeout(() => {

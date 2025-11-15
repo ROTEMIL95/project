@@ -209,7 +209,39 @@ export class Quote {
       });
 
       // Convert snake_case keys to camelCase for frontend
-      const converted = quotes.map(quote => convertKeysToCamelCase(quote));
+      const converted = quotes.map(quote => {
+        const convertedQuote = convertKeysToCamelCase(quote);
+
+        // ✅ FIX: Manually convert room_breakdown and detailed_breakdown back to camelCase in items
+        // These fields are not converted automatically because 'items' is in JSONB_FIELDS_SAVE
+        if (convertedQuote.items && convertedQuote.items.length > 0) {
+          console.log(`🔍 [Quote.filter] Converting breakdown fields for quote ${convertedQuote.id}...`);
+          convertedQuote.items = convertedQuote.items.map((item, idx) => {
+            const convertedItem = { ...item };
+
+            // Convert room_breakdown to roomBreakdown
+            if (item.room_breakdown !== undefined) {
+              convertedItem.roomBreakdown = item.room_breakdown;
+              delete convertedItem.room_breakdown;
+              console.log(`📦 [Quote.filter] Item ${idx} (${item.name}): Converted room_breakdown to roomBreakdown`, {
+                roomBreakdownLength: convertedItem.roomBreakdown?.length || 0
+              });
+            }
+
+            // Convert detailed_breakdown to detailedBreakdown
+            if (item.detailed_breakdown !== undefined) {
+              convertedItem.detailedBreakdown = item.detailed_breakdown;
+              delete convertedItem.detailed_breakdown;
+              console.log(`📦 [Quote.filter] Item ${idx} (${item.name}): Converted detailed_breakdown to detailedBreakdown`);
+            }
+
+            return convertedItem;
+          });
+        }
+
+        return convertedQuote;
+      });
+
       console.log('[Quote.filter] Returning converted quotes:', converted.length);
       converted.forEach((quote, idx) => {
         console.log(`[Quote.filter] Quote ${idx + 1} - ${quote.projectName}:`, {
@@ -229,8 +261,40 @@ export class Quote {
   static async getById(id) {
     try {
       const data = await quotesAPI.get(id);
+
+      if (!data) return null;
+
       // Convert snake_case keys to camelCase for frontend
-      return data ? convertKeysToCamelCase(data) : null;
+      const converted = convertKeysToCamelCase(data);
+
+      // ✅ FIX: Manually convert room_breakdown and detailed_breakdown back to camelCase in items
+      // These fields are not converted automatically because 'items' is in JSONB_FIELDS_SAVE
+      if (converted.items && converted.items.length > 0) {
+        console.log('🔍 [Quote.getById] Converting breakdown fields from DB to camelCase...');
+        converted.items = converted.items.map((item, idx) => {
+          const convertedItem = { ...item };
+
+          // Convert room_breakdown to roomBreakdown
+          if (item.room_breakdown !== undefined) {
+            convertedItem.roomBreakdown = item.room_breakdown;
+            delete convertedItem.room_breakdown;
+            console.log(`📦 [Quote.getById] Item ${idx} (${item.name}): Converted room_breakdown to roomBreakdown`, {
+              roomBreakdownLength: convertedItem.roomBreakdown?.length || 0
+            });
+          }
+
+          // Convert detailed_breakdown to detailedBreakdown
+          if (item.detailed_breakdown !== undefined) {
+            convertedItem.detailedBreakdown = item.detailed_breakdown;
+            delete convertedItem.detailed_breakdown;
+            console.log(`📦 [Quote.getById] Item ${idx} (${item.name}): Converted detailed_breakdown to detailedBreakdown`);
+          }
+
+          return convertedItem;
+        });
+      }
+
+      return converted;
     } catch (error) {
       console.error("Quote.getById error:", error);
       return null;
@@ -241,6 +305,32 @@ export class Quote {
     try {
       // Convert camelCase keys to snake_case for database
       const snakeCaseData = convertKeysToSnakeCase(quoteData);
+
+      // ✅ FIX: Manually convert roomBreakdown and detailedBreakdown in items
+      // These fields are not converted automatically because 'items' is in JSONB_FIELDS_SAVE
+      if (snakeCaseData.items && snakeCaseData.items.length > 0) {
+        console.log('🔍 [Quote.create] Converting breakdown fields in items...');
+        snakeCaseData.items = snakeCaseData.items.map((item, idx) => {
+          const convertedItem = { ...item };
+
+          // Convert roomBreakdown to room_breakdown
+          if (item.roomBreakdown !== undefined) {
+            convertedItem.room_breakdown = item.roomBreakdown;
+            delete convertedItem.roomBreakdown;
+            console.log(`📦 [Quote.create] Item ${idx} (${item.name}): Converted roomBreakdown to room_breakdown`);
+          }
+
+          // Convert detailedBreakdown to detailed_breakdown
+          if (item.detailedBreakdown !== undefined) {
+            convertedItem.detailed_breakdown = item.detailedBreakdown;
+            delete convertedItem.detailedBreakdown;
+            console.log(`📦 [Quote.create] Item ${idx} (${item.name}): Converted detailedBreakdown to detailed_breakdown`);
+          }
+
+          return convertedItem;
+        });
+      }
+
       const data = await quotesAPI.create(snakeCaseData);
       // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;
@@ -257,6 +347,32 @@ export class Quote {
       console.log('[Quote.update] 🔄 Original updates:', updates);
       console.log('[Quote.update] 🔄 Converted to snake_case:', snakeCaseUpdates);
       console.log('[Quote.update] 🔄 categoryTimings in converted:', snakeCaseUpdates.category_timings);
+
+      // ✅ FIX: Manually convert roomBreakdown and detailedBreakdown in items
+      // These fields are not converted automatically because 'items' is in JSONB_FIELDS_SAVE
+      if (snakeCaseUpdates.items && snakeCaseUpdates.items.length > 0) {
+        console.log('🔍 [Quote.update] Converting breakdown fields in items...');
+        snakeCaseUpdates.items = snakeCaseUpdates.items.map((item, idx) => {
+          const convertedItem = { ...item };
+
+          // Convert roomBreakdown to room_breakdown
+          if (item.roomBreakdown !== undefined) {
+            convertedItem.room_breakdown = item.roomBreakdown;
+            delete convertedItem.roomBreakdown;
+            console.log(`📦 [Quote.update] Item ${idx} (${item.name}): Converted roomBreakdown to room_breakdown`);
+          }
+
+          // Convert detailedBreakdown to detailed_breakdown
+          if (item.detailedBreakdown !== undefined) {
+            convertedItem.detailed_breakdown = item.detailedBreakdown;
+            delete convertedItem.detailedBreakdown;
+            console.log(`📦 [Quote.update] Item ${idx} (${item.name}): Converted detailedBreakdown to detailed_breakdown`);
+          }
+
+          return convertedItem;
+        });
+      }
+
       const data = await quotesAPI.update(id, snakeCaseUpdates);
       // Convert snake_case keys to camelCase for frontend
       return data ? convertKeysToCamelCase(data) : null;

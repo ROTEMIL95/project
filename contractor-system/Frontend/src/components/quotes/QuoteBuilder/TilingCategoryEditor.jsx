@@ -462,6 +462,7 @@ export default React.forwardRef(function TilingCategoryEditor({
   initialRooms = [],            // ✅ ADD: For restoration
   existingCategoryData,         // ✅ ADD: Existing category data
   onUpdateCategoryData,         // ✅ NEW: Callback to update parent's categoryDataMap
+  onRemoveItemFromQuote,        // 🆕 Function to remove items from cart when area is deleted
 }, ref) {
   const [tilingItems, setTilingItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -756,6 +757,9 @@ export default React.forwardRef(function TilingCategoryEditor({
   }, [tilingItems]);
 
   const handleRemoveItem = useCallback((itemId) => {
+    console.log(`🗑️ [TilingCategoryEditor] handleRemoveItem called for: ${itemId}`);
+
+    // Remove from local state
     setLocalItems((prev) => {
       if (prev.length === 1 && prev[0].id === itemId) {
         // If only one item left and it's being removed, reset to a blank item
@@ -774,7 +778,25 @@ export default React.forwardRef(function TilingCategoryEditor({
       }
       return prev.filter((item) => item.id !== itemId);
     });
-  }, []);
+
+    // ✅ FIX: Remove associated items from cart immediately using all possible ID variants
+    // Don't rely on selectedItems prop as it might be stale - let the parent handle the filtering
+    if (onRemoveItemFromQuote) {
+      console.log(`🗑️ [TilingCategoryEditor] Requesting removal from cart for itemId: ${itemId}`);
+
+      // Try all possible ID transformations that might exist in the cart
+      const possibleIds = [
+        itemId,                    // Original ID
+        `${itemId}_tiling`,       // Transformed ID for regular tiling
+        `${itemId}_panel`,        // Transformed ID for panel
+      ];
+
+      possibleIds.forEach(id => {
+        console.log(`  🗑️ Attempting to remove ID: ${id}`);
+        onRemoveItemFromQuote(id);
+      });
+    }
+  }, [onRemoveItemFromQuote, categoryId]);
 
   const toggleBreakdown = useCallback((itemId) => {
     setOpenBreakdowns((prev) => ({
@@ -926,7 +948,10 @@ export default React.forwardRef(function TilingCategoryEditor({
     console.log("📈 TilingCategoryEditor: currentCategorySummaryMetrics (aggregated totals):", currentCategorySummaryMetrics);
 
     // הכנת נתונים למשלוח - נמיר כל פריט ב-localItems למבנה המתאים ל-selectedItems
-    const processedItemsForQuote = localItems.map((item, index) => {
+    // ✅ NEW: When an item has both quantity AND panelQuantity, split it into 2 separate quote items
+    const processedItemsForQuote = [];
+
+    localItems.forEach((item, index) => {
       const itemMetrics = calculatedItemsMetrics[index]?.finalMetrics;
       const complexityData = calculatedItemsMetrics[index]?.complexity;
 
@@ -938,55 +963,134 @@ export default React.forwardRef(function TilingCategoryEditor({
         totalMaterialCost: 0,
         totalLaborCost: 0,
         workDays: 0,
-        costOfBlackMaterial: 0
+        costOfBlackMaterial: 0,
+        quantityWorkDays: 0,
+        panelWorkDays: 0,
+        quantityLaborCost: 0,
+        panelLaborCost: 0
       };
 
       const metrics = itemMetrics || defaultMetrics;
+      const hasRegularTiling = Number(item.quantity) > 0;
+      const hasPanel = Number(item.panelQuantity) > 0;
 
-      const processedItem = {
-        id: item.id, // Use local item's unique ID for the instance in the quote
-        catalogItemId: item.selectedItemData?.id || null,
-        categoryId: categoryId, // Use the prop directly
-        categoryName: 'ריצוף וחיפוי', // Hardcoded as categoryId is fixed to "cat_tiling"
-        name: item.name || `פריט ריצוף ${index + 1}`, // This is the user-defined room name
-        description: `סוג: ${formatItemNameWithSize(item)}${item.selectedItemData?.generalDescription ? `, ${item.selectedItemData.generalDescription}` : ''}`,
-        quantity: Number(item.quantity) || 0,
-        unit: item.selectedItemData?.unit || 'מ"ר',
-        unitPrice: metrics.totalPrice > 0 && (Number(item.quantity) || 0) > 0 ? metrics.totalPrice / (Number(item.quantity) || 1) : 0,
-        totalPrice: metrics.totalPrice,
-        totalCost: metrics.totalContractorCost,
-        profit: metrics.profit,
-        profitPercent: metrics.totalContractorCost > 0 ? metrics.profit / metrics.totalContractorCost * 100 : 0,
-        workDuration: metrics.workDays,
-        quality: item.selectedItemData?.quality || '',
-        complexityLevel: item.complexity?.level || 'none',
-        complexityDescription: item.complexity?.description || '',
-        complexityAddedCost: complexityData?.laborCostIncrease || 0,
-        materialCost: metrics.totalMaterialCost,
-        laborCost: metrics.totalLaborCost,
-        additionalCost: metrics.costOfBlackMaterial,
-        quantityWorkDays: metrics.quantityWorkDays || 0,
-        panelWorkDays: metrics.panelWorkDays || 0,
-        quantityLaborCost: metrics.quantityLaborCost || 0,
-        panelLaborCost: metrics.panelLaborCost || 0,
-        panelQuantity: Number(item.panelQuantity) || 0,
-        itemType: 'tiling',
-        isFromSimulator: false,
-        addedAt: new Date().toISOString(),
-        manualPriceOverride: item.manualPriceOverride || false,
-        manualCustomerPrice: item.manualCustomerPrice || null,
-        selectedSize: item.selectedSize || null, // Store selected size
-        workType: item.workType || '', // NEW: Save workType
-      };
+      // ✅ Calculate proportional split of costs if both exist
+      const totalWorkDays = (metrics.quantityWorkDays || 0) + (metrics.panelWorkDays || 0);
+      const totalLaborCost = (metrics.quantityLaborCost || 0) + (metrics.panelLaborCost || 0);
+
+      // Material cost and complexity are split proportionally to labor
+      const tilingLaborRatio = totalLaborCost > 0 ? (metrics.quantityLaborCost || 0) / totalLaborCost : 0.5;
+      const panelLaborRatio = totalLaborCost > 0 ? (metrics.panelLaborCost || 0) / totalLaborCost : 0.5;
+
+      // Split material cost proportionally
+      const tilingMaterialCost = metrics.totalMaterialCost * tilingLaborRatio;
+      const panelMaterialCost = metrics.totalMaterialCost * panelLaborRatio;
+
+      // Split complexity cost proportionally
+      const tilingComplexityCost = (complexityData?.laborCostIncrease || 0) * tilingLaborRatio;
+      const panelComplexityCost = (complexityData?.laborCostIncrease || 0) * panelLaborRatio;
+
+      // Calculate total costs for each
+      const tilingTotalCost = tilingMaterialCost + (metrics.quantityLaborCost || 0) + tilingComplexityCost;
+      const panelTotalCost = panelMaterialCost + (metrics.panelLaborCost || 0) + panelComplexityCost;
+
+      // Calculate prices with same profit margin
+      const profitPercent = metrics.totalContractorCost > 0 ? (metrics.profit / metrics.totalContractorCost) : 0.3;
+      const tilingProfit = tilingTotalCost * profitPercent;
+      const panelProfit = panelTotalCost * profitPercent;
+      const tilingTotalPrice = tilingTotalCost + tilingProfit;
+      const panelTotalPrice = panelTotalCost + panelProfit;
+
+      // ✅ CREATE REGULAR TILING ITEM (if quantity > 0)
+      if (hasRegularTiling) {
+        const tilingItem = {
+          id: hasPanel ? `${item.id}_tiling` : item.id, // Add suffix if split
+          catalogItemId: item.selectedItemData?.id || null,
+          categoryId: categoryId,
+          categoryName: 'ריצוף וחיפוי',
+          name: hasPanel ? `${item.name} - ריצוף` : item.name,
+          description: `סוג: ${formatItemNameWithSize(item)}${item.selectedItemData?.generalDescription ? `, ${item.selectedItemData.generalDescription}` : ''}`,
+          quantity: Number(item.quantity),
+          unit: item.selectedItemData?.unit || 'מ"ר',
+          unitPrice: hasPanel ? (tilingTotalPrice / Number(item.quantity)) : (metrics.totalPrice > 0 && Number(item.quantity) > 0 ? metrics.totalPrice / Number(item.quantity) : 0),
+          totalPrice: hasPanel ? tilingTotalPrice : metrics.totalPrice,
+          totalCost: hasPanel ? tilingTotalCost : metrics.totalContractorCost,
+          profit: hasPanel ? tilingProfit : metrics.profit,
+          profitPercent: hasPanel ? (tilingTotalCost > 0 ? tilingProfit / tilingTotalCost * 100 : 0) : (metrics.totalContractorCost > 0 ? metrics.profit / metrics.totalContractorCost * 100 : 0),
+          workDuration: metrics.quantityWorkDays || 0,
+          quality: item.selectedItemData?.quality || '',
+          complexityLevel: item.complexity?.level || 'none',
+          complexityDescription: item.complexity?.description || '',
+          complexityAddedCost: hasPanel ? tilingComplexityCost : (complexityData?.laborCostIncrease || 0),
+          materialCost: hasPanel ? tilingMaterialCost : metrics.totalMaterialCost,
+          laborCost: metrics.quantityLaborCost || 0,
+          additionalCost: hasPanel ? (metrics.costOfBlackMaterial * tilingLaborRatio) : metrics.costOfBlackMaterial,
+          quantityWorkDays: metrics.quantityWorkDays || 0,
+          panelWorkDays: 0, // No panel in this item
+          quantityLaborCost: metrics.quantityLaborCost || 0,
+          panelLaborCost: 0, // No panel in this item
+          panelQuantity: 0, // No panel in this item
+          itemType: 'tiling',
+          source: 'tiling_area_detail', // ✅ FIX: Add source field for cart item identification
+          isFromSimulator: false,
+          addedAt: new Date().toISOString(),
+          manualPriceOverride: item.manualPriceOverride || false,
+          manualCustomerPrice: item.manualCustomerPrice || null,
+          selectedSize: item.selectedSize || null,
+          workType: item.workType || '',
+        };
+        processedItemsForQuote.push(tilingItem);
+      }
+
+      // ✅ CREATE PANEL ITEM (if panelQuantity > 0)
+      if (hasPanel) {
+        const panelItem = {
+          id: `${item.id}_panel`,
+          catalogItemId: item.selectedItemData?.id || null,
+          categoryId: categoryId,
+          categoryName: 'ריצוף וחיפוי',
+          name: `${item.name} - פאנל`,
+          description: `פאנל - ${formatItemNameWithSize(item)}${item.selectedItemData?.generalDescription ? `, ${item.selectedItemData.generalDescription}` : ''}`,
+          quantity: Number(item.panelQuantity),
+          unit: 'מ"ר',
+          unitPrice: panelTotalPrice / Number(item.panelQuantity),
+          totalPrice: panelTotalPrice,
+          totalCost: panelTotalCost,
+          profit: panelProfit,
+          profitPercent: panelTotalCost > 0 ? panelProfit / panelTotalCost * 100 : 0,
+          workDuration: metrics.panelWorkDays || 0,
+          quality: item.selectedItemData?.quality || '',
+          complexityLevel: item.complexity?.level || 'none',
+          complexityDescription: item.complexity?.description || '',
+          complexityAddedCost: panelComplexityCost,
+          materialCost: panelMaterialCost,
+          laborCost: metrics.panelLaborCost || 0,
+          additionalCost: hasRegularTiling ? (metrics.costOfBlackMaterial * panelLaborRatio) : metrics.costOfBlackMaterial,
+          quantityWorkDays: 0, // No regular tiling in this item
+          panelWorkDays: metrics.panelWorkDays || 0,
+          quantityLaborCost: 0, // No regular tiling in this item
+          panelLaborCost: metrics.panelLaborCost || 0,
+          panelQuantity: Number(item.panelQuantity),
+          itemType: 'tiling',
+          source: 'tiling_area_detail', // ✅ FIX: Add source field for cart item identification
+          isFromSimulator: false,
+          addedAt: new Date().toISOString(),
+          manualPriceOverride: false, // Panel is auto-calculated
+          manualCustomerPrice: null,
+          selectedSize: item.selectedSize || null,
+          workType: item.workType || '',
+        };
+        processedItemsForQuote.push(panelItem);
+      }
 
       console.log(`🔧 TilingCategoryEditor: Processing item ${index + 1}:`, {
         originalItem: item,
-        processedItem: processedItem,
+        hasRegularTiling,
+        hasPanel,
+        splitIntoTwoItems: hasRegularTiling && hasPanel,
         itemMetrics: itemMetrics,
         complexityData: complexityData
       });
-
-      return processedItem;
     });
 
     console.log("✅ TilingCategoryEditor: Processed items ready for selectedItems:", processedItemsForQuote);
@@ -1236,79 +1340,35 @@ export default React.forwardRef(function TilingCategoryEditor({
                     </div>
                   </div>
 
-                  {/* Visual Breakdown for Panel Calculations */}
+                  {/* Price Display for User */}
                   {itemMetrics && (item.panelQuantity > 0 || item.quantity > 0) && (
-                    <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
-                      <div className="flex items-center justify-center gap-2 mb-3">
-                        <Calculator className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm font-semibold text-blue-800">פירוט חישוב עבודה</span>
-                      </div>
-                      <div className="flex items-center justify-center gap-3 flex-wrap">
-                        {/* Regular Tiling Section */}
-                        {item.quantity > 0 && (
-                          <div className="flex-1 min-w-[200px] p-3 bg-white rounded-lg border border-blue-300 shadow-sm">
-                            <div className="text-xs font-medium text-gray-600 mb-2 text-center">ריצוף רגיל</div>
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-600">שטח:</span>
-                                <span className="font-semibold text-gray-800">{itemMetrics.totalArea.toFixed(1)} מ"ר</span>
-                              </div>
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-600">ימי עבודה:</span>
-                                <span className="font-semibold text-gray-800">{(itemMetrics.quantityWorkDays || 0).toFixed(2)}</span>
-                              </div>
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-600">עלות עובדים:</span>
-                                <span className="font-semibold text-blue-700">₪{formatPrice(itemMetrics.quantityLaborCost)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Plus Symbol */}
-                        {item.quantity > 0 && item.panelQuantity > 0 && (
-                          <div className="flex items-center justify-center">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                              <Plus className="w-4 h-4 text-blue-600" />
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Panel Work Section */}
-                        {item.panelQuantity > 0 && (
-                          <div className="flex-1 min-w-[200px] p-3 bg-white rounded-lg border border-indigo-300 shadow-sm">
-                            <div className="text-xs font-medium text-gray-600 mb-2 text-center">עבודת פאנל</div>
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-600">שטח פאנל:</span>
-                                <span className="font-semibold text-gray-800">{itemMetrics.panelArea.toFixed(1)} מ"ר</span>
-                              </div>
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-600">ימי עבודה:</span>
-                                <span className="font-semibold text-gray-800">{itemMetrics.panelWorkDays.toFixed(2)}</span>
-                              </div>
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-600">עלות עובדים:</span>
-                                <span className="font-semibold text-indigo-700">₪{formatPrice(itemMetrics.panelLaborCost)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Total Summary */}
-                      {item.quantity > 0 && item.panelQuantity > 0 && (
-                        <div className="mt-3 pt-3 border-t border-blue-200">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Regular Tiling Price */}
+                      {item.quantity > 0 && (
+                        <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border-2 border-blue-300 shadow-sm">
+                          <div className="text-sm font-semibold text-blue-800 mb-2">מחיר ריצוף</div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm font-semibold text-gray-700">סה"כ עבודה:</span>
-                            <div className="flex items-center gap-4">
-                              <Badge variant="outline" className="bg-white border-blue-400 text-blue-700">
-                                {(itemMetrics.quantityWorkDays + itemMetrics.panelWorkDays).toFixed(2)} ימים
-                              </Badge>
-                              <Badge variant="outline" className="bg-white border-blue-400 text-blue-700 font-bold">
-                                ₪{formatPrice(itemMetrics.quantityLaborCost + itemMetrics.panelLaborCost)}
-                              </Badge>
-                            </div>
+                            <span className="text-xs text-blue-600">{itemMetrics.totalArea.toFixed(1)} מ"ר</span>
+                            <span className="text-xl font-bold text-blue-700">₪{formatPrice(
+                              item.panelQuantity > 0
+                                ? (itemMetrics.totalPrice * (itemMetrics.quantityLaborCost / (itemMetrics.quantityLaborCost + itemMetrics.panelLaborCost)))
+                                : itemMetrics.totalPrice
+                            )}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Panel Price */}
+                      {item.panelQuantity > 0 && (
+                        <div className="p-4 bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-lg border-2 border-indigo-300 shadow-sm">
+                          <div className="text-sm font-semibold text-indigo-800 mb-2">מחיר פאנל</div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-indigo-600">{itemMetrics.panelArea.toFixed(1)} מ"ר</span>
+                            <span className="text-xl font-bold text-indigo-700">₪{formatPrice(
+                              item.quantity > 0
+                                ? (itemMetrics.totalPrice * (itemMetrics.panelLaborCost / (itemMetrics.quantityLaborCost + itemMetrics.panelLaborCost)))
+                                : itemMetrics.totalPrice
+                            )}</span>
                           </div>
                         </div>
                       )}

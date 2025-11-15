@@ -210,6 +210,23 @@ export default function ManualCalcDialog() {
   const handleSave = () => {
     if (!canSave) return;
 
+    console.log('🎨 [ManualCalcDialog] handleSave called');
+    console.log('🎨 [ManualCalcDialog] Form state:', {
+      workType: form.workType,
+      wallsEnabled: form.wallsEnabled,
+      wallsLayers: form.wallsLayers,
+      wallsArea: form.wallsArea,
+      wallsType: form.wallsType,
+      ceilingEnabled: form.ceilingEnabled,
+      ceilingLayers: form.ceilingLayers,
+      ceilingArea: form.ceilingArea,
+      ceilingType: form.ceilingType,
+      layersWalls,
+      layersCeiling,
+      qtyWalls,
+      qtyCeiling,
+    });
+
     // Use existing ID if editing, otherwise create new ID
     const isEditing = ctxRef.current?.editingItemId;
     const nowId = isEditing || `manual_${form.workType}_${Date.now()}`;
@@ -226,39 +243,53 @@ export default function ManualCalcDialog() {
     // Build breakdown rows to be consumed by summary/preview tables
     const detailedBreakdown = [];
     if (form.wallsEnabled && qtyWalls > 0) {
-      detailedBreakdown.push({
+      const wallsBreakdown = {
         name: "קירות",
         // areas
         wallsArea: qtyWalls,
+        quantity: qtyWalls, // ✅ FIX: Add quantity for FloatingCart
         includeCeiling: false,
         withCeiling: false,
         ceilingArea: 0,
         // paint/plaster meta for walls
+        itemName: form.wallsType || "", // ✅ FIX: Add itemName for FloatingCart
         paintWallsName: form.wallsType || "",
         wallLayers: layersWalls || 0,
+        layers: layersWalls || 0, // ✅ FIX: Add layers field for FloatingCart
+        paintLayers: layersWalls || 0, // ✅ FIX: Add paintLayers for FloatingCart
         // pricing
         price: priceWalls,
         sellingPrice: priceWalls,
         metrics: { totalSellingPrice: priceWalls }
-      });
+      };
+      console.log('🎨 [ManualCalcDialog] Created wallsBreakdown:', wallsBreakdown);
+      detailedBreakdown.push(wallsBreakdown);
     }
     if (form.ceilingEnabled && qtyCeiling > 0) {
-      detailedBreakdown.push({
+      const ceilingBreakdown = {
         name: "תקרה",
         // areas
         wallsArea: 0,
+        quantity: qtyCeiling, // ✅ FIX: Add quantity for FloatingCart
         includeCeiling: true,
         withCeiling: true,
         ceilingArea: qtyCeiling,
         // paint/plaster meta for ceiling
+        itemName: form.ceilingType || "", // ✅ FIX: Add itemName for FloatingCart
         ceilingPaintName: form.ceilingType || "",
         ceilingLayers: layersCeiling || 0,
+        layers: layersCeiling || 0, // ✅ FIX: Add layers field for FloatingCart
+        paintLayers: layersCeiling || 0, // ✅ FIX: Add paintLayers for FloatingCart (ceiling uses paint layers too)
         // pricing
         price: priceCeiling,
         sellingPrice: priceCeiling,
         metrics: { totalSellingPrice: priceCeiling }
-      });
+      };
+      console.log('🎨 [ManualCalcDialog] Created ceilingBreakdown:', ceilingBreakdown);
+      detailedBreakdown.push(ceilingBreakdown);
     }
+
+    console.log('🎨 [ManualCalcDialog] Final detailedBreakdown array:', detailedBreakdown);
 
     const item = {
       id: nowId,
@@ -352,8 +383,18 @@ export default function ManualCalcDialog() {
       window.dispatchEvent(ev);
     }
 
+    console.log('🎨 [ManualCalcDialog] Final item to be added to quote:', {
+      id: item.id,
+      source: item.source,
+      detailedBreakdown: item.detailedBreakdown,
+      manualMeta: item.manualMeta,
+    });
+
     if (typeof window.__b44AddItemToQuote === "function") {
+      console.log('🎨 [ManualCalcDialog] Calling window.__b44AddItemToQuote with item');
       window.__b44AddItemToQuote(item);
+    } else {
+      console.error('❌ [ManualCalcDialog] window.__b44AddItemToQuote is not defined!');
     }
 
     resetAndClose();

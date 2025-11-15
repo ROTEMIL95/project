@@ -141,17 +141,57 @@ const ManualCartDetails = ({ item }) => {
   }
 
   return (
-    <div className="mt-1 space-y-1 text-xs text-gray-600">
+    <div className="mt-2 space-y-1 text-xs text-gray-600">
       {walls.enabled && (
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-700">{walls.label}:</span>
-          <span>{walls.type ? `סוג ${walls.type}` : "—"} • {walls.layers || 0} שכבות • {walls.area || 0} מ״ר</span>
+        <div className="mb-2">
+          <div className="font-medium text-gray-700 mb-0.5">{walls.label}</div>
+          <div className="mr-2 space-y-1">
+            {walls.type && (
+              <div className="flex items-center gap-1">
+                <span className="font-medium">סוג:</span>
+                <span>{walls.type}</span>
+              </div>
+            )}
+            {walls.layers > 0 && (
+              <div className="flex items-center gap-1">
+                <Layers className="h-3 w-3 text-purple-500" />
+                <span className="font-medium">שכבות:</span>
+                <span>{walls.layers}</span>
+              </div>
+            )}
+            {walls.area > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="font-medium">כמות:</span>
+                <span>{walls.area} מ״ר</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
       {ceiling.enabled && (
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-700">{ceiling.label}:</span>
-          <span>{ceiling.type ? `סוג ${ceiling.type}` : "—"} • {ceiling.layers || 0} שכבות • {ceiling.area || 0} מ״ר</span>
+        <div>
+          <div className="font-medium text-gray-700 mb-0.5">{ceiling.label}</div>
+          <div className="mr-2 space-y-1">
+            {ceiling.type && (
+              <div className="flex items-center gap-1">
+                <span className="font-medium">סוג:</span>
+                <span>{ceiling.type}</span>
+              </div>
+            )}
+            {ceiling.layers > 0 && (
+              <div className="flex items-center gap-1">
+                <Layers className="h-3 w-3 text-purple-500" />
+                <span className="font-medium">שכבות:</span>
+                <span>{ceiling.layers}</span>
+              </div>
+            )}
+            {ceiling.area > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="font-medium">כמות:</span>
+                <span>{ceiling.area} מ״ר</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -183,7 +223,7 @@ const renderSimpleAreaItem = (item, onRemoveItem) => {
                             <span>{paintType}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <Layers className="h-3 w-3" />
+                            <Layers className="h-3 w-3 text-purple-500" />
                             <span className="font-medium">שכבות:</span>
                             <span>{layers}</span>
                         </div>
@@ -261,13 +301,204 @@ const renderRoomCalcItem = (item, onRemoveItem) => {
 
 // NEW: Render paint/plaster room detail items (simple single-room items)
 const renderPaintRoomDetail = (item, onRemoveItem) => {
+    // Removed verbose logging - only log when debugging
+    // console.log('🎨 [renderPaintRoomDetail] Item data:', {...});
+
+    // Determine if it's paint or plaster from description
+    const descLower = (item.description || '').toLowerCase();
+    const isPaint = descLower.includes('צבע') || item.paintType;
+    const isPlaster = descLower.includes('טיח') || descLower.includes('שפכטל') || item.plasterType;
+
+    // Get the item name - prefer itemName from metrics
+    const itemName = item.itemName || item.paintName || item.plasterName || '';
+
+    // Get the paint/plaster type ID
+    const typeId = item.paintType || item.plasterType || '';
+
+    // Build a better display name
+    let displayTypeName = itemName;
+
+    // If we don't have an itemName but have a typeId, use it
+    if (!displayTypeName && typeId) {
+        // Map common type IDs to Hebrew names
+        const typeNames = {
+            'acrylic': 'אקרילי',
+            'supercryl': 'סופרקריל',
+            'oil': 'שמן',
+            'effects': 'אפקטים',
+            'gypsum': 'גבס',
+            'cement': 'צמנט'
+        };
+        displayTypeName = typeNames[typeId] || typeId;
+    }
+
+    const layers = item.layers || 0;
+
+    console.log('🎨 [renderPaintRoomDetail] Calculated layers:', layers);
+
+    // Check if this item has both walls and ceiling
+    // Description containing "|" means it has both (e.g., "קירות: X | תקרה: Y")
+    const descriptionHasBoth = item.description?.includes('|');
+    const hasWalls = item.description?.includes('קירות') || Number(item.wallPaintQuantity || 0) > 0;
+    const hasCeiling = item.description?.includes('תקרה') || Number(item.ceilingPaintQuantity || 0) > 0;
+    const hasBoth = (hasWalls && hasCeiling) || descriptionHasBoth;
+
+    console.log('🎨 [FloatingCart renderPaintRoomDetail]', item.name, {
+        id: item.id,
+        source: item.source,
+        wallPaintQuantity: item.wallPaintQuantity,
+        ceilingPaintQuantity: item.ceilingPaintQuantity,
+        quantity: item.quantity,
+        itemName: item.itemName,
+        paintName: item.paintName,
+        wallPaintName: item.wallPaintName,
+        ceilingPaintName: item.ceilingPaintName,
+        description: item.description,
+        hasWalls,
+        hasCeiling,
+        hasBoth,
+        displayTypeName
+    });
+
+    // Parse walls and ceiling info from description if available
+    let wallsText = '';
+    let ceilingText = '';
+    let wallsLayers = 0;
+    let ceilingLayers = 0;
+
+    if (descriptionHasBoth && item.description) {
+        const parts = item.description.split('|').map(s => s.trim());
+        wallsText = parts[0]?.replace('קירות:', '').trim() || '';
+        ceilingText = parts[1]?.replace('תקרה:', '').trim() || '';
+
+        // Extract layers from each part (format: "סוג X - Y שכבות" or "סוג X Y שכבות")
+        const wallsLayersMatch = wallsText.match(/(\d+)\s*שכבות?/);
+        const ceilingLayersMatch = ceilingText.match(/(\d+)\s*שכבות?/);
+
+        wallsLayers = wallsLayersMatch ? parseInt(wallsLayersMatch[1]) : (item.wallPaintLayers || 0);
+        ceilingLayers = ceilingLayersMatch ? parseInt(ceilingLayersMatch[1]) : (item.ceilingPaintLayers || 0);
+
+        console.log('🎨 [renderPaintRoomDetail] Extracted layers:', {
+            wallsText,
+            ceilingText,
+            wallsLayers,
+            ceilingLayers,
+            wallsLayersMatch,
+            ceilingLayersMatch
+        });
+
+        // Remove layers info from text (we'll show it separately)
+        wallsText = wallsText.replace(/\s*-?\s*\d+\s*שכבות?/, '').trim();
+        ceilingText = ceilingText.replace(/\s*-?\s*\d+\s*שכבות?/, '').trim();
+    }
+
     return (
         <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border flex items-start gap-3">
             <div className="flex-1">
-                <p className="font-semibold text-gray-800 text-sm">{item.name}</p>
-                <p className="text-xs text-gray-600 mt-0.5">{item.description}</p>
-                <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                    <span>{safeToFixed(item.quantity || 0, 0)} מ"ר</span>
+                <div className="flex items-center gap-2">
+                    <Paintbrush className={`h-4 w-4 ${isPaint ? 'text-blue-500' : 'text-orange-500'}`} />
+                    <p className="font-semibold text-gray-800 text-sm">{item.name}</p>
+                </div>
+                {/* Only show description if it doesn't duplicate the type name shown below AND we don't have both walls/ceiling */}
+                {item.description && !displayTypeName && !hasBoth && (
+                    <p className="text-xs text-gray-600 mt-0.5">{item.description}</p>
+                )}
+                <div className="mt-2 space-y-1 text-xs text-gray-600">
+                    {/* If we have both walls and ceiling, show them separately */}
+                    {hasBoth ? (
+                        <>
+                            {hasWalls && (
+                                <div className="mb-2">
+                                    <div className="font-medium text-gray-700 mb-0.5">קירות</div>
+                                    <div className="mr-2 text-xs space-y-1">
+                                        {/* Prefer wallPaintName from item fields over parsed text */}
+                                        {item.wallPaintName ? (
+                                            <div className="flex items-center gap-1">
+                                                <span className="font-medium">סוג:</span>
+                                                <span>{item.wallPaintName}</span>
+                                            </div>
+                                        ) : wallsText && !wallsText.includes('|') ? (
+                                            <span>{wallsText}</span>
+                                        ) : !wallsText && displayTypeName ? (
+                                            <div className="flex items-center gap-1">
+                                                <span className="font-medium">סוג:</span>
+                                                <span>{displayTypeName}</span>
+                                            </div>
+                                        ) : null}
+                                        {(wallsLayers > 0 || item.wallPaintLayers > 0) && (
+                                            <div className="flex items-center gap-1">
+                                                <Layers className="h-3 w-3 text-purple-500" />
+                                                <span className="font-medium">שכבות:</span>
+                                                <span>{wallsLayers || item.wallPaintLayers}</span>
+                                            </div>
+                                        )}
+                                        {wallsLayers === 0 && !item.wallPaintLayers && layers > 0 && (
+                                            <div className="flex items-center gap-1">
+                                                <Layers className="h-3 w-3 text-purple-500" />
+                                                <span className="font-medium">שכבות:</span>
+                                                <span>{layers}</span>
+                                            </div>
+                                        )}
+                                        {(item.wallPaintQuantity > 0) && (
+                                            <div className="flex items-center gap-1">
+                                                <span className="font-medium">כמות:</span>
+                                                <span>{safeToFixed(item.wallPaintQuantity, 0)} מ"ר</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            {hasCeiling && (
+                                <div>
+                                    <div className="font-medium text-gray-700 mb-0.5">תקרה</div>
+                                    <div className="mr-2 text-xs space-y-1">
+                                        {/* Prefer ceilingPaintName from item fields over parsed text */}
+                                        {item.ceilingPaintName ? (
+                                            <div className="flex items-center gap-1">
+                                                <span className="font-medium">סוג:</span>
+                                                <span>{item.ceilingPaintName}</span>
+                                            </div>
+                                        ) : ceilingText && !ceilingText.includes('|') ? (
+                                            <span>{ceilingText}</span>
+                                        ) : null}
+                                        {(ceilingLayers > 0 || item.ceilingPaintLayers > 0) && (
+                                            <div className="flex items-center gap-1">
+                                                <Layers className="h-3 w-3 text-purple-500" />
+                                                <span className="font-medium">שכבות:</span>
+                                                <span>{ceilingLayers || item.ceilingPaintLayers}</span>
+                                            </div>
+                                        )}
+                                        {(item.ceilingPaintQuantity > 0) && (
+                                            <div className="flex items-center gap-1">
+                                                <span className="font-medium">כמות:</span>
+                                                <span>{safeToFixed(item.ceilingPaintQuantity, 0)} מ"ר</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        /* Single item - show in one line */
+                        <>
+                            {displayTypeName && (
+                                <div className="flex items-center gap-1">
+                                    <Paintbrush className={`h-3 w-3 ${isPaint ? 'text-blue-500' : 'text-orange-500'}`} />
+                                    <span className="font-medium">סוג:</span>
+                                    <span>{displayTypeName}</span>
+                                </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                                <Layers className="h-3 w-3 text-purple-500" />
+                                <span className="font-medium">שכבות:</span>
+                                <span>{layers || 0}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <span className="font-medium">שטח:</span>
+                                <span>{safeToFixed(item.quantity || 0, 0)} מ"ר</span>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
             <div className="text-right flex items-center gap-2">
@@ -448,9 +679,6 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
     const filteredRoomsRaw = roomsRaw.filter(r => r?.source !== 'manual_calc');
 
     const rooms = filteredRoomsRaw.map((r, idx) => {
-        // 🐛 DEBUG: Log each room's complete data
-        console.log(`🎨 [renderPaintSummary] Room ${idx}:`, JSON.parse(JSON.stringify(r)));
-
         // Check if this is a manual item (should never happen after filtering above)
         const isManualItem = r?.source === 'manual_calc';
 
@@ -458,14 +686,6 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
         const paintItemName = r?.itemName || r?.name || null;
         const paintLayers = Number(r?.layers || r?.paintLayers || 0);
         const paintQuantity = Number(r?.quantity || r?.paintQuantity || 0);
-
-        console.log(`🔍 [Room ${idx}] Extracted paint data:`, {
-            paintItemName,
-            paintLayers,
-            paintQuantity,
-            source: r?.source,
-            rawItem: r
-        });
 
         const wallsArea = Number(firstPositive([
             r?.quantity, r?.paintQuantity, r?.calculatedWallArea, r?.wallArea, r?.wallAreaSqM, r?.wallsArea, r?.wallsNetArea, r?.wallAreaAfterOpenings
@@ -650,12 +870,7 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
       item.source !== 'paint_plaster_category_summary'
     );
 
-    console.log('🛒 [FloatingCart] Items filtering:', {
-      totalItems: items.length,
-      displayItems: displayItems.length,
-      removed: items.length - displayItems.length,
-      allSources: items.map(it => ({ id: it.id, source: it.source, name: it.name }))
-    });
+    // Removed general cart filtering log
 
     // NEW: compute grouping once (using filtered items)
     const { order: categoriesOrder, map: categoriesMap } = groupItemsByCategory(displayItems);
@@ -765,18 +980,22 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                 {/* Items in this category */}
                                                 <div className="space-y-3">
                                                     {group.items.map(item => {
+                                                      // ⭐ IMPORTANT: Check specific sources FIRST before generic checks
                                                       const isManualItem = isManualCalcItem(item);
-                                                      const isPaintSummary = item.categoryId === 'cat_paint_plaster' &&
-                                                        (item.source === 'paint_plaster_category_summary' || Array.isArray(item?.detailedBreakdown));
 
-                                                      // NEW: Check for simple area items
+                                                      // Check for paint room detail items (MUST be before isPaintSummary!)
+                                                      const isPaintRoomDetail = item.source === 'paint_room_detail';
+
+                                                      // Check for simple area items
                                                       const isSimpleAreaItem = item.source === 'paint_simulator' || item.source === 'plaster_simulator';
 
-                                                      // NEW: Check for room calculator items
+                                                      // Check for room calculator items
                                                       const isRoomCalcItem = item.source === 'paint_room_calc' || item.source === 'plaster_room_calc';
 
-                                                      // NEW: Check for paint room detail items
-                                                      const isPaintRoomDetail = item.source === 'paint_room_detail';
+                                                      // ✅ FIX: Only treat as summary if explicitly marked OR has detailedBreakdown BUT NOT paint_room_detail
+                                                      const isPaintSummary = item.categoryId === 'cat_paint_plaster' &&
+                                                        !isPaintRoomDetail &&  // Prevent paint_room_detail from being treated as summary
+                                                        (item.source === 'paint_plaster_category_summary' || Array.isArray(item?.detailedBreakdown));
 
                                                       // Manual calc items - render with simple styling matching paint room detail
                                                       if (isManualItem) {
