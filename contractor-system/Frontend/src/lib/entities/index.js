@@ -55,28 +55,11 @@ const convertKeysToCamelCase = (obj, debugKey = null) => {
     // Skip this key if we've already processed its camelCase equivalent
     // This prevents empty camelCase columns from overwriting converted snake_case data
     if (processedKeys.has(camelKey)) {
-      console.log(`[convertKeysToCamelCase] Skipping duplicate key: ${key} (already have ${camelKey})`);
       continue;
-    }
-
-    // Debug log for category_timings
-    if (key === 'category_timings') {
-      console.log('[convertKeysToCamelCase] Found category_timings!', {
-        originalKey: key,
-        camelKey: camelKey,
-        value: value,
-        valueType: typeof value
-      });
     }
 
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       const convertedValue = convertKeysToCamelCase(value, key);
-
-      // Debug log for converted category_timings
-      if (key === 'category_timings') {
-        console.log('[convertKeysToCamelCase] Converted category_timings value:', convertedValue);
-      }
-
       converted[camelKey] = convertedValue;
       processedKeys.add(camelKey);
     } else {
@@ -193,20 +176,10 @@ export class Quote {
         params.limit = filters.limit;
       }
 
-      console.log('[Quote.filter] Calling API with params:', params);
       const response = await quotesAPI.list(params);
-      console.log('[Quote.filter] API response:', response);
 
       // Backend returns {quotes: [...], total: N}
       const quotes = response.quotes || response || [];
-      console.log('[Quote.filter] Extracted quotes:', quotes.length, 'quotes');
-      quotes.forEach((quote, idx) => {
-        console.log(`[Quote.filter] RAW Quote ${idx + 1} - ${quote.project_name || quote.projectName}:`, {
-          id: quote.id,
-          category_timings: quote.category_timings,
-          hasCategoryTimings: !!quote.category_timings && Object.keys(quote.category_timings).length > 0
-        });
-      });
 
       // Convert snake_case keys to camelCase for frontend
       const converted = quotes.map(quote => {
@@ -215,24 +188,19 @@ export class Quote {
         // ✅ FIX: Manually convert room_breakdown and detailed_breakdown back to camelCase in items
         // These fields are not converted automatically because 'items' is in JSONB_FIELDS_SAVE
         if (convertedQuote.items && convertedQuote.items.length > 0) {
-          console.log(`🔍 [Quote.filter] Converting breakdown fields for quote ${convertedQuote.id}...`);
-          convertedQuote.items = convertedQuote.items.map((item, idx) => {
+          convertedQuote.items = convertedQuote.items.map(item => {
             const convertedItem = { ...item };
 
             // Convert room_breakdown to roomBreakdown
             if (item.room_breakdown !== undefined) {
               convertedItem.roomBreakdown = item.room_breakdown;
               delete convertedItem.room_breakdown;
-              console.log(`📦 [Quote.filter] Item ${idx} (${item.name}): Converted room_breakdown to roomBreakdown`, {
-                roomBreakdownLength: convertedItem.roomBreakdown?.length || 0
-              });
             }
 
             // Convert detailed_breakdown to detailedBreakdown
             if (item.detailed_breakdown !== undefined) {
               convertedItem.detailedBreakdown = item.detailed_breakdown;
               delete convertedItem.detailed_breakdown;
-              console.log(`📦 [Quote.filter] Item ${idx} (${item.name}): Converted detailed_breakdown to detailedBreakdown`);
             }
 
             return convertedItem;
@@ -242,15 +210,6 @@ export class Quote {
         return convertedQuote;
       });
 
-      console.log('[Quote.filter] Returning converted quotes:', converted.length);
-      converted.forEach((quote, idx) => {
-        console.log(`[Quote.filter] Quote ${idx + 1} - ${quote.projectName}:`, {
-          id: quote.id,
-          hasCategoryTimings: !!quote.categoryTimings && Object.keys(quote.categoryTimings).length > 0,
-          categoryTimingsKeys: Object.keys(quote.categoryTimings || {}),
-          categoryTimings: quote.categoryTimings
-        });
-      });
       return converted;
     } catch (error) {
       console.error("Quote.filter error:", error);
@@ -270,24 +229,19 @@ export class Quote {
       // ✅ FIX: Manually convert room_breakdown and detailed_breakdown back to camelCase in items
       // These fields are not converted automatically because 'items' is in JSONB_FIELDS_SAVE
       if (converted.items && converted.items.length > 0) {
-        console.log('🔍 [Quote.getById] Converting breakdown fields from DB to camelCase...');
-        converted.items = converted.items.map((item, idx) => {
+        converted.items = converted.items.map(item => {
           const convertedItem = { ...item };
 
           // Convert room_breakdown to roomBreakdown
           if (item.room_breakdown !== undefined) {
             convertedItem.roomBreakdown = item.room_breakdown;
             delete convertedItem.room_breakdown;
-            console.log(`📦 [Quote.getById] Item ${idx} (${item.name}): Converted room_breakdown to roomBreakdown`, {
-              roomBreakdownLength: convertedItem.roomBreakdown?.length || 0
-            });
           }
 
           // Convert detailed_breakdown to detailedBreakdown
           if (item.detailed_breakdown !== undefined) {
             convertedItem.detailedBreakdown = item.detailed_breakdown;
             delete convertedItem.detailed_breakdown;
-            console.log(`📦 [Quote.getById] Item ${idx} (${item.name}): Converted detailed_breakdown to detailedBreakdown`);
           }
 
           return convertedItem;
@@ -309,22 +263,19 @@ export class Quote {
       // ✅ FIX: Manually convert roomBreakdown and detailedBreakdown in items
       // These fields are not converted automatically because 'items' is in JSONB_FIELDS_SAVE
       if (snakeCaseData.items && snakeCaseData.items.length > 0) {
-        console.log('🔍 [Quote.create] Converting breakdown fields in items...');
-        snakeCaseData.items = snakeCaseData.items.map((item, idx) => {
+        snakeCaseData.items = snakeCaseData.items.map(item => {
           const convertedItem = { ...item };
 
           // Convert roomBreakdown to room_breakdown
           if (item.roomBreakdown !== undefined) {
             convertedItem.room_breakdown = item.roomBreakdown;
             delete convertedItem.roomBreakdown;
-            console.log(`📦 [Quote.create] Item ${idx} (${item.name}): Converted roomBreakdown to room_breakdown`);
           }
 
           // Convert detailedBreakdown to detailed_breakdown
           if (item.detailedBreakdown !== undefined) {
             convertedItem.detailed_breakdown = item.detailedBreakdown;
             delete convertedItem.detailedBreakdown;
-            console.log(`📦 [Quote.create] Item ${idx} (${item.name}): Converted detailedBreakdown to detailed_breakdown`);
           }
 
           return convertedItem;
@@ -344,29 +295,23 @@ export class Quote {
     try {
       // Convert camelCase keys to snake_case for database
       const snakeCaseUpdates = convertKeysToSnakeCase(updates);
-      console.log('[Quote.update] 🔄 Original updates:', updates);
-      console.log('[Quote.update] 🔄 Converted to snake_case:', snakeCaseUpdates);
-      console.log('[Quote.update] 🔄 categoryTimings in converted:', snakeCaseUpdates.category_timings);
 
       // ✅ FIX: Manually convert roomBreakdown and detailedBreakdown in items
       // These fields are not converted automatically because 'items' is in JSONB_FIELDS_SAVE
       if (snakeCaseUpdates.items && snakeCaseUpdates.items.length > 0) {
-        console.log('🔍 [Quote.update] Converting breakdown fields in items...');
-        snakeCaseUpdates.items = snakeCaseUpdates.items.map((item, idx) => {
+        snakeCaseUpdates.items = snakeCaseUpdates.items.map(item => {
           const convertedItem = { ...item };
 
           // Convert roomBreakdown to room_breakdown
           if (item.roomBreakdown !== undefined) {
             convertedItem.room_breakdown = item.roomBreakdown;
             delete convertedItem.roomBreakdown;
-            console.log(`📦 [Quote.update] Item ${idx} (${item.name}): Converted roomBreakdown to room_breakdown`);
           }
 
           // Convert detailedBreakdown to detailed_breakdown
           if (item.detailedBreakdown !== undefined) {
             convertedItem.detailed_breakdown = item.detailedBreakdown;
             delete convertedItem.detailedBreakdown;
-            console.log(`📦 [Quote.update] Item ${idx} (${item.name}): Converted detailedBreakdown to detailed_breakdown`);
           }
 
           return convertedItem;

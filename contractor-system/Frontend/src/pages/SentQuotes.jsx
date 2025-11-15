@@ -148,7 +148,7 @@ export default function SentQuotes() {
         // Allow admins to delete any quote, or users to delete their own quotes
         const isAdmin = user?.role === 'admin';
         const isOwner = quoteToDelete.userId === user.id;
-        
+
         if (!isAdmin && !isOwner) {
             toast({
                 variant: "destructive",
@@ -159,36 +159,49 @@ export default function SentQuotes() {
             return;
         }
 
-        try {
-            // First, try to delete the main quote entity.
-            try {
-                await Quote.delete(quoteToDelete.id);
-            } catch (error) {
-                // Check if it's a "not found" error - can be in message or status code
-                const is404 = error.response?.status === 404 || 
-                              error.message?.toLowerCase().includes('not found') ||
-                              error.message?.includes('404');
-                
-                if (!is404) {
-                    console.error("Backend error deleting quote:", error);
-                } else {
-                    console.log("Quote was already deleted, proceeding with cleanup.");
-                }
-            }
+        // עדכון UI מיידי - מוחקים מהרשימה מיד
+        setQuotes(prevQuotes => prevQuotes.filter(q => q.id !== quoteToDelete.id));
+        setDeleteAlert({ isOpen: false, quote: null });
 
-            // Second, try to remove the associated financial transaction.
-            await removeFinancialTransaction(quoteToDelete.id);
+        // הצגת הודעה למשתמש
+        toast({
+            title: "מוחק הצעה...",
+            description: `מוחק את הצעת המחיר "${quoteToDelete.projectName}" מהמערכת.`,
+        });
+
+        // ביצוע המחיקה ברקע - גם אם זה לוקח זמן, המשתמש כבר רואה שההצעה נמחקה
+        try {
+            // מחיקת ההצעה והטרנזקציות במקביל למהירות מקסימלית
+            const [quoteResult, transactionResult] = await Promise.allSettled([
+                Quote.delete(quoteToDelete.id).catch(error => {
+                    // Check if it's a "not found" error
+                    const is404 = error.response?.status === 404 ||
+                                  error.message?.toLowerCase().includes('not found') ||
+                                  error.message?.includes('404');
+
+                    if (!is404) {
+                        console.error("Backend error deleting quote:", error);
+                        throw error;
+                    }
+                    console.log("Quote was already deleted, proceeding with cleanup.");
+                }),
+                removeFinancialTransaction(quoteToDelete.id)
+            ]);
+
+            // הודעת הצלחה סופית
+            toast({
+                title: "ההצעה נמחקה בהצלחה",
+                description: `הצעת המחיר "${quoteToDelete.projectName}" נמחקה לצמיתות מהמערכת.`,
+            });
 
         } catch (e) {
             console.error("An unexpected error occurred during the deletion process:", e);
-        } finally {
-            // This block will ALWAYS run, ensuring the UI is updated and the dialog closes.
-            setQuotes(prevQuotes => prevQuotes.filter(q => q.id !== quoteToDelete.id));
+            // במקרה של שגיאה, אנחנו לא מחזירים את ההצעה לרשימה כי זה יכול לבלבל
             toast({
-                title: "ההצעה הוסרה",
-                description: `הצעת המחיר "${quoteToDelete.projectName}" הוסרה מהרשימה.`,
+                variant: "destructive",
+                title: "שגיאה במחיקה",
+                description: "הצעה הוסרה מהתצוגה, אך ייתכנו בעיות במחיקה מהשרת. נסה לרענן את העמוד.",
             });
-            setDeleteAlert({ isOpen: false, quote: null });
         }
     };
 
@@ -335,28 +348,33 @@ export default function SentQuotes() {
         }
     };
 
-    // פונקציה להסרת טרנזקציה פיננסית - עם שיפורי טיפול בשגיאות
+    // פונקציה להסרת טרנזקציה פיננסית - עם שיפורי טיפול בשגיאות ומחיקה מקבילית
     const removeFinancialTransaction = async (quoteId) => {
         try {
             const existingTransactions = await FinancialTransaction.filter({ quoteId: quoteId });
-            
-            for (const transaction of existingTransactions) {
-                try {
-                    await FinancialTransaction.delete(transaction.id);
-                    console.log(`נמחקה טרנזקציה פיננסית ${transaction.id} עבור הצעה ${quoteId}`);
-                } catch (deleteError) {
-                     // Check if it's a "not found" error
-                    const is404 = deleteError.response?.status === 404 ||
-                                  deleteError.message?.toLowerCase().includes('not found') ||
-                                  deleteError.message?.includes('404');
-                    
-                    if (is404) {
-                        console.log(`Transaction ${transaction.id} already deleted, skipping.`);
-                    } else {
-                        console.error(`Unexpected error deleting transaction ${transaction.id}:`, deleteError);
-                    }
-                }
-            }
+
+            // מחיקה מקבילית של כל הטרנזקציות במקום ברצף - מהיר יותר!
+            const deletionPromises = existingTransactions.map(transaction =>
+                FinancialTransaction.delete(transaction.id)
+                    .then(() => {
+                        console.log(`נמחקה טרנזקציה פיננסית ${transaction.id} עבור הצעה ${quoteId}`);
+                    })
+                    .catch(deleteError => {
+                        // Check if it's a "not found" error
+                        const is404 = deleteError.response?.status === 404 ||
+                                      deleteError.message?.toLowerCase().includes('not found') ||
+                                      deleteError.message?.includes('404');
+
+                        if (is404) {
+                            console.log(`Transaction ${transaction.id} already deleted, skipping.`);
+                        } else {
+                            console.error(`Unexpected error deleting transaction ${transaction.id}:`, deleteError);
+                        }
+                    })
+            );
+
+            // המתנה לסיום כל המחיקות במקביל
+            await Promise.all(deletionPromises);
         } catch (error) {
             console.error('Error fetching transactions to remove:', error);
             // We don't re-throw the error, as failing to remove a transaction
