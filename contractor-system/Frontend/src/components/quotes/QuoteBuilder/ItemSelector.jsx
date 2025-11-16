@@ -1539,7 +1539,7 @@ const PaintRoomsManager = React.forwardRef(({
         const costPerSqM = totalQuantity > 0 ? finalCalculatedTotalCost / totalQuantity : 0;
         const profitPerSqM = totalQuantity > 0 ? finalTotalProfit / totalQuantity : 0;
 
-        return {
+        const result = {
             totalCost: Math.round(finalCalculatedTotalCost),
             totalPrice: Math.round(finalCalculatedTotalSellingPrice),
             totalProfit: Math.round(finalTotalProfit),
@@ -1573,6 +1573,19 @@ const PaintRoomsManager = React.forwardRef(({
                 complexityWorkDaysIncrease: totalPlasterComplexityWorkDaysIncrease
             }
         };
+
+        // Debug log - only when preciseWorkDays changes
+        if (window.__lastPWDLog !== preciseWorkDays) {
+            console.log('✅ [totalMetrics] Updated:', {
+                preciseWorkDays,
+                totalWorkDays: result.totalWorkDays,
+                totalLaborCost: result.totalLaborCost,
+                unroundedWorkDays: result.unroundedWorkDays
+            });
+            window.__lastPWDLog = preciseWorkDays;
+        }
+
+        return result;
     }, [rooms, preciseBucketCalculation, preciseWorkDays, manualItemsForCategory, categoryId]);
 
     useImperativeHandle(ref, () => ({
@@ -2130,10 +2143,16 @@ const PaintRoomsManager = React.forwardRef(({
                                     };
 
                                     const handleDeleteManualItem = (itemToDelete) => {
+                                        // Remove from staged manual items
                                         if (setStagedManualItems && typeof setStagedManualItems === 'function') {
-                                            setStagedManualItems(prev => 
+                                            setStagedManualItems(prev =>
                                                 prev.filter(item => item.id !== itemToDelete.id)
                                             );
+                                        }
+
+                                        // 🔧 Also remove from cart (selectedItems)
+                                        if (onRemoveItemFromQuote && typeof onRemoveItemFromQuote === 'function') {
+                                            onRemoveItemFromQuote(itemToDelete.id);
                                         }
                                     };
 
