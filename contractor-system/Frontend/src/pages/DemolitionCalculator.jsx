@@ -205,7 +205,7 @@ const DemolitionItemForm = ({ isOpen, onClose, onSubmit, itemToEdit, defaults })
                 : 'כמה שעות עבודה דרושות לביצוע יחידה אחת';
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={onClose} modal={true}>
             <DialogContent className="max-w-lg" dir="rtl">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-lg">
@@ -237,7 +237,7 @@ const DemolitionItemForm = ({ isOpen, onClose, onSubmit, itemToEdit, defaults })
                                     <SelectTrigger className="h-9">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent position="popper" className="z-[9999]">
                                         <SelectItem value="יחידה">יחידה</SelectItem>
                                         <SelectItem value="מ'ר">מ"ר</SelectItem>
                                         <SelectItem value="מטר רץ">מטר רץ</SelectItem>
