@@ -1799,7 +1799,8 @@ const PaintRoomsManager = React.forwardRef(({
                 // (items with source 'manual_calc' are added individually when created)
                 const filteredManualItems = manualItems.filter(item => item.source !== 'manual_calc');
 
-                // Create consolidated summary item
+                // 🔧 FIX: Use totalMetrics values which include precision adjustments
+                // instead of summing individual item prices
                 const consolidatedItem = {
                     id: `cat_paint_plaster_summary_${Date.now()}`,
                     categoryId: categoryId,
@@ -1807,15 +1808,16 @@ const PaintRoomsManager = React.forwardRef(({
                     name: 'סיכום צבע ושפכטל',
                     description: generatedDescription,
                     source: 'paint_plaster_category_summary',
-                    totalCost: catalogTotalCost + manualTotalCost,
-                    totalSellingPrice: catalogTotalPrice + manualTotalPrice,
-                    totalPrice: catalogTotalPrice + manualTotalPrice,
-                    totalProfit: (catalogTotalPrice + manualTotalPrice) - (catalogTotalCost + manualTotalCost),
-                    totalWorkDays: catalogTotalWorkDays + manualTotalWorkDays,
-                    workDuration: catalogTotalWorkDays + manualTotalWorkDays,
-                    laborCost: totalLaborCost,
-                    materialCost: totalMaterialCost,
-                    quantity: catalogTotalQuantity,
+                    // ✅ Use totalMetrics which includes precision adjustments
+                    totalCost: totalMetrics.totalCost,
+                    totalSellingPrice: totalMetrics.totalPrice,
+                    totalPrice: totalMetrics.totalPrice,
+                    totalProfit: totalMetrics.totalProfit,
+                    totalWorkDays: totalMetrics.totalWorkDays,
+                    workDuration: totalMetrics.totalWorkDays,
+                    laborCost: totalMetrics.totalLaborCost,
+                    materialCost: totalMetrics.finalMaterialCost,
+                    quantity: totalMetrics.totalQuantity,
                     unit: 'מ"ר',
                     // Store detailed breakdown for reference - exclude manual_calc items (already in cart)
                     detailedBreakdown: [...catalogItems, ...filteredManualItems],
@@ -1824,8 +1826,8 @@ const PaintRoomsManager = React.forwardRef(({
                     manualItemsCount: filteredManualItems.length,
                 };
 
-                // Return only the individual catalog items (no consolidated summary)
-                quoteItems = catalogItems;
+                // ✅ Return catalog items AND the summary item (for cart category subtotal)
+                quoteItems = [...catalogItems, consolidatedItem];
             } else if (manualItems.length > 0) {
                 // If only manual items exist, still consolidate them
                 // BUT: Filter out manual_calc items that were already added directly to cart

@@ -865,15 +865,9 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
     const profit = totalPrice - totalCost;
     const profitPercent = totalCost > 0 ? ((profit / totalCost) * 100).toFixed(1) : '0.0';
 
-    // Filter out only the consolidated category summary items (not individual room items)
-    const displayItems = items.filter(item =>
-      item.source !== 'paint_plaster_category_summary'
-    );
-
-    // Removed general cart filtering log
-
-    // NEW: compute grouping once (using filtered items)
-    const { order: categoriesOrder, map: categoriesMap } = groupItemsByCategory(displayItems);
+    // 🔧 FIX: Don't filter out summary items yet - we need them for category subtotals
+    // We'll skip rendering them in the item list instead
+    const { order: categoriesOrder, map: categoriesMap } = groupItemsByCategory(items);
 
     // NEW: fallback from project breakdowns (advanced calc)
     const paintFallbackRooms = projectComplexities?.roomBreakdowns?.paint || [];
@@ -963,7 +957,13 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                 {hasItems ? (
                                     categoriesOrder.map((catKey) => {
                                         const group = categoriesMap[catKey];
-                                        const categorySubtotal = group.items.reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0);
+
+                                        // 🔧 FIX: For paint/plaster category, use summary item's totalPrice
+                                        // (which includes precision adjustments) instead of summing individual items
+                                        const summaryItem = group.items.find(it => it.source === 'paint_plaster_category_summary');
+                                        const categorySubtotal = summaryItem
+                                            ? Number(summaryItem.totalPrice) || 0
+                                            : group.items.reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0);
 
                                         return (
                                             <div key={catKey} className="space-y-3">
@@ -980,6 +980,11 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                 {/* Items in this category */}
                                                 <div className="space-y-3">
                                                     {group.items.map(item => {
+                                                      // 🔧 FIX: Skip rendering the summary item itself (we use it for subtotal only)
+                                                      if (item.source === 'paint_plaster_category_summary') {
+                                                        return null;
+                                                      }
+
                                                       // ⭐ IMPORTANT: Check specific sources FIRST before generic checks
                                                       const isManualItem = isManualCalcItem(item);
 
