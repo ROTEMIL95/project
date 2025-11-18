@@ -323,6 +323,7 @@ function PersistedStep3({
           categoriesNav={orderedCategories}
           currentCategoryId={effectiveCategoryId}
           onSelectCategory={setCurrentCategoryForItems}
+          onProceed={onProceedToAdditionalCosts}
         />
       </ErrorBoundary>
     );
