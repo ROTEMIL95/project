@@ -10,16 +10,12 @@ import { DollarSign, Percent, TrendingUp, Users, Trash2, ChevronDown, ChevronUp,
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format, addDays, eachDayOfInterval, startOfDay, isWithinInterval } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { formatPrice } from '@/lib/utils';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-
-const formatPrice = (price) => {
-    if (typeof price !== 'number' || isNaN(price)) return '0';
-    return price.toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-};
 
 const getProfitBadgeClass = (percent) => {
     if (isNaN(percent)) return "bg-gray-100 text-gray-800";

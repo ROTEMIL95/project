@@ -2,6 +2,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { formatPrice } from '@/lib/utils';
 
 // מפת צבעים לקטגוריות - צבעים עדינים ורכים
 const CATEGORY_STYLES = {
@@ -59,11 +60,6 @@ const CATEGORY_STYLES = {
     accentColor: '#C084FC',
     lightBg: '#FAF5FF'
   }
-};
-
-const formatPrice = (price) => {
-  if (typeof price !== 'number' || isNaN(price)) return '0';
-  return price.toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 };
 
 export default function QuoteToHTML({ quote }) {

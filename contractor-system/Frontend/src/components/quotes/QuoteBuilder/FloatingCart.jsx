@@ -5,13 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ShoppingCart, X, Trash2, DollarSign, TrendingUp, Info, Paintbrush, Layers } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatPrice } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const formatPrice = (price) => {
-    if (typeof price !== 'number' || isNaN(price) || price === null || price === undefined) return '0';
-    return price.toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-};
 
 // NEW: category names fallback
 const CATEGORY_NAMES = {
