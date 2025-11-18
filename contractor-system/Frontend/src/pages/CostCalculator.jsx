@@ -1110,14 +1110,29 @@ export default function CostCalculator() {
                     }
                 }
 
-                // Load user's tiling defaults
-                if (userData.user_metadata?.tilingUserDefaults) {
-                    setUserTilingDefaults(userData.user_metadata.tilingUserDefaults);
+                // ✅ FIX: Load user defaults from user_profiles table (same as PriceBookSettings)
+                const { data: profile, error: profileError } = await supabase
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('auth_user_id', userData.id)
+                    .single();
+
+                if (profileError) {
+                    console.error('Error loading profile:', profileError);
                 }
 
-                // Load user's paint defaults
-                if (userData.user_metadata?.paintUserDefaults) {
-                    setUserPaintDefaults(userData.user_metadata.paintUserDefaults);
+                // Load user's tiling defaults (from profile first, fallback to user_metadata)
+                const tilingDefaultsFromProfile = profile?.tiling_user_defaults;
+                const tilingDefaultsFromMetadata = userData.user_metadata?.tilingUserDefaults;
+                if (tilingDefaultsFromProfile || tilingDefaultsFromMetadata) {
+                    setUserTilingDefaults(tilingDefaultsFromProfile || tilingDefaultsFromMetadata);
+                }
+
+                // Load user's paint defaults (from profile first, fallback to user_metadata)
+                const paintDefaultsFromProfile = profile?.paint_user_defaults;
+                const paintDefaultsFromMetadata = userData.user_metadata?.paintUserDefaults;
+                if (paintDefaultsFromProfile || paintDefaultsFromMetadata) {
+                    setUserPaintDefaults(paintDefaultsFromProfile || paintDefaultsFromMetadata);
                 }
 
                 const categories = await Category.list();

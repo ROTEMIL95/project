@@ -350,7 +350,19 @@ export default function DemolitionCalculator() {
 
             setLoading(true);
             try {
-                const defaults = user.user_metadata?.demolitionDefaults || { laborCostPerDay: 1000, profitPercent: 40 };
+                // ✅ FIX: Load from user_profiles table (same as PriceBookSettings)
+                const { data: profile, error: profileError } = await supabase
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('auth_user_id', user.id)
+                    .single();
+
+                if (profileError) {
+                    console.error('Error loading profile:', profileError);
+                }
+
+                // Use profile data if available, otherwise fallback to user_metadata
+                const defaults = profile?.demolition_defaults || user.user_metadata?.demolitionDefaults || { laborCostPerDay: 1000, profitPercent: 40 };
                 let items = user.user_metadata?.demolitionItems || [];
 
                 // Seed default items if user has none
