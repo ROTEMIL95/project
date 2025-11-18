@@ -1340,41 +1340,6 @@ export default React.forwardRef(function TilingCategoryEditor({
                     </div>
                   </div>
 
-                  {/* Price Display for User */}
-                  {itemMetrics && (item.panelQuantity > 0 || item.quantity > 0) && (
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {/* Regular Tiling Price */}
-                      {item.quantity > 0 && (
-                        <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border-2 border-blue-300 shadow-sm">
-                          <div className="text-sm font-semibold text-blue-800 mb-2">מחיר ריצוף</div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-blue-600">{itemMetrics.totalArea.toFixed(1)} מ"ר</span>
-                            <span className="text-xl font-bold text-blue-700">₪{formatPrice(
-                              item.panelQuantity > 0
-                                ? (itemMetrics.totalPrice * (itemMetrics.quantityLaborCost / (itemMetrics.quantityLaborCost + itemMetrics.panelLaborCost)))
-                                : itemMetrics.totalPrice
-                            )}</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Panel Price */}
-                      {item.panelQuantity > 0 && (
-                        <div className="p-4 bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-lg border-2 border-indigo-300 shadow-sm">
-                          <div className="text-sm font-semibold text-indigo-800 mb-2">מחיר פאנל</div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-indigo-600">{itemMetrics.panelArea.toFixed(1)} מ"ר</span>
-                            <span className="text-xl font-bold text-indigo-700">₪{formatPrice(
-                              item.quantity > 0
-                                ? (itemMetrics.totalPrice * (itemMetrics.panelLaborCost / (itemMetrics.quantityLaborCost + itemMetrics.panelLaborCost)))
-                                : itemMetrics.totalPrice
-                            )}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                   {/* Individual Item Summary - always display, itemMetrics will be zeroed if quantities are zero or no item selected */}
                   {itemMetrics &&
                     <div className="mt-4 space-y-3">
@@ -1407,19 +1372,53 @@ export default React.forwardRef(function TilingCategoryEditor({
                           </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
-                          <div className="grid grid-cols-3 gap-3 pt-2">
-                            <div className="p-3 bg-gray-100 rounded-lg text-center shadow-sm border border-gray-200">
-                              <Label className="text-xs text-gray-500">עלות חומרים (סה"כ)</Label>
-                              <p className="font-bold text-black text-base">₪{formatPrice(itemMetrics.totalMaterialCost || 0)}</p>
-                              <span className="text-xs text-gray-400">ריצוף + חומר שחור</span>
-                            </div>
-                            <div className="p-3 bg-gray-100 rounded-lg text-center shadow-sm border border-gray-200">
-                              <Label className="text-xs text-gray-500">עלות עובדים סה"כ</Label>
-                              <p className="font-bold text-black text-base">₪{formatPrice(itemMetrics.totalLaborCost || 0)}</p>
-                            </div>
-                            <div className="p-3 bg-gray-100 rounded-lg text-center shadow-sm border border-gray-200">
-                              <Label className="text-xs text-gray-500">ימי עבודה מדויקים</Label>
-                              <p className="font-bold text-black text-base">{(itemMetrics.workDays || 0).toFixed(1)}</p>
+                          <div className="space-y-3 pt-2">
+                            {/* Price Display for User - Moved Inside Breakdown */}
+                            {(item.panelQuantity > 0 || item.quantity > 0) && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {/* Regular Tiling Price */}
+                                {item.quantity > 0 && (
+                                  <div className="p-3 bg-gray-100 rounded-lg text-center shadow-sm border border-gray-200">
+                                    <Label className="text-xs text-gray-500">מחיר ריצוף</Label>
+                                    <p className="font-bold text-black text-base">₪{formatPrice(
+                                      item.panelQuantity > 0
+                                        ? (itemMetrics.totalPrice * (itemMetrics.quantityLaborCost / (itemMetrics.quantityLaborCost + itemMetrics.panelLaborCost)))
+                                        : itemMetrics.totalPrice
+                                    )}</p>
+                                    <span className="text-xs text-gray-400">{itemMetrics.totalArea.toFixed(1)} מ"ר</span>
+                                  </div>
+                                )}
+
+                                {/* Panel Price */}
+                                {item.panelQuantity > 0 && (
+                                  <div className="p-3 bg-gray-100 rounded-lg text-center shadow-sm border border-gray-200">
+                                    <Label className="text-xs text-gray-500">מחיר פאנל</Label>
+                                    <p className="font-bold text-black text-base">₪{formatPrice(
+                                      item.quantity > 0
+                                        ? (itemMetrics.totalPrice * (itemMetrics.panelLaborCost / (itemMetrics.quantityLaborCost + itemMetrics.panelLaborCost)))
+                                        : itemMetrics.totalPrice
+                                    )}</p>
+                                    <span className="text-xs text-gray-400">{itemMetrics.panelArea.toFixed(1)} מ"ר</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Cost Breakdown Grid */}
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="p-3 bg-gray-100 rounded-lg text-center shadow-sm border border-gray-200">
+                                <Label className="text-xs text-gray-500">עלות חומרים (סה"כ)</Label>
+                                <p className="font-bold text-black text-base">₪{formatPrice(itemMetrics.totalMaterialCost || 0)}</p>
+                                <span className="text-xs text-gray-400">ריצוף + חומר שחור</span>
+                              </div>
+                              <div className="p-3 bg-gray-100 rounded-lg text-center shadow-sm border border-gray-200">
+                                <Label className="text-xs text-gray-500">עלות עובדים סה"כ</Label>
+                                <p className="font-bold text-black text-base">₪{formatPrice(itemMetrics.totalLaborCost || 0)}</p>
+                              </div>
+                              <div className="p-3 bg-gray-100 rounded-lg text-center shadow-sm border border-gray-200">
+                                <Label className="text-xs text-gray-500">ימי עבודה מדויקים</Label>
+                                <p className="font-bold text-black text-base">{(itemMetrics.workDays || 0).toFixed(1)}</p>
+                              </div>
                             </div>
                           </div>
                         </CollapsibleContent>
