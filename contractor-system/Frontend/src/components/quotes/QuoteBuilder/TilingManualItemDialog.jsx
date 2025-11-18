@@ -32,16 +32,14 @@ export default function TilingManualItemDialog({
     if (open && !prevOpenRef.current) {
       if (editingItem) {
         // Load data from editing item
-        // Calculate material cost per unit (divide total by quantity)
-        const materialCostPerUnit = editingItem.quantity > 0
-          ? (editingItem.materialCost || 0) / editingItem.quantity
-          : (editingItem.materialCost || 0);
+        // ✅ materialCost is already the total cost, don't divide by quantity
+        const totalMaterialCost = editingItem.materialCost || 0;
 
         setFormData({
           name: editingItem.name || '',
           description: editingItem.description || '',
           quantity: editingItem.quantity || 0,
-          materialCost: materialCostPerUnit,
+          materialCost: totalMaterialCost, // Total cost, not per unit
           workDuration: editingItem.workDuration || 0,
         });
         setTimeUnit('days');
@@ -80,12 +78,12 @@ export default function TilingManualItemDialog({
     }
   }, [formData.workDuration, laborCostPerDay, timeUnit]);
 
+  // ✅ Total cost WITHOUT quantity multiplier - quantity is only for display
   const totalCost = useMemo(() => {
     const materialCostPerUnit = Number(formData.materialCost) || 0;
-    const quantity = Number(formData.quantity) || 0;
-    const totalMaterialCost = materialCostPerUnit * quantity;
-    return totalMaterialCost + laborCost;
-  }, [formData.materialCost, formData.quantity, laborCost]);
+    // Don't multiply by quantity - materialCost is already the total cost
+    return materialCostPerUnit + laborCost;
+  }, [formData.materialCost, laborCost]);
 
   const totalPrice = useMemo(() => {
     return Math.round(totalCost * (1 + profitPercent / 100));
@@ -110,17 +108,17 @@ export default function TilingManualItemDialog({
       return;
     }
 
-    const materialCostPerUnit = Number(formData.materialCost) || 0;
     const quantity = Number(formData.quantity) || 0;
-    const totalMaterialCost = materialCostPerUnit * quantity;
+    // ✅ materialCost is already the total cost, don't multiply by quantity
+    const totalMaterialCost = Number(formData.materialCost) || 0;
 
     const itemToAdd = {
       id: `tiling_manual_${Date.now()}`,
       name: formData.name,
       description: formData.description,
-      quantity: quantity,
+      quantity: quantity, // Quantity is only for display in quote
       unit: 'מ״ר',
-      materialCost: totalMaterialCost, // Total material cost (not per unit)
+      materialCost: totalMaterialCost, // Total material cost (not affected by quantity)
       laborCost: laborCost,
       totalCost: totalCost,
       totalPrice: totalPrice,
@@ -197,7 +195,7 @@ export default function TilingManualItemDialog({
 
             <div>
               <Label htmlFor="materialCost" className="text-sm">
-                עלות חומרים למ"ר (ש"ח)
+                עלות חומרים (ש"ח)
               </Label>
               <Input
                 id="materialCost"
@@ -208,11 +206,6 @@ export default function TilingManualItemDialog({
                 placeholder="0"
                 className="mt-1 h-9"
               />
-              {formData.materialCost > 0 && formData.quantity > 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  עלות חומרים כוללת: {formatPrice((Number(formData.materialCost) || 0) * (Number(formData.quantity) || 0))}
-                </p>
-              )}
             </div>
           </div>
 
