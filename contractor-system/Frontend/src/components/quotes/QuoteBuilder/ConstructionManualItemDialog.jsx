@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calculator, Plus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -19,14 +20,17 @@ export default function ConstructionManualItemDialog({
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [materialCostPerUnit, setMaterialCostPerUnit] = useState(0);
-  
+
   // זמן עבודה
   const [workTimeUnit, setWorkTimeUnit] = useState('days');
   const [workTimeValue, setWorkTimeValue] = useState(0);
-  
+
   // עלות עבודה
   const [laborDayCost, setLaborDayCost] = useState(1000);
-  
+
+  // יחידת מידה
+  const [unit, setUnit] = useState('יחידה');
+
   // רווח
   const desiredProfitPercent = defaults.desiredProfitPercent || 30;
 
@@ -45,6 +49,7 @@ export default function ConstructionManualItemDialog({
     setMaterialCostPerUnit(0);
     setWorkTimeUnit('days');
     setWorkTimeValue(0);
+    setUnit('יחידה');
     onOpenChange(false);
   };
 
@@ -77,7 +82,7 @@ export default function ConstructionManualItemDialog({
       name: name.trim(),
       description: description.trim(),
       quantity: qty,
-      unit: 'יחידה',
+      unit: unit, // יחידת מידה שנבחרה
       contractorCostPerUnit: Math.round(contractorCost),
       desiredProfitPercent: desiredProfitPercent,
       clientPricePerUnit: Math.round(clientPrice),
@@ -150,20 +155,40 @@ export default function ConstructionManualItemDialog({
             />
           </div>
 
-          {/* כמות */}
-          <div>
-            <Label htmlFor="quantity" className="text-xs font-semibold text-gray-700">
-              כמות
-            </Label>
-            <Input
-              id="quantity"
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="mt-0.5 h-8 text-sm"
-            />
-            <p className="text-[10px] text-gray-500 mt-0.5">* הכמות לא משפיעה על המחיר</p>
+          {/* כמות ויחידת מידה */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label htmlFor="quantity" className="text-xs font-semibold text-gray-700">
+                כמות
+              </Label>
+              <Input
+                id="quantity"
+                type="number"
+                min={1}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="mt-0.5 h-8 text-sm"
+              />
+              <p className="text-[10px] text-gray-500 mt-0.5">* הכמות לא משפיעה על המחיר</p>
+            </div>
+
+            <div>
+              <Label htmlFor="unit" className="text-xs font-semibold text-gray-700">
+                יחידת מידה
+              </Label>
+              <Select value={unit} onValueChange={setUnit}>
+                <SelectTrigger className="mt-0.5 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-[9999]">
+                  <SelectItem value="יחידה">יחידה</SelectItem>
+                  <SelectItem value="מ״ר">מ"ר</SelectItem>
+                  <SelectItem value="מטר רץ">מטר רץ</SelectItem>
+                  <SelectItem value="מ״א">מ"א</SelectItem>
+                  <SelectItem value="שעות">שעות</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* עלות חומר */}

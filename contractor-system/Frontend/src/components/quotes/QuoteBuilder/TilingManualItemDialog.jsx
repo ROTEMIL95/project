@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Clock, Calendar } from 'lucide-react';
 
 export default function TilingManualItemDialog({
@@ -26,6 +27,9 @@ export default function TilingManualItemDialog({
   // Toggle between days/hours
   const [timeUnit, setTimeUnit] = useState('days'); // 'days' or 'hours'
 
+  // יחידת מידה
+  const [unit, setUnit] = useState('מ״ר');
+
   const prevOpenRef = useRef(open);
 
   useEffect(() => {
@@ -43,6 +47,7 @@ export default function TilingManualItemDialog({
           workDuration: editingItem.workDuration || 0,
         });
         setTimeUnit('days');
+        setUnit(editingItem.unit || 'מ״ר');
       } else {
         // Reset form for new item
         setFormData({
@@ -53,6 +58,7 @@ export default function TilingManualItemDialog({
           workDuration: 0,
         });
         setTimeUnit('days');
+        setUnit('מ״ר');
       }
     }
     prevOpenRef.current = open;
@@ -117,7 +123,7 @@ export default function TilingManualItemDialog({
       name: formData.name,
       description: formData.description,
       quantity: quantity, // Quantity is only for display in quote
-      unit: 'מ״ר',
+      unit: unit, // יחידת מידה שנבחרה
       materialCost: totalMaterialCost, // Total material cost (not affected by quantity)
       laborCost: laborCost,
       totalCost: totalCost,
@@ -176,10 +182,10 @@ export default function TilingManualItemDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <Label htmlFor="quantity" className="text-sm">
-                כמות (מ"ר) <span className="text-red-500">*</span>
+                כמות <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="quantity"
@@ -191,6 +197,24 @@ export default function TilingManualItemDialog({
                 placeholder="0"
                 className="mt-1 h-9"
               />
+            </div>
+
+            <div>
+              <Label htmlFor="unit" className="text-sm">
+                יחידת מידה
+              </Label>
+              <Select value={unit} onValueChange={setUnit}>
+                <SelectTrigger className="mt-1 h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-[9999]">
+                  <SelectItem value="מ״ר">מ"ר</SelectItem>
+                  <SelectItem value="מטר רץ">מטר רץ</SelectItem>
+                  <SelectItem value="יחידה">יחידה</SelectItem>
+                  <SelectItem value="מ״א">מ"א</SelectItem>
+                  <SelectItem value="שעות">שעות</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

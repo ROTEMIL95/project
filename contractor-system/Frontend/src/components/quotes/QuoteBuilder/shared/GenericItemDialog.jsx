@@ -299,7 +299,7 @@ function DialogFieldsRenderer({ config, formData, setFormData, calc, fmt }) {
           <Label htmlFor="unit">יחידת מידה</Label>
           <Select value={formData.unit} onValueChange={(v) => updateField('unit', v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[9999]">
               {config.unitOptions.map(opt => (
                 <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
               ))}

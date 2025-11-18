@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function ElectricalManualItemDialog({
   open,
@@ -24,6 +25,7 @@ export default function ElectricalManualItemDialog({
   const [description, setDescription] = React.useState("");
   const [quantity, setQuantity] = React.useState(initialQuantity);
   const [contractorCost, setContractorCost] = React.useState("");
+  const [unit, setUnit] = React.useState("יחידה");
 
   React.useEffect(() => {
     if (open && item) {
@@ -32,12 +34,14 @@ export default function ElectricalManualItemDialog({
       setDescription(item.description || "");
       setQuantity(item.quantity || initialQuantity);
       setContractorCost(String(item.contractorCostPerUnit || ""));
+      setUnit(item.unit || "יחידה");
     } else if (open && !item) {
       // Adding new item
       setName("");
       setDescription("");
       setQuantity(initialQuantity);
       setContractorCost("");
+      setUnit("יחידה");
     }
   }, [open, item, initialQuantity]);
 
@@ -62,7 +66,7 @@ export default function ElectricalManualItemDialog({
       name: name.trim(),
       description: description.trim(),
       quantity: qty,
-      unit: "יחידה",
+      unit: unit, // יחידת מידה שנבחרה
       subCategory: "points",
       contractorCostPerUnit: cCost,
       clientPricePerUnit: clientPricePerUnit,
@@ -113,18 +117,36 @@ export default function ElectricalManualItemDialog({
             />
           </div>
 
-          {/* כמות */}
-          <div>
-            <Label htmlFor="quantity" className="text-sm font-medium">כמות</Label>
-            <Input
-              id="quantity"
-              type="number"
-              min={1}
-              step={1}
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="mt-1"
-            />
+          {/* כמות ויחידת מידה */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="quantity" className="text-sm font-medium">כמות</Label>
+              <Input
+                id="quantity"
+                type="number"
+                min={1}
+                step={1}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="unit" className="text-sm font-medium">יחידת מידה</Label>
+              <Select value={unit} onValueChange={setUnit}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-[9999]">
+                  <SelectItem value="יחידה">יחידה</SelectItem>
+                  <SelectItem value="מ״ר">מ"ר</SelectItem>
+                  <SelectItem value="מטר רץ">מטר רץ</SelectItem>
+                  <SelectItem value="נקודה">נקודה</SelectItem>
+                  <SelectItem value="שקע">שקע</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* עלות קבלן ליחידה */}

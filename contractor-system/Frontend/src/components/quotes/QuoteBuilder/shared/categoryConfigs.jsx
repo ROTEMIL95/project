@@ -40,7 +40,7 @@ export const electricalConfig = {
     showName: false,  // Item name comes from catalog
     showDescription: true,
     showQuantity: true,
-    showUnit: false,  // Unit is fixed
+    showUnit: true,  // יחידת מידה ניתנת לבחירה
     showContractorCost: true,
     showHoursPerUnit: false,
     showMaterialCost: false,
@@ -52,6 +52,15 @@ export const electricalConfig = {
     unit: 'יחידה',
     initialQuantity: 1,
   },
+
+  // יחידות מידה זמינות
+  unitOptions: [
+    { value: 'יחידה', label: 'יחידה' },
+    { value: 'מ״ר', label: 'מ"ר' },
+    { value: 'מטר רץ', label: 'מטר רץ' },
+    { value: 'נקודה', label: 'נקודה' },
+    { value: 'שקע', label: 'שקע' },
+  ],
 
   // Calculation Rules
   calculations: {
@@ -101,7 +110,7 @@ export const plumbingConfig = {
     showName: true,  // Manual item - name required
     showDescription: true,
     showQuantity: true,
-    showUnit: false,  // Unit fixed to 'יחידה'
+    showUnit: true,  // יחידת מידה ניתנת לבחירה
     showContractorCost: true,
     showHoursPerUnit: false,
     showMaterialCost: false,
@@ -113,6 +122,15 @@ export const plumbingConfig = {
     initialQuantity: 1,
     subCategory: 'infrastructure',
   },
+
+  // יחידות מידה זמינות
+  unitOptions: [
+    { value: 'יחידה', label: 'יחידה' },
+    { value: 'מ״ר', label: 'מ"ר' },
+    { value: 'מטר רץ', label: 'מטר רץ' },
+    { value: 'נקודה', label: 'נקודה' },
+    { value: 'קומפלט', label: 'קומפלט' },
+  ],
 
   calculations: {
     useQuantityInTotal: true,
@@ -163,7 +181,7 @@ export const demolitionConfig = {
     showName: true,
     showDescription: true,
     showQuantity: true,
-    showUnit: false,  // Unit fixed to 'יחידה'
+    showUnit: true,  // יחידת מידה ניתנת לבחירה
     showContractorCost: false,  // Calculated from hours
     showHoursPerUnit: true,  // Main input
     showMaterialCost: false,
@@ -177,6 +195,15 @@ export const demolitionConfig = {
     laborCostPerDay: 1000,
     hoursPerDay: 8,
   },
+
+  // יחידות מידה זמינות
+  unitOptions: [
+    { value: 'יחידה', label: 'יחידה' },
+    { value: 'מ״ר', label: 'מ"ר' },
+    { value: 'מטר רץ', label: 'מטר רץ' },
+    { value: 'מ״א', label: 'מ"א' },
+    { value: 'טון', label: 'טון' },
+  ],
 
   calculations: {
     useQuantityInTotal: false,  // Quantity doesn't affect price!
@@ -304,7 +331,7 @@ export const tilingConfig = {
     showName: true,  // Manual item - name required
     showDescription: true,
     showQuantity: true,
-    showUnit: false,  // Unit fixed to 'מ"ר'
+    showUnit: true,  // יחידת מידה ניתנת לבחירה
     showContractorCost: true,
     showHoursPerUnit: false,
     showMaterialCost: false,
@@ -316,6 +343,14 @@ export const tilingConfig = {
     initialQuantity: 1,
     subCategory: 'tiling',
   },
+
+  // יחידות מידה זמינות
+  unitOptions: [
+    { value: 'מ״ר', label: 'מ"ר' },
+    { value: 'מטר רץ', label: 'מטר רץ' },
+    { value: 'יחידה', label: 'יחידה' },
+    { value: 'מ״א', label: 'מ"א' },
+  ],
 
   calculations: {
     useQuantityInTotal: true,
