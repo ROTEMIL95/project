@@ -65,9 +65,14 @@ const CATEGORY_STYLES = {
 export default function QuoteToHTML({ quote }) {
   if (!quote) return null;
 
-  // קיבוץ פריטים לפי קטגוריות
+  // קיבוץ פריטים לפי קטגוריות (מסנן פריטי סיכום)
   const itemsByCategory = {};
   (quote.items || []).forEach(item => {
+    // Skip summary items - they shouldn't appear in the quote
+    if (item.source === 'paint_plaster_category_summary') {
+      return;
+    }
+
     const categoryId = item.categoryId || 'other';
     if (!itemsByCategory[categoryId]) {
       itemsByCategory[categoryId] = [];
@@ -919,23 +924,85 @@ export default function QuoteToHTML({ quote }) {
                     <table class="items-table">
                       <thead>
                         <tr>
-                          <th style="width: 40%;">תיאור</th>
-                          <th style="width: 12%;">כמות</th>
-                          <th style="width: 12%;">יחידה</th>
-                          <th style="width: 16%;">מחיר ליחידה</th>
-                          <th style="width: 20%;">סה"כ</th>
+                          <th style="width: 30%;">תיאור</th>
+                          ${categoryId === 'cat_tiling' ? `
+                          <th style="width: 12%;">סוג עבודה</th>
+                          <th style="width: 10%;">גודל אריח</th>
+                          ` : categoryId === 'cat_paint_plaster' ? `
+                          <th style="width: 12%;">סוג צבע</th>
+                          <th style="width: 8%;">שכבות</th>
+                          ` : ''}
+                          <th style="width: 10%;">כמות</th>
+                          ${categoryId === 'cat_paint_plaster' ? `
+                          <th style="width: 13%;">מחיר למ"ר</th>
+                          ` : `
+                          <th style="width: 8%;">יחידה</th>
+                          <th style="width: 15%;">מחיר ליחידה</th>
+                          `}
+                          <th style="width: 15%;">סה"כ</th>
                         </tr>
                       </thead>
                       <tbody>
-                        ${items.map(item => `
+                        ${items.map(item => {
+                          // Helper function to get paint type name
+                          const getPaintTypeName = (item) => {
+                            const type = item.paintType || item.plasterType;
+                            if (!type) return '-';
+
+                            const typeStr = String(type);
+
+                            // If it's just "קירות" or "תקרה" without a specific paint type, return "-"
+                            if (typeStr === 'קירות' || typeStr === 'תקרה') {
+                              return '-';
+                            }
+
+                            // Map English IDs to Hebrew names
+                            const paintTypeMap = {
+                              'acrylic': 'אקרילי',
+                              'supercryl': 'סופרקריל',
+                              'oil': 'שמן',
+                              'effects': 'אפקטים',
+                              'tambourflex': 'טמבורפלקס',
+                              'gypsum': 'גבס',
+                              'plaster': 'טיח'
+                            };
+
+                            // If it's an English ID, convert to Hebrew
+                            if (paintTypeMap[typeStr.toLowerCase()]) {
+                              return paintTypeMap[typeStr.toLowerCase()];
+                            }
+
+                            // Return the paint type as-is (e.g., "סופרקריל", "אקרילי פרימיום")
+                            return typeStr;
+                          };
+
+                          // Calculate price per sqm for paint/plaster
+                          const pricePerSqm = item.quantity > 0 ? Math.round(item.totalPrice / item.quantity) : 0;
+
+                          return `
                           <tr>
-                            <td><strong>${item.name || item.description || ''}</strong></td>
-                            <td>${formatPrice(item.quantity || 0)}</td>
+                            <td><strong>${item.name || item.description || ''}</strong>${item.description && item.name !== item.description ? `<br/><span style="font-size: 12px; color: #6b7280;">${item.description}</span>` : ''}</td>
+                            ${categoryId === 'cat_tiling' && item.workType ? `
+                            <td>${item.workType || '-'}</td>
+                            <td>${item.selectedSize || '-'}</td>
+                            ` : categoryId === 'cat_tiling' ? `
+                            <td>-</td>
+                            <td>-</td>
+                            ` : categoryId === 'cat_paint_plaster' ? `
+                            <td>${getPaintTypeName(item)}</td>
+                            <td>${item.layers || 1}</td>
+                            ` : ''}
+                            <td>${formatPrice(item.quantity || 0)}${categoryId === 'cat_paint_plaster' ? ' מ"ר' : ''}</td>
+                            ${categoryId === 'cat_paint_plaster' ? `
+                            <td>₪${formatPrice(pricePerSqm)}</td>
+                            ` : `
                             <td>${item.unit || 'יח\''}</td>
                             <td>₪${formatPrice(item.unitPrice || 0)}</td>
+                            `}
                             <td><strong>₪${formatPrice(item.totalPrice || 0)}</strong></td>
                           </tr>
-                        `).join('')}
+                        `;
+                        }).join('')}
                       </tbody>
                     </table>
                     

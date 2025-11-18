@@ -391,8 +391,60 @@ export default function ManualCalcDialog() {
     });
 
     if (typeof window.__b44AddItemToQuote === "function") {
-      console.log('🎨 [ManualCalcDialog] Calling window.__b44AddItemToQuote with item');
-      window.__b44AddItemToQuote(item);
+      console.log('🎨 [ManualCalcDialog] Splitting item into separate walls/ceiling items');
+
+      // Split into separate items for walls and ceiling
+      if (form.wallsEnabled && qtyWalls > 0) {
+        const wallItem = {
+          id: `${nowId}_walls`,
+          source: "manual_calc",
+          categoryId: "cat_paint_plaster",
+          categoryName: "צבע ושפכטל",
+          name: `${form.description?.trim() || (form.workType === "plaster" ? "שפכטל" : "צבע")} - קירות`,
+          description: `${form.workType === 'paint' ? 'צבע' : 'שפכטל'} - קירות${form.description ? ` - ${form.description}` : ''}`,
+          paintType: form.workType === 'paint' ? `${form.wallsType || 'קירות'}` : undefined,
+          plasterType: form.workType === 'plaster' ? `${form.wallsType || 'קירות'}` : undefined,
+          quantity: qtyWalls,
+          unit: "מ\"ר",
+          layers: layersWalls || 0,
+          unitPrice: Math.round(priceWalls / qtyWalls),
+          totalPrice: priceWalls,
+          totalCost: Math.round(contractorRounded * shareWalls),
+          materialCost: Math.round(materials * shareWalls),
+          laborCost: Math.round(laborCost * shareWalls),
+          profit: Math.round(priceWalls - (contractorRounded * shareWalls)),
+          profitPercent: profitPercent,
+          workDuration: effectiveWorkDays * shareWalls,
+        };
+        console.log('🎨 [ManualCalcDialog] Adding wall item:', wallItem);
+        window.__b44AddItemToQuote(wallItem);
+      }
+
+      if (form.ceilingEnabled && qtyCeiling > 0) {
+        const ceilingItem = {
+          id: `${nowId}_ceiling`,
+          source: "manual_calc",
+          categoryId: "cat_paint_plaster",
+          categoryName: "צבע ושפכטל",
+          name: `${form.description?.trim() || (form.workType === "plaster" ? "שפכטל" : "צבע")} - תקרה`,
+          description: `${form.workType === 'paint' ? 'צבע' : 'שפכטל'} - תקרה${form.description ? ` - ${form.description}` : ''}`,
+          paintType: form.workType === 'paint' ? `${form.ceilingType || 'תקרה'}` : undefined,
+          plasterType: form.workType === 'plaster' ? `${form.ceilingType || 'תקרה'}` : undefined,
+          quantity: qtyCeiling,
+          unit: "מ\"ר",
+          layers: layersCeiling || 0,
+          unitPrice: Math.round(priceCeiling / qtyCeiling),
+          totalPrice: priceCeiling,
+          totalCost: Math.round(contractorRounded * shareCeiling),
+          materialCost: Math.round(materials * shareCeiling),
+          laborCost: Math.round(laborCost * shareCeiling),
+          profit: Math.round(priceCeiling - (contractorRounded * shareCeiling)),
+          profitPercent: profitPercent,
+          workDuration: effectiveWorkDays * shareCeiling,
+        };
+        console.log('🎨 [ManualCalcDialog] Adding ceiling item:', ceilingItem);
+        window.__b44AddItemToQuote(ceilingItem);
+      }
     } else {
       console.error('❌ [ManualCalcDialog] window.__b44AddItemToQuote is not defined!');
     }

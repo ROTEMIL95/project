@@ -140,45 +140,129 @@ export default function PaintSimulatorV2({
   };
 
   const handleRoomCalcResult = (result) => {
-    // Ensure all required fields are present
-    const normalizedResult = {
-      ...result,
-      // Ensure required pricing fields exist
-      totalPrice: result.totalPrice || result.totalSellingPrice || 0,
-      totalCost: result.totalCost || result.totalContractorCost || 0,
-      materialCost: result.materialCost || (result.totalCost || 0) * 0.6,
-      laborCost: result.laborCost || (result.totalCost || 0) * 0.4,
-      profit: (result.totalPrice || 0) - (result.totalCost || 0),
-      profitPercent: result.profitPercent || (result.totalCost > 0 ? Math.round(((result.totalPrice - result.totalCost) / result.totalCost) * 100) : 0),
-      // Ensure quantity and unit
-      quantity: result.quantity || result.totalArea || 0,
-      unit: result.unit || 'מ"ר',
-      workDuration: result.workDuration || result.totalWorkDays || 0,
-    };
-    
-    if (currentCalcType === 'paint') {
-      const item = {
-        id: `paint_room_${Date.now()}`,
-        categoryId: 'cat_paint_plaster',
-        categoryName: 'צבע ושפכטל',
-        source: 'paint_room_calc',
-        description: result.description || 'צבע מחדרים',
-        ...normalizedResult
+    console.log('🎨 [PaintSimulatorV2] Received room calc result:', result);
+
+    // Get the paint item name from result or selected paint item
+    const paintItemName = result.paintItemName || result.selectedPaintItem?.itemName || result.selectedCeilingPaintItem?.itemName || '';
+
+    // Check if we have detailed room breakdown
+    if (result.detailedRooms && result.detailedRooms.length > 0) {
+      // Add each room as a separate item, split by walls/ceiling
+      result.detailedRooms.forEach((room, index) => {
+        const baseId = Date.now() + index;
+
+        // Calculate pricing per sqm
+        const pricePerSqm = room.pricePerSqM || (room.totalPrice / room.totalArea) || 0;
+        const costPerSqm = room.costPerSqM || (room.totalCost / room.totalArea) || 0;
+
+        // Extract paint type from room data
+        const wallPaintName = room.paintWallsName || room.itemName || paintItemName || '';
+        const ceilingPaintName = room.ceilingPaintName || room.itemName || paintItemName || '';
+
+        // Add walls as separate item if there are walls
+        if (room.wallArea > 0) {
+          const wallPrice = room.wallArea * pricePerSqm;
+          const wallCost = room.wallArea * costPerSqm;
+          const wallProfit = wallPrice - wallCost;
+
+          const wallItem = {
+            id: `${currentCalcType}_wall_${baseId}`,
+            categoryId: 'cat_paint_plaster',
+            categoryName: 'צבע ושפכטל',
+            source: `${currentCalcType}_room_calc`,
+            name: `${room.name} - קירות`,
+            description: `${currentCalcType === 'paint' ? 'צבע' : 'שפכטל'} - ${room.name} - קירות`,
+            paintType: currentCalcType === 'paint' ? wallPaintName : undefined,
+            plasterType: currentCalcType === 'plaster' ? wallPaintName : undefined,
+            quantity: room.wallArea,
+            unit: 'מ"ר',
+            layers: room.wallLayers || room.layers || 1,
+            unitPrice: Math.round(pricePerSqm),
+            totalPrice: Math.round(wallPrice),
+            totalCost: Math.round(wallCost),
+            materialCost: Math.round(wallCost * 0.6),
+            laborCost: Math.round(wallCost * 0.4),
+            profit: Math.round(wallProfit),
+            profitPercent: wallCost > 0 ? Math.round((wallProfit / wallCost) * 100) : 0,
+            workDuration: room.workDuration || 0,
+            roomData: room, // Store full room data for reference
+          };
+          console.log(`🎨 [PaintSimulatorV2] Adding wall item for ${room.name}:`, wallItem);
+          onAddItemToQuote(wallItem);
+        }
+
+        // Add ceiling as separate item if ceiling is included
+        if (room.ceilingArea > 0) {
+          const ceilingPrice = room.ceilingArea * pricePerSqm;
+          const ceilingCost = room.ceilingArea * costPerSqm;
+          const ceilingProfit = ceilingPrice - ceilingCost;
+
+          const ceilingItem = {
+            id: `${currentCalcType}_ceiling_${baseId}`,
+            categoryId: 'cat_paint_plaster',
+            categoryName: 'צבע ושפכטל',
+            source: `${currentCalcType}_room_calc`,
+            name: `${room.name} - תקרה`,
+            description: `${currentCalcType === 'paint' ? 'צבע' : 'שפכטל'} - ${room.name} - תקרה`,
+            paintType: currentCalcType === 'paint' ? ceilingPaintName : undefined,
+            plasterType: currentCalcType === 'plaster' ? ceilingPaintName : undefined,
+            quantity: room.ceilingArea,
+            unit: 'מ"ר',
+            layers: room.ceilingLayers || room.layers || 1,
+            unitPrice: Math.round(pricePerSqm),
+            totalPrice: Math.round(ceilingPrice),
+            totalCost: Math.round(ceilingCost),
+            materialCost: Math.round(ceilingCost * 0.6),
+            laborCost: Math.round(ceilingCost * 0.4),
+            profit: Math.round(ceilingProfit),
+            profitPercent: ceilingCost > 0 ? Math.round((ceilingProfit / ceilingCost) * 100) : 0,
+            workDuration: room.workDuration || 0,
+            roomData: room, // Store full room data for reference
+          };
+          console.log(`🎨 [PaintSimulatorV2] Adding ceiling item for ${room.name}:`, ceilingItem);
+          onAddItemToQuote(ceilingItem);
+        }
+      });
+    } else {
+      // Fallback: Single item if no detailed breakdown
+      const normalizedResult = {
+        ...result,
+        totalPrice: result.totalPrice || result.totalSellingPrice || 0,
+        totalCost: result.totalCost || result.totalContractorCost || 0,
+        materialCost: result.materialCost || (result.totalCost || 0) * 0.6,
+        laborCost: result.laborCost || (result.totalCost || 0) * 0.4,
+        profit: (result.totalPrice || 0) - (result.totalCost || 0),
+        profitPercent: result.profitPercent || (result.totalCost > 0 ? Math.round(((result.totalPrice - result.totalCost) / result.totalCost) * 100) : 0),
+        quantity: result.quantity || result.totalArea || 0,
+        unit: result.unit || 'מ"ר',
+        workDuration: result.workDuration || result.totalWorkDays || 0,
       };
-      console.log('🎨 [PaintSimulatorV2] Adding paint room calc item to quote:', item);
-      onAddItemToQuote(item);
-    } else if (currentCalcType === 'plaster') {
-      const item = {
-        id: `plaster_room_${Date.now()}`,
-        categoryId: 'cat_paint_plaster',
-        categoryName: 'צבע ושפכטל',
-        source: 'plaster_room_calc',
-        description: result.description || 'שפכטל מחדרים',
-        ...normalizedResult
-      };
-      console.log('🎨 [PaintSimulatorV2] Adding plaster room calc item to quote:', item);
-      onAddItemToQuote(item);
+
+      if (currentCalcType === 'paint') {
+        const item = {
+          id: `paint_room_${Date.now()}`,
+          categoryId: 'cat_paint_plaster',
+          categoryName: 'צבע ושפכטל',
+          source: 'paint_room_calc',
+          description: result.description || 'צבע מחדרים',
+          ...normalizedResult
+        };
+        console.log('🎨 [PaintSimulatorV2] Adding paint room calc item to quote:', item);
+        onAddItemToQuote(item);
+      } else if (currentCalcType === 'plaster') {
+        const item = {
+          id: `plaster_room_${Date.now()}`,
+          categoryId: 'cat_paint_plaster',
+          categoryName: 'צבע ושפכטל',
+          source: 'plaster_room_calc',
+          description: result.description || 'שפכטל מחדרים',
+          ...normalizedResult
+        };
+        console.log('🎨 [PaintSimulatorV2] Adding plaster room calc item to quote:', item);
+        onAddItemToQuote(item);
+      }
     }
+
     setShowRoomCalc(false);
     setCurrentCalcType(null);
   };
