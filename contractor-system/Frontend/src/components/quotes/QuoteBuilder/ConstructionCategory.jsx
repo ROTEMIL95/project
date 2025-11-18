@@ -406,6 +406,7 @@ export default function ConstructionCategory({
   );
 
   const currentDays = Number(summary.days) || 0;
+  const roundedDays = Math.ceil(currentDays);
   const laborDayCost = Number(pricingDefaults.laborCostPerDay) || 0;
   const desiredProfit = Number(pricingDefaults.desiredProfitPercent) || 0;
   const canApplyRounding = constructionItems.length > 0 && typeof setSelectedItems === "function";
@@ -585,27 +586,29 @@ export default function ConstructionCategory({
     };
   }, [editorPreset, pricingDefaults]);
 
-  const prevItemsCountRef = React.useRef(0);
-  
+  // ❌ REMOVED: Automatic rounding on item addition
+  // Users should manually trigger rounding via the button when they want it
+
+  // ✅ NEW: Reset rounding when adding items ONLY if it crosses to next day
+  const prevItemsCountRef = React.useRef(constructionItems.length);
+  const prevRoundedDaysRef = React.useRef(roundedDays);
+
   React.useEffect(() => {
     const currentCount = constructionItems.length;
     const prevCount = prevItemsCountRef.current;
-    const currentDays = Number(summary.days) || 0;
-    const roundedWorkDays = Math.ceil(summary.days);
-    const roundingDifference = roundedWorkDays - currentDays;
-    const needsRounding = !isRoundedApplied && roundingDifference > 0.01 && currentDays > 0;
-    
-    if (currentCount > prevCount && needsRounding && canApplyRounding) {
-      const timer = setTimeout(() => {
-        applyRoundWorkDaysAndDistribute();
-      }, 300);
-      
-      prevItemsCountRef.current = currentCount;
-      return () => clearTimeout(timer);
+    const prevRounded = prevRoundedDaysRef.current;
+
+    // If items were added AND rounding is currently applied
+    if (currentCount > prevCount && isRoundedApplied) {
+      // Only reset if the rounded value would change (crosses into next day)
+      if (roundedDays > prevRounded) {
+        revertRoundWorkDays();
+      }
     }
-    
+
     prevItemsCountRef.current = currentCount;
-  }, [constructionItems.length, summary.days, isRoundedApplied, canApplyRounding]);
+    prevRoundedDaysRef.current = roundedDays;
+  }, [constructionItems.length, isRoundedApplied, roundedDays]);
 
 
   return (
@@ -1110,7 +1113,9 @@ export default function ConstructionCategory({
                 </div>
                 <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 text-center">
                   <div className="text-[11px] text-purple-800">ימי עבודה (סה״כ)</div>
-                  <div className="text-xl font-bold text-purple-700">{summary.days.toFixed(1)}</div>
+                  <div className="text-xl font-bold text-purple-700">
+                    {isRoundedApplied ? roundedDays.toFixed(1) : currentDays.toFixed(1)}
+                  </div>
                 </div>
               </div>
 
