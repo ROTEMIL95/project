@@ -652,12 +652,25 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
             name: newRoomName, // ✅ FIX: Update room name
             roomBreakdown: detailedRooms,
             calculatedWallArea: wallSqM,
-            calculatedCeilingArea: ceilingSqM
+            calculatedCeilingArea: ceilingSqM,
+            // ✅ FIX: Also update the wall/ceiling quantities in the room object
+            ...(isAdvancedCalcOpen.type === 'paint' ? {
+                wallPaintQuantity: wallSqM > 0 ? wallSqM : room.wallPaintQuantity,
+                ceilingPaintQuantity: ceilingSqM > 0 ? ceilingSqM : room.ceilingPaintQuantity
+            } : {
+                wallPlasterQuantity: wallSqM > 0 ? wallSqM : room.wallPlasterQuantity,
+                ceilingPlasterQuantity: ceilingSqM > 0 ? ceilingSqM : room.ceilingPlasterQuantity
+            })
         };
 
         console.log('🔧 [handleApplyAdvancedCalc] Updated room data:', {
             oldName: room.name,
             newName: newRoomName,
+            wallSqM,
+            ceilingSqM,
+            type: isAdvancedCalcOpen.type,
+            wallPaintQuantity: updatedRoom.wallPaintQuantity,
+            ceilingPaintQuantity: updatedRoom.ceilingPaintQuantity,
             updatedRoom,
             roomBreakdownLength: detailedRooms?.length || 0,
             detailedRoomsContent: detailedRooms
@@ -1662,6 +1675,10 @@ const PaintRoomsManager = React.forwardRef(({
                     // ✅ FIX: Remove itemName from metrics to prevent it from "leaking" between items
                     const { itemName: metricsItemName, ...metricsWithoutItemName } = metrics;
 
+                    // Extract wall and ceiling quantities from metrics if available (for detailed mode)
+                    const wallQty = metrics.wallMetrics?.quantity || Number(room.wallPaintQuantity) || 0;
+                    const ceilingQty = metrics.ceilingMetrics?.quantity || Number(room.ceilingPaintQuantity) || 0;
+
                     const itemToAdd = {
                         ...metricsWithoutItemName,
                         id: `${room.id}_paint`,
@@ -1683,12 +1700,12 @@ const PaintRoomsManager = React.forwardRef(({
                         paintName: paintName, // Add paintName to the item
                         // ✅ FIX: Add separate wall and ceiling data for detailed paint
                         wallPaintId: room.wallPaintId || '',
-                        wallPaintLayers: room.wallPaintLayers || 0,
-                        wallPaintQuantity: room.wallPaintQuantity || 0,
+                        wallPaintLayers: Number(room.wallPaintLayers) || 0,
+                        wallPaintQuantity: wallQty,
                         wallPaintName: wallPaintItem?.itemName || wallPaintItem?.paintName || '',
                         ceilingPaintId: room.ceilingPaintId || '',
-                        ceilingPaintLayers: room.ceilingPaintLayers || 0,
-                        ceilingPaintQuantity: room.ceilingPaintQuantity || 0,
+                        ceilingPaintLayers: Number(room.ceilingPaintLayers) || 0,
+                        ceilingPaintQuantity: ceilingQty,
                         ceilingPaintName: ceilingPaintItem?.itemName || ceilingPaintItem?.paintName || '',
                         // Also save the main itemId for simple paint
                         itemId: room.paintItemId || '',
@@ -1704,12 +1721,17 @@ const PaintRoomsManager = React.forwardRef(({
                         layers: itemToAdd.layers,
                         paintName: itemToAdd.paintName,
                         paintType: itemToAdd.paintType,
+                        isDetailedPaint: room.isDetailedPaint,
                         wallPaintLayers: itemToAdd.wallPaintLayers,
                         ceilingPaintLayers: itemToAdd.ceilingPaintLayers,
                         wallPaintQuantity: itemToAdd.wallPaintQuantity,
                         ceilingPaintQuantity: itemToAdd.ceilingPaintQuantity,
                         wallPaintName: itemToAdd.wallPaintName,
                         ceilingPaintName: itemToAdd.ceilingPaintName,
+                        'room.wallPaintQuantity': room.wallPaintQuantity,
+                        'room.ceilingPaintQuantity': room.ceilingPaintQuantity,
+                        'metrics.wallMetrics?.quantity': metrics.wallMetrics?.quantity,
+                        'metrics.ceilingMetrics?.quantity': metrics.ceilingMetrics?.quantity,
                         roomBreakdownLength: itemToAdd.roomBreakdown?.length || 0,
                         roomBreakdown: itemToAdd.roomBreakdown
                     });

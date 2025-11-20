@@ -945,16 +945,22 @@ export default function QuoteToHTML({ quote }) {
                       <tbody>
                         ${items.map(item => {
                           // Helper function to get paint type name
-                          const getPaintTypeName = (item) => {
-                            const type = item.paintType || item.plasterType;
+                          const getPaintTypeName = (item, subType) => {
+                            const type = subType || item.paintType || item.plasterType;
                             if (!type) return '-';
 
-                            const typeStr = String(type);
+                            let typeStr = String(type);
 
                             // If it's just "קירות" or "תקרה" without a specific paint type, return "-"
                             if (typeStr === 'קירות' || typeStr === 'תקרה') {
                               return '-';
                             }
+
+                            // Remove "עבודת צבע" or similar suffixes from paint names
+                            typeStr = typeStr.replace(/\s*-\s*עבודת\s+צבע\s*$/i, '').trim();
+                            typeStr = typeStr.replace(/\s*עבודת\s+צבע\s*$/i, '').trim();
+                            typeStr = typeStr.replace(/\s*-\s*עבודת\s+שפכטל\s*$/i, '').trim();
+                            typeStr = typeStr.replace(/\s*עבודת\s+שפכטל\s*$/i, '').trim();
 
                             // Map English IDs to Hebrew names
                             const paintTypeMap = {
@@ -976,32 +982,77 @@ export default function QuoteToHTML({ quote }) {
                             return typeStr;
                           };
 
-                          // Calculate price per sqm for paint/plaster
-                          const pricePerSqm = item.quantity > 0 ? Math.round(item.totalPrice / item.quantity) : 0;
+                          // Check if this is a detailed/advanced paint item with wall/ceiling breakdown
+                          const hasWallCeilingBreakdown = categoryId === 'cat_paint_plaster' &&
+                            (item.wallPaintQuantity > 0 || item.ceilingPaintQuantity > 0);
 
-                          return `
-                          <tr>
-                            <td><strong>${item.name || item.description || ''}</strong>${item.description && item.name !== item.description ? `<br/><span style="font-size: 12px; color: #6b7280;">${item.description}</span>` : ''}</td>
-                            ${categoryId === 'cat_tiling' && item.workType ? `
-                            <td>${item.workType || '-'}</td>
-                            <td>${item.selectedSize || '-'}</td>
-                            ` : categoryId === 'cat_tiling' ? `
-                            <td>-</td>
-                            <td>-</td>
-                            ` : categoryId === 'cat_paint_plaster' ? `
-                            <td>${getPaintTypeName(item)}</td>
-                            <td>${item.layers || 1}</td>
-                            ` : ''}
-                            <td>${formatPrice(item.quantity || 0)}${categoryId === 'cat_paint_plaster' ? ' מ"ר' : ''}</td>
-                            ${categoryId === 'cat_paint_plaster' ? `
-                            <td>₪${formatPrice(pricePerSqm)}</td>
-                            ` : `
-                            <td>${item.unit || 'יח\''}</td>
-                            <td>₪${formatPrice(item.unitPrice || 0)}</td>
-                            `}
-                            <td><strong>₪${formatPrice(item.totalPrice || 0)}</strong></td>
-                          </tr>
-                        `;
+                          if (hasWallCeilingBreakdown) {
+                            // Split into two rows: walls and ceiling
+                            let rows = '';
+
+                            // Calculate total quantity for price distribution
+                            const totalQuantity = (item.wallPaintQuantity || 0) + (item.ceilingPaintQuantity || 0);
+                            const safeQuantity = totalQuantity > 0 ? totalQuantity : (item.quantity || 1);
+
+                            if (item.wallPaintQuantity > 0) {
+                              const wallPricePerSqm = item.wallPaintQuantity > 0 && safeQuantity > 0 ? Math.round((item.totalPrice * (item.wallPaintQuantity / safeQuantity)) / item.wallPaintQuantity) : 0;
+                              const wallTotalPrice = safeQuantity > 0 ? Math.round(item.totalPrice * (item.wallPaintQuantity / safeQuantity)) : Math.round(item.totalPrice / 2);
+
+                              rows += `
+                              <tr>
+                                <td><strong>${item.name || item.description || ''} - קירות</strong></td>
+                                <td>${getPaintTypeName(item, item.wallPaintName)}</td>
+                                <td>${item.wallPaintLayers || item.layers || 1}</td>
+                                <td>${formatPrice(item.wallPaintQuantity || 0)} מ"ר</td>
+                                <td>₪${formatPrice(wallPricePerSqm)}</td>
+                                <td><strong>₪${formatPrice(wallTotalPrice)}</strong></td>
+                              </tr>`;
+                            }
+
+                            if (item.ceilingPaintQuantity > 0) {
+                              const ceilingPricePerSqm = item.ceilingPaintQuantity > 0 && safeQuantity > 0 ? Math.round((item.totalPrice * (item.ceilingPaintQuantity / safeQuantity)) / item.ceilingPaintQuantity) : 0;
+                              const ceilingTotalPrice = safeQuantity > 0 ? Math.round(item.totalPrice * (item.ceilingPaintQuantity / safeQuantity)) : Math.round(item.totalPrice / 2);
+
+                              rows += `
+                              <tr>
+                                <td><strong>${item.name || item.description || ''} - תקרה</strong></td>
+                                <td>${getPaintTypeName(item, item.ceilingPaintName)}</td>
+                                <td>${item.ceilingPaintLayers || item.layers || 1}</td>
+                                <td>${formatPrice(item.ceilingPaintQuantity || 0)} מ"ר</td>
+                                <td>₪${formatPrice(ceilingPricePerSqm)}</td>
+                                <td><strong>₪${formatPrice(ceilingTotalPrice)}</strong></td>
+                              </tr>`;
+                            }
+
+                            return rows;
+                          } else {
+                            // Regular single-row display
+                            const pricePerSqm = item.quantity > 0 ? Math.round(item.totalPrice / item.quantity) : 0;
+
+                              return `
+                              <tr>
+                                <td><strong>${item.name || item.description || ''}</strong></td>
+                                ${categoryId === 'cat_tiling' && item.workType ? `
+                                <td>${item.workType || '-'}</td>
+                                <td>${item.selectedSize || '-'}</td>
+                                ` : categoryId === 'cat_tiling' ? `
+                                <td>-</td>
+                                <td>-</td>
+                                ` : categoryId === 'cat_paint_plaster' ? `
+                                <td>${getPaintTypeName(item)}</td>
+                                <td>${item.layers || 1}</td>
+                                ` : ''}
+                                <td>${formatPrice(item.quantity || 0)}${categoryId === 'cat_paint_plaster' ? ' מ"ר' : ''}</td>
+                                ${categoryId === 'cat_paint_plaster' ? `
+                                <td>₪${formatPrice(pricePerSqm)}</td>
+                                ` : `
+                                <td>${item.unit || 'יח\''}</td>
+                                <td>₪${formatPrice(item.unitPrice || 0)}</td>
+                                `}
+                                <td><strong>₪${formatPrice(item.totalPrice || 0)}</strong></td>
+                              </tr>
+                            `;
+                          }
                         }).join('')}
                       </tbody>
                     </table>
