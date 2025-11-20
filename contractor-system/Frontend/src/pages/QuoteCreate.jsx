@@ -959,27 +959,31 @@ export default function QuoteCreate() {
     }
   }, [normalizeRoomBreakdown, roomBreakdowns, setProjectComplexities, setSelectedItems, setStagedManualItems]);
 
-
-  // נשמור פונקציה גלובלית שתאפשר הוספה לעגלה גם מאזין כללי
-  useEffect(() => {
-    window.__b44AddItemToQuote = (item) => {
-      handleAddItemToQuote(item);
-    };
-    return () => {
-      try { delete window.__b44AddItemToQuote; } catch (e) {
-      }
-    };
-  }, [handleAddItemToQuote]);
+  // פונקציה להסרת פריט מההצעה
+  const handleRemoveItemFromQuote = useCallback((itemId) => {
+    setSelectedItems(prev => prev.filter(item => item.id !== itemId));
+  }, []);
 
   // NEW: update a single item inside selectedItems by id
   const handleUpdateItemInQuote = useCallback((itemId, patch) => {
     setSelectedItems(prev => prev.map(it => it.id === itemId ? { ...it, ...patch } : it));
   }, []);
 
-  // פונקציה להסרת פריט מההצעה
-  const handleRemoveItemFromQuote = useCallback((itemId) => {
-    setSelectedItems(prev => prev.filter(item => item.id !== itemId));
-  }, []);
+  // נשמור פונקציה גלובלית שתאפשר הוספה לעגלה גם מאזין כללי
+  useEffect(() => {
+    window.__b44AddItemToQuote = (item) => {
+      handleAddItemToQuote(item);
+    };
+    window.__b44RemoveItemFromQuote = (itemId) => {
+      handleRemoveItemFromQuote(itemId);
+    };
+    return () => {
+      try { delete window.__b44AddItemToQuote; } catch (e) {
+      }
+      try { delete window.__b44RemoveItemFromQuote; } catch (e) {
+      }
+    };
+  }, [handleAddItemToQuote, handleRemoveItemFromQuote]);
 
   // פונקציה לחישוב תאריך סיום אוטומטי (ללא ימי שישי-שבת)
   const calculateEndDate = useCallback((startDate, workDays) => {

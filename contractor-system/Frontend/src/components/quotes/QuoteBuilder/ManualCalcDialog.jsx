@@ -393,10 +393,24 @@ export default function ManualCalcDialog() {
     if (typeof window.__b44AddItemToQuote === "function") {
       console.log('🎨 [ManualCalcDialog] Splitting item into separate walls/ceiling items');
 
+      // If editing, first remove the old item
+      if (isEditing && typeof window.__b44RemoveItemFromQuote === "function") {
+        console.log('🎨 [ManualCalcDialog] Removing old item:', isEditing);
+        window.__b44RemoveItemFromQuote(isEditing);
+      }
+
+      // Generate base ID (without _walls or _ceiling suffix)
+      // If editing, extract the base ID by removing the suffix
+      let baseId = nowId;
+      if (isEditing) {
+        // Remove _walls or _ceiling suffix if present
+        baseId = isEditing.replace(/_walls$|_ceiling$/, '');
+      }
+
       // Split into separate items for walls and ceiling
       if (form.wallsEnabled && qtyWalls > 0) {
         const wallItem = {
-          id: `${nowId}_walls`,
+          id: `${baseId}_walls`,
           source: "manual_calc",
           categoryId: "cat_paint_plaster",
           categoryName: "צבע ושפכטל",
@@ -415,6 +429,7 @@ export default function ManualCalcDialog() {
           profit: Math.round(priceWalls - (contractorRounded * shareWalls)),
           profitPercent: profitPercent,
           workDuration: effectiveWorkDays * shareWalls,
+          manualFormSnapshot: item.manualFormSnapshot, // Include snapshot for editing
         };
         console.log('🎨 [ManualCalcDialog] Adding wall item:', wallItem);
         window.__b44AddItemToQuote(wallItem);
@@ -422,7 +437,7 @@ export default function ManualCalcDialog() {
 
       if (form.ceilingEnabled && qtyCeiling > 0) {
         const ceilingItem = {
-          id: `${nowId}_ceiling`,
+          id: `${baseId}_ceiling`,
           source: "manual_calc",
           categoryId: "cat_paint_plaster",
           categoryName: "צבע ושפכטל",
@@ -441,6 +456,7 @@ export default function ManualCalcDialog() {
           profit: Math.round(priceCeiling - (contractorRounded * shareCeiling)),
           profitPercent: profitPercent,
           workDuration: effectiveWorkDays * shareCeiling,
+          manualFormSnapshot: item.manualFormSnapshot, // Include snapshot for editing
         };
         console.log('🎨 [ManualCalcDialog] Adding ceiling item:', ceilingItem);
         window.__b44AddItemToQuote(ceilingItem);
