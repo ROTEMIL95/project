@@ -833,9 +833,15 @@ export default function DemolitionCategoryEditor(props) {
             <div className="rounded-xl border bg-gray-50/60 p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="font-semibold text-gray-800">סיכום קטגוריית הריסה</div>
-                <Button variant="outline" size="sm" onClick={handleToggleRoundingMode}>
-                  {roundingActive ? 'ימים מדויקים' : 'עיגול ימי עבודה'}
-                </Button>
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={!roundingActive}
+                    onChange={handleToggleRoundingMode}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 group-hover:text-gray-900">ימי עבודה מדויקים</span>
+                </label>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <SumTile

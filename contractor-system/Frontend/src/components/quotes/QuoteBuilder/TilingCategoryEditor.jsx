@@ -210,7 +210,7 @@ const MetricCard = ({ title, value, footer, color, icon }) => {
 };
 
 // Summary Card for Tiling Category
-const TilingSummaryCard = ({ metrics, onToggleRoundWorkDays, isWorkDaysRounded, formatPrice }) => {
+const TilingSummaryCard = ({ metrics, preciseWorkDays, setPreciseWorkDays, formatPrice }) => {
   if (!metrics) return null;
 
   return (
@@ -259,8 +259,8 @@ const TilingSummaryCard = ({ metrics, onToggleRoundWorkDays, isWorkDaysRounded, 
           </div>
           <div className="p-3 bg-gray-50 rounded-lg shadow-sm">
             <div className="text-lg font-bold text-gray-800">
-              {/* Show rounded by default, precise when toggle is on */}
-              {isWorkDaysRounded ? metrics.unroundedWorkDays.toFixed(1) : Math.ceil(metrics.unroundedWorkDays).toFixed(0)}
+              {/* Show precise when toggle is on, rounded when off */}
+              {preciseWorkDays ? metrics.unroundedWorkDays.toFixed(1) : Math.ceil(metrics.unroundedWorkDays).toFixed(0)}
             </div>
             <div className="text-xs text-gray-600">ימי עבודה</div>
           </div>
@@ -270,23 +270,17 @@ const TilingSummaryCard = ({ metrics, onToggleRoundWorkDays, isWorkDaysRounded, 
           </div>
         </div>
 
-        {/* Updated toggle section with improved styling */}
+        {/* Work Days Precision Toggle */}
         <div className="flex justify-center pt-4 border-t border-gray-200">
-          <div className="flex items-center gap-3 bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-4 hover:from-indigo-100 hover:to-blue-100 transition-all duration-300 shadow-sm">
-            <div className="flex items-center gap-2">
-              <Calculator className="h-5 w-5 text-indigo-600" />
-              <span className="font-semibold text-indigo-800 text-sm">חישוב ימים מדויקים</span>
-            </div>
-            <Switch
-              checked={isWorkDaysRounded}
-              onCheckedChange={(checked) => onToggleRoundWorkDays(checked)}
-              id="precise-work-days-tiling"
-              className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-gray-300 scale-110" />
-
-            <div className="text-xs text-indigo-600 bg-white px-2 py-1 rounded-full border border-indigo-200">
-              {isWorkDaysRounded ? "מדויק" : "מעוגל"}
-            </div>
-          </div>
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={preciseWorkDays}
+              onChange={(e) => setPreciseWorkDays(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-700 group-hover:text-gray-900">ימי עבודה מדויקים</span>
+          </label>
         </div>
       </CardContent>
     </Card>);
@@ -1465,6 +1459,70 @@ export default React.forwardRef(function TilingCategoryEditor({
               </p>
             </div>
           </div>
+
+          {/* Overall Summary Section */}
+          {currentCategorySummaryMetrics && currentCategorySummaryMetrics.totalQuantity > 0 && (
+            <div className="mt-8 p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border-2 border-orange-200 shadow-lg">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <BarChart3 className="w-6 h-6 text-orange-600" />
+                סיכום כללי - ריצוף וחיפוי
+              </h3>
+
+              {/* Main Metrics Grid */}
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="p-4 bg-blue-50 rounded-lg text-center shadow-sm border border-blue-200">
+                  <div className="text-sm text-blue-700 mb-1">מחיר כולל ללקוח</div>
+                  <div className="text-2xl font-bold text-blue-800">₪{formatPrice(currentCategorySummaryMetrics.totalPrice)}</div>
+                  <div className="text-xs text-blue-600 mt-1">{formatPrice(currentCategorySummaryMetrics.pricePerMeter)} ₪ למ"ר</div>
+                </div>
+                <div className="p-4 bg-red-50 rounded-lg text-center shadow-sm border border-red-200">
+                  <div className="text-sm text-red-700 mb-1">עלות כוללת לקבלן</div>
+                  <div className="text-2xl font-bold text-red-800">₪{formatPrice(currentCategorySummaryMetrics.totalContractorCost)}</div>
+                  <div className="text-xs text-red-600 mt-1">{formatPrice(currentCategorySummaryMetrics.costPerMeter)} ₪ למ"ר</div>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg text-center shadow-sm border border-green-200">
+                  <div className="text-sm text-green-700 mb-1">רווח כולל</div>
+                  <div className="text-2xl font-bold text-green-800">₪{formatPrice(currentCategorySummaryMetrics.profit)}</div>
+                  <div className="text-xs text-green-600 mt-1">{currentCategorySummaryMetrics.profitPercent.toFixed(1)}%</div>
+                </div>
+              </div>
+
+              {/* Secondary Metrics Grid */}
+              <div className="grid grid-cols-4 gap-3 mb-4">
+                <div className="p-3 bg-gray-50 rounded-lg shadow-sm text-center">
+                  <div className="text-base font-bold text-gray-800">₪{formatPrice(currentCategorySummaryMetrics.totalMaterialCost)}</div>
+                  <div className="text-xs text-gray-600">עלות חומרים</div>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg shadow-sm text-center">
+                  <div className="text-base font-bold text-gray-800">₪{formatPrice(currentCategorySummaryMetrics.totalLaborCost)}</div>
+                  <div className="text-xs text-gray-600">עלות עבודה</div>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg shadow-sm text-center">
+                  <div className="text-base font-bold text-gray-800">
+                    {preciseWorkDays ? currentCategorySummaryMetrics.unroundedWorkDays.toFixed(1) : Math.ceil(currentCategorySummaryMetrics.unroundedWorkDays)}
+                  </div>
+                  <div className="text-xs text-gray-600">ימי עבודה</div>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg shadow-sm text-center">
+                  <div className="text-base font-bold text-gray-800">{currentCategorySummaryMetrics.totalQuantity.toFixed(1)}</div>
+                  <div className="text-xs text-gray-600">סה"כ מ"ר</div>
+                </div>
+              </div>
+
+              {/* Work Days Precision Checkbox */}
+              <div className="flex justify-center pt-4 border-t border-orange-200">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={preciseWorkDays}
+                    onChange={(e) => setPreciseWorkDays(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 group-hover:text-gray-900">ימי עבודה מדויקים</span>
+                </label>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
