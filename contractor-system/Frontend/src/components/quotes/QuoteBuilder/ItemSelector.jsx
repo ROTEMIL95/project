@@ -66,7 +66,7 @@ const getItemDisplayName = (item) => {
     }
 
     // גיבוי אם השדות הנכונים לא קיימים
-    if (item.paintType && !item.paintType.startsWith('custom_')) {
+    if (item.paintType && !item.paintType.startsWith('שם לא מזוהה')) {
         return item.paintType;
     }
 
@@ -1248,7 +1248,7 @@ const PaintRoomsManager = React.forwardRef(({
 
     const [isSummaryOpen, setIsSummaryOpen] = useState(true);
     const [isTilingSummaryOpen, setIsTilingSummaryOpen] = useState(true);
-    const [isManualItemsOpen, setIsManualItemsOpen] = useState(true);
+    const [isManualItemsOpen, setIsManualItemsOpen] = useState(false);
     const [preciseWorkDays, setPreciseWorkDays] = useState(false);
     const [preciseBucketCalculation, setPreciseBucketCalculation] = useState(false);
 
