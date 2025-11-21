@@ -3629,15 +3629,21 @@ const ItemSelector = React.forwardRef(({
     saveCurrentCategoryData: async () => {
       console.log('[ItemSelector] saveCurrentCategoryData called via ref for category:', currentCategoryForItems);
       if (currentCategoryForItems) {
-        await saveCurrentCategoryData(currentCategoryForItems);
-        console.log('[ItemSelector] Data saved for category:', currentCategoryForItems);
+        const savedData = await saveCurrentCategoryData(currentCategoryForItems);
+        console.log('[ItemSelector] Data saved for category:', currentCategoryForItems, 'returning:', savedData);
+        return savedData; // 🔧 FIX: Return the saved data so parent can add items to cart
       }
+      return null;
     }
   }), [currentCategoryForItems, saveCurrentCategoryData]);
 
   // ✅ Restore staged manual items when switching to a category
   // Track previous category to detect actual category switches
   const prevCategoryRef = useRef(null);
+
+  // 🔧 REMOVED: Auto-save useEffect that was causing duplicate saves
+  // Category switching is now handled by CategoryStepper in QuoteCreate,
+  // which calls saveCurrentCategoryData via ref and adds items to cart
 
   useEffect(() => {
     // Only restore when category actually CHANGES (not on every categoryDataMap update)

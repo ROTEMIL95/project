@@ -972,21 +972,16 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                             {/* תוכן העגלה עם גלילה */}
                             <div className="flex-1 overflow-y-auto p-6 space-y-6">
                                 {hasItems ? (
-                                    categoriesOrder.map((catKey) => {
-                                        const group = categoriesMap[catKey];
+                                    <>
+                                        {categoriesOrder.map((catKey) => {
+                                            const group = categoriesMap[catKey];
 
-                                        // 🔧 FIX: For paint/plaster category, use summary item's totalPrice
-                                        // (which includes precision adjustments) instead of summing individual items
-                                        const summaryItem = group.items.find(it => it.source === 'paint_plaster_category_summary');
-                                        const categorySubtotal = summaryItem
-                                            ? Number(summaryItem.totalPrice) || 0
-                                            : group.items.reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0);
-
-                                        console.log(`[FloatingCart] Category ${catKey}:`, {
-                                            itemsCount: group.items.length,
-                                            summaryItem: summaryItem?.id,
-                                            categorySubtotal
-                                        });
+                                            // 🔧 FIX: For paint/plaster category, use summary item's totalPrice
+                                            // (which includes precision adjustments) instead of summing individual items
+                                            const summaryItem = group.items.find(it => it.source === 'paint_plaster_category_summary');
+                                            const categorySubtotal = summaryItem
+                                                ? Number(summaryItem.totalPrice) || 0
+                                                : group.items.reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0);
 
                                         return (
                                             <div key={catKey} className="space-y-3">
@@ -1068,7 +1063,8 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                 </div>
                                             </div>
                                         );
-                                    })
+                                    })}
+                                    </>
                                 ) : (
                                     <div className="text-center py-12">
                                         <ShoppingCart className="h-16 w-16 mx-auto text-gray-300 mb-4" />

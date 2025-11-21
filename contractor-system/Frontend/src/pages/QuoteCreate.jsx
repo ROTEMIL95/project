@@ -2637,10 +2637,40 @@ export default function QuoteCreate() {
               categories={getOrderedSelectedCategories()}
               currentId={currentCategoryForItems}
               onSelect={async (catId) => {
-                // ✅ Save current category data before switching
-                if (itemSelectorRef.current && itemSelectorRef.current.saveCurrentCategoryData) {
-                  await itemSelectorRef.current.saveCurrentCategoryData();
+                console.log('[QuoteCreate CategoryStepper] Switching from', currentCategoryForItems, 'to', catId);
+
+                // 🔧 FIX: Use the same logic as "Next" button - save current category and add items to cart
+                if (currentCategoryForItems && itemSelectorRef.current?.saveCurrentCategoryData) {
+                  console.log('[QuoteCreate CategoryStepper] Saving current category:', currentCategoryForItems);
+                  const savedData = await itemSelectorRef.current.saveCurrentCategoryData();
+
+                  if (savedData) {
+                    const itemsToAdd = savedData.quoteItems || [];
+                    const stagedItems = savedData.stagedManualItems || [];
+
+                    console.log('[QuoteCreate CategoryStepper] Adding items to cart:', {
+                      categoryId: currentCategoryForItems,
+                      quoteItems: itemsToAdd.length,
+                      stagedItems: stagedItems.length
+                    });
+
+                    setSelectedItems(prevItems => {
+                      const otherCategoryItems = prevItems.filter(item => item.categoryId !== currentCategoryForItems);
+                      const newItems = [...otherCategoryItems, ...itemsToAdd, ...stagedItems];
+
+                      console.log('[QuoteCreate CategoryStepper] Cart updated:', {
+                        removed: prevItems.length - otherCategoryItems.length,
+                        added: itemsToAdd.length + stagedItems.length,
+                        newTotal: newItems.length
+                      });
+
+                      return newItems;
+                    });
+                  }
+                } else {
+                  console.warn('[QuoteCreate CategoryStepper] Cannot save - no current category or ref not available');
                 }
+
                 setCurrentCategoryForItems(catId);
               }}
             />
