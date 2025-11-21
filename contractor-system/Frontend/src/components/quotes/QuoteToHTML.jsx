@@ -4,105 +4,133 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { formatPrice } from '@/lib/utils';
 
-// מפת צבעים לקטגוריות - צבעים עדינים ורכים
+// מפת סגנון מונוכרומי לקטגוריות - עיצוב עסקי
 const CATEGORY_STYLES = {
   'cat_paint_plaster': {
     name: 'צבע ושפכטל',
     icon: '🎨',
-    bgColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-    textColor: '#1E40AF',
-    accentColor: '#60A5FA',
-    lightBg: '#F0F9FF'
+    bgColor: '#ffffff',
+    borderColor: '#d1d5db',
+    textColor: '#111827',
+    accentColor: '#6b7280',
+    lightBg: '#f9fafb'
   },
   'cat_tiling': {
     name: 'ריצוף וחיפוי',
     icon: '📦',
-    bgColor: '#FFF7ED',
-    borderColor: '#FED7AA',
-    textColor: '#C2410C',
-    accentColor: '#FB923C',
-    lightBg: '#FFF7ED'
+    bgColor: '#ffffff',
+    borderColor: '#d1d5db',
+    textColor: '#111827',
+    accentColor: '#6b7280',
+    lightBg: '#f9fafb'
   },
   'cat_demolition': {
     name: 'הריסה ופינוי',
     icon: '🔨',
-    bgColor: '#FFF1F2',
-    borderColor: '#FECACA',
-    textColor: '#BE123C',
-    accentColor: '#FB7185',
-    lightBg: '#FFF1F2'
+    bgColor: '#ffffff',
+    borderColor: '#d1d5db',
+    textColor: '#111827',
+    accentColor: '#6b7280',
+    lightBg: '#f9fafb'
   },
   'cat_electricity': {
     name: 'חשמל',
     icon: '💡',
-    bgColor: '#FEFCE8',
-    borderColor: '#FEF08A',
-    textColor: '#A16207',
-    accentColor: '#FDE047',
-    lightBg: '#FEFCE8'
+    bgColor: '#ffffff',
+    borderColor: '#d1d5db',
+    textColor: '#111827',
+    accentColor: '#6b7280',
+    lightBg: '#f9fafb'
   },
   'cat_plumbing': {
     name: 'אינסטלציה',
     icon: '🔧',
-    bgColor: '#F0FDFA',
-    borderColor: '#99F6E4',
-    textColor: '#0F766E',
-    accentColor: '#5EEAD4',
-    lightBg: '#F0FDFA'
+    bgColor: '#ffffff',
+    borderColor: '#d1d5db',
+    textColor: '#111827',
+    accentColor: '#6b7280',
+    lightBg: '#f9fafb'
   },
   'cat_construction': {
     name: 'בינוי (כללי)',
     icon: '🏗️',
-    bgColor: '#FAF5FF',
-    borderColor: '#E9D5FF',
-    textColor: '#7C3AED',
-    accentColor: '#C084FC',
-    lightBg: '#FAF5FF'
+    bgColor: '#ffffff',
+    borderColor: '#d1d5db',
+    textColor: '#111827',
+    accentColor: '#6b7280',
+    lightBg: '#f9fafb'
   }
 };
 
 export default function QuoteToHTML({ quote }) {
   if (!quote) return null;
 
-  // קיבוץ פריטים לפי קטגוריות (מסנן פריטי סיכום)
+  // קיבוץ פריטים לפי קטגוריות (מסנן פריטי סיכום) + שמירת summary items בנפרד
   const itemsByCategory = {};
+  const summaryItemsByCategory = {};
+
   (quote.items || []).forEach(item => {
-    // Skip summary items - they shouldn't appear in the quote
+    const categoryId = item.categoryId || 'other';
+
+    // If it's a summary item, store it separately
     if (item.source === 'paint_plaster_category_summary') {
+      summaryItemsByCategory[categoryId] = item;
       return;
     }
 
-    const categoryId = item.categoryId || 'other';
     if (!itemsByCategory[categoryId]) {
       itemsByCategory[categoryId] = [];
     }
     itemsByCategory[categoryId].push(item);
   });
 
-  // חישוב סיכומים לכל קטגוריה
+  // חישוב סיכומים לכל קטגוריה - השתמש ב-summary item אם קיים, אחרת חשב מחדש
   const categorySummaries = {};
   Object.keys(itemsByCategory).forEach(categoryId => {
     const items = itemsByCategory[categoryId];
-    const totalPrice = items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-    const totalCost = items.reduce((sum, item) => sum + (item.totalCost || 0), 0);
-    const totalWorkDays = items.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
-    
-    // NEW: Calculate itemCount - sum quantities for "יחידה" items, count 1 for others
-    const itemCount = items.reduce((sum, item) => {
-      if (item.unit === "יחידה") {
-        return sum + (Number(item.quantity) || 1);
-      }
-      return sum + 1;
-    }, 0);
-    
-    categorySummaries[categoryId] = {
-      totalPrice,
-      totalCost,
-      profit: totalPrice - totalCost,
-      totalWorkDays,
-      itemCount
-    };
+    const summaryItem = summaryItemsByCategory[categoryId];
+
+    // If we have a summary item, use its values (this ensures consistency with the cart)
+    if (summaryItem) {
+      const itemCount = items.reduce((sum, item) => {
+        if (item.unit === "יחידה") {
+          return sum + (Number(item.quantity) || 1);
+        }
+        return sum + 1;
+      }, 0);
+
+      categorySummaries[categoryId] = {
+        totalPrice: Number(summaryItem.totalPrice) || 0,
+        totalCost: Number(summaryItem.totalCost) || 0,
+        profit: Number(summaryItem.profit) || 0,
+        totalWorkDays: Number(summaryItem.workDuration) || 0,
+        itemCount
+      };
+
+      console.log('[QuoteToHTML] Using summary item for category', categoryId, categorySummaries[categoryId]);
+    } else {
+      // Fallback: calculate from items
+      const totalPrice = items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+      const totalCost = items.reduce((sum, item) => sum + (item.totalCost || 0), 0);
+      const totalWorkDays = items.reduce((sum, item) => sum + (Number(item.workDuration) || 0), 0);
+
+      const itemCount = items.reduce((sum, item) => {
+        if (item.unit === "יחידה") {
+          return sum + (Number(item.quantity) || 1);
+        }
+        return sum + 1;
+      }, 0);
+
+      categorySummaries[categoryId] = {
+        totalPrice,
+        totalCost,
+        profit: totalPrice - totalCost,
+        totalWorkDays,
+        itemCount
+      };
+
+      console.log('[QuoteToHTML] Calculating summary from items for category', categoryId, categorySummaries[categoryId]);
+    }
   });
 
   const companyInfo = quote.companyInfo || {};
@@ -134,10 +162,11 @@ export default function QuoteToHTML({ quote }) {
       }
       
       .quote-header {
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        background: #111827;
         color: white;
         padding: 48px 40px;
         text-align: center;
+        border-bottom: 4px solid #1f2937;
       }
       
       .quote-header h1 {
@@ -197,13 +226,13 @@ export default function QuoteToHTML({ quote }) {
         font-weight: 500;
       }
       
-      /* בלוק לוח זמנים - עיצוב עדין */
+      /* בלוק לוח זמנים - עיצוב מונוכרומי */
       .timeline-section {
-        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        background: #f9fafb;
         padding: 24px 40px;
         margin: 32px 40px;
         border-radius: 12px;
-        border: 1px solid #bfdbfe;
+        border: 2px solid #d1d5db;
       }
       
       .timeline-header {
@@ -219,12 +248,12 @@ export default function QuoteToHTML({ quote }) {
       }
       
       .timeline-title {
-        font-size: 16px;
-        color: #1e40af;
-        font-weight: 600;
-        letter-spacing: -0.2px;
+        font-size: 18px;
+        color: #111827;
+        font-weight: 700;
+        letter-spacing: -0.3px;
       }
-      
+
       .timeline-content {
         display: flex;
         align-items: center;
@@ -232,71 +261,71 @@ export default function QuoteToHTML({ quote }) {
         gap: 12px;
         flex-wrap: wrap;
       }
-      
+
       .timeline-item {
         background: white;
         padding: 14px 18px;
         border-radius: 10px;
-        border: 1px solid #bfdbfe;
+        border: 2px solid #d1d5db;
         text-align: center;
         flex: 0 1 auto;
         min-width: 140px;
       }
-      
+
       .timeline-item-icon {
         font-size: 18px;
         margin-bottom: 6px;
       }
-      
+
       .timeline-item-label {
-        font-weight: 500;
-        color: #3b82f6;
+        font-weight: 600;
+        color: #6b7280;
         font-size: 11px;
         margin-bottom: 6px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
-      
+
       .timeline-item-value {
-        color: #1e3a8a;
+        color: #111827;
         font-size: 14px;
-        font-weight: 600;
+        font-weight: 700;
       }
-      
+
       .timeline-arrow {
-        color: #93c5fd;
+        color: #9ca3af;
         font-size: 16px;
         font-weight: bold;
       }
       
-      /* עיצוב קטגוריה - עדין ומודרני */
+      /* עיצוב קטגוריה - מונוכרומי ועסקי */
       .category-block {
         margin: 40px;
         page-break-inside: avoid;
       }
-      
+
       .category-header {
         padding: 20px 24px;
         border-radius: 12px 12px 0 0;
-        border: 1px solid;
+        border: 2px solid;
         border-bottom: none;
         display: flex;
         align-items: center;
         gap: 12px;
       }
-      
+
       .category-icon {
         font-size: 28px;
       }
-      
+
       .category-title {
         font-size: 22px;
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: -0.3px;
       }
-      
+
       .category-content {
-        border: 1px solid;
+        border: 2px solid;
         border-top: none;
         border-radius: 0 0 12px 12px;
         overflow: hidden;
@@ -408,51 +437,53 @@ export default function QuoteToHTML({ quote }) {
         color: #374151;
       }
       
-      /* סיכום כללי - עיצוב עדין */
+      /* סיכום כללי - עיצוב מונוכרומי */
       .final-summary {
         margin: 40px;
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        background: #111827;
         color: white;
         padding: 32px;
         border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(99, 102, 241, 0.15);
+        border: 3px solid #1f2937;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
       }
-      
+
       .final-summary h2 {
-        font-size: 22px;
+        font-size: 24px;
         margin-bottom: 24px;
         text-align: center;
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: -0.3px;
       }
-      
+
       .final-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 16px;
       }
-      
+
       .final-item {
-        background: rgba(255,255,255,0.15);
+        background: #1f2937;
         padding: 20px;
         border-radius: 10px;
         text-align: center;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.2);
+        border: 2px solid #374151;
       }
-      
+
       .final-label {
         font-size: 13px;
-        opacity: 0.95;
+        opacity: 0.9;
         margin-bottom: 10px;
         font-weight: 500;
         letter-spacing: 0.3px;
+        color: #d1d5db;
       }
-      
+
       .final-value {
         font-size: 26px;
         font-weight: 700;
         letter-spacing: -0.5px;
+        color: white;
       }
       
       /* תנאי תשלום - עיצוב עדין */
@@ -512,15 +543,15 @@ export default function QuoteToHTML({ quote }) {
       .term-percentage {
         font-size: 18px;
         font-weight: 700;
-        color: #6366f1;
+        color: #111827;
         min-width: 60px;
         text-align: center;
       }
-      
+
       .term-amount {
         font-size: 18px;
         font-weight: 700;
-        color: #059669;
+        color: #111827;
         min-width: 120px;
         text-align: left;
       }
@@ -533,7 +564,7 @@ export default function QuoteToHTML({ quote }) {
         text-align: left;
       }
       
-      /* New: Variable Costs Section */
+      /* New: Variable Costs Section - מונוכרומי */
       .variable-costs-section {
         margin: 40px;
       }
@@ -544,13 +575,13 @@ export default function QuoteToHTML({ quote }) {
         gap: 12px;
         margin-bottom: 16px;
         padding-bottom: 8px;
-        border-bottom: 2px solid #f59e0b; /* amber-500 */
+        border-bottom: 3px solid #111827;
       }
 
       .variable-costs-header h2 {
         font-size: 24px;
         font-weight: 700;
-        color: #78350f; /* amber-900 */
+        color: #111827;
       }
 
       .variable-costs-content {
@@ -591,21 +622,21 @@ export default function QuoteToHTML({ quote }) {
         padding: 16px;
         border-radius: 12px;
         border-width: 2px;
-        border-color: #fbbf24; /* amber-400 */
-        background-color: #fffbeb; /* amber-50 */
+        border-color: #d1d5db;
+        background-color: #f9fafb;
         margin-top: 16px;
       }
 
       .variable-costs-total-label {
         font-size: 20px;
         font-weight: 700;
-        color: #78350f; /* amber-900 */
+        color: #111827;
       }
 
       .variable-costs-total-value {
         font-size: 24px;
         font-weight: 700;
-        color: #78350f; /* amber-900 */
+        color: #111827;
       }
       
       /* New: Commitments Section */
@@ -658,40 +689,40 @@ export default function QuoteToHTML({ quote }) {
         white-space: pre-wrap; /* whitespace-pre-wrap */
       }
 
-      /* Specific colors for contractor commitments */
+      /* Specific colors for contractor commitments - מונוכרומי */
       .contractor-commitment-card {
-        background: linear-gradient(to bottom right, #eff6ff, #dbeafe); /* from-blue-50 to-blue-100 */
-        border-color: #93c5fd; /* border-blue-300 */
+        background: #f9fafb;
+        border-color: #d1d5db;
       }
 
       .contractor-commitment-header {
-        border-color: #60a5fa; /* border-blue-400 */
+        border-color: #9ca3af;
       }
 
       .contractor-commitment-title {
-        color: #1e3a8a; /* text-blue-900 */
+        color: #111827;
       }
 
       .contractor-commitment-content {
-        color: #1f40af; /* text-blue-800 */
+        color: #374151;
       }
 
-      /* Specific colors for client commitments */
+      /* Specific colors for client commitments - מונוכרומי */
       .client-commitment-card {
-        background: linear-gradient(to bottom right, #f0fdf4, #dcfce7); /* from-green-50 to-green-100 */
-        border-color: #a7f3d0; /* border-green-300 */
+        background: #f9fafb;
+        border-color: #d1d5db;
       }
 
       .client-commitment-header {
-        border-color: #4ade80; /* border-green-400 */
+        border-color: #9ca3af;
       }
 
       .client-commitment-title {
-        color: #065f46; /* text-green-900 */
+        color: #111827;
       }
 
       .client-commitment-content {
-        color: #047857; /* text-green-800 */
+        color: #374151;
       }
       
       .legal-note {
@@ -1158,27 +1189,21 @@ export default function QuoteToHTML({ quote }) {
                   ${quote.projectComplexities.additionalCostDetails
                     .filter(cost => (cost.cost || 0) > 0)
                     .map((cost, index) => {
-                      const colors = [
-                        { border: '#dcfce7', bg: '#f0fdf4', text: '#065f46', emoji: '🚚' }, // green-300, green-50, green-900
-                        { border: '#dbeafe', bg: '#eff6ff', text: '#1e40af', emoji: '🏗️' }, // blue-300, blue-50, blue-900
-                        { border: '#e9d5ff', bg: '#faf5ff', text: '#6b21a8', emoji: '🧹' }, // purple-300, purple-50, purple-900
-                        { border: '#fed7aa', bg: '#fff7ed', text: '#9a3412', emoji: '📦' }, // orange-300, orange-50, orange-900
-                        { border: '#fbcfe8', bg: '#fdf2f8', text: '#9d174d', emoji: '🔧' }  // pink-300, pink-50, pink-900
-                      ];
-                      const colorScheme = colors[index % colors.length];
-                      
+                      const emojis = ['📦', '🚚', '🏗️', '🧹', '🔧'];
+                      const emoji = emojis[index % emojis.length];
+
                       return `
-                        <div 
+                        <div
                           class="variable-cost-item"
-                          style="border-color: ${colorScheme.border}; background-color: ${colorScheme.bg};"
+                          style="border-color: #d1d5db; background-color: #f9fafb;"
                         >
                           <div class="variable-cost-item-left">
-                            <span style="font-size: 24px;">${colorScheme.emoji}</span>
-                            <span class="variable-cost-item-desc" style="color: ${colorScheme.text};">
+                            <span style="font-size: 24px;">${emoji}</span>
+                            <span class="variable-cost-item-desc" style="color: #111827;">
                               ${cost.description || 'עלות נוספת'}
                             </span>
                           </div>
-                          <div class="variable-cost-item-value" style="color: ${colorScheme.text};">
+                          <div class="variable-cost-item-value" style="color: #111827;">
                             ₪${formatPrice(cost.cost || 0)}
                           </div>
                         </div>
@@ -1217,12 +1242,14 @@ export default function QuoteToHTML({ quote }) {
                 </div>
                 <div class="final-item">
                   <div class="final-label">סה"כ פריטים</div>
-                  <div class="final-value">${formatPrice((quote.items || []).reduce((sum, item) => {
-                    if (item.unit === "יחידה") {
-                      return sum + (Number(item.quantity) || 1);
-                    }
-                    return sum + 1;
-                  }, 0))}</div>
+                  <div class="final-value">${formatPrice((quote.items || [])
+                    .filter(item => item.source !== 'paint_plaster_category_summary')
+                    .reduce((sum, item) => {
+                      if (item.unit === "יחידה") {
+                        return sum + (Number(item.quantity) || 1);
+                      }
+                      return sum + 1;
+                    }, 0))}</div>
                 </div>
               </div>
             </div>

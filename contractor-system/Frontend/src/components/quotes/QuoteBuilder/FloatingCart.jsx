@@ -857,21 +857,30 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
 export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToSummary, projectComplexities, onUpdateItem }) {
     const [isOpen, setIsOpen] = useState(false);
 
+    // Debug: log items length and trigger on every render
+    useEffect(() => {
+        console.log('[FloatingCart useEffect] Items changed:', items.length, 'Items:', items);
+    }, [items]);
 
-    const hasItems = items.length > 0;
+    console.log('[FloatingCart render] Items count:', items.length);
+
+    // Filter out summary items for hasItems check - we don't want to show prices if only summary items remain
+    const realItems = items.filter(item => item.source !== 'paint_plaster_category_summary');
+    const hasItems = realItems.length > 0;
 
     // Calculate totals - FIXED: always calculate from items for accuracy
-    const totalPrice = items.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
-  
+    // If no items, set all values to 0
+    const totalPrice = hasItems ? items.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0) : 0;
+
     // NEW: Calculate totalCost directly from items, ensuring we get the correct contractor cost
-    const totalCost = items.reduce((sum, item) => {
+    const totalCost = hasItems ? items.reduce((sum, item) => {
       // For tiling items, make sure we use the correct cost field
       const itemCost = Number(item.totalCost) || Number(item.baseCost) || 0;
       return sum + itemCost;
-    }, 0);
-    
-    const profit = totalPrice - totalCost;
-    const profitPercent = totalCost > 0 ? ((profit / totalCost) * 100).toFixed(1) : '0.0';
+    }, 0) : 0;
+
+    const profit = hasItems ? (totalPrice - totalCost) : 0;
+    const profitPercent = (hasItems && totalCost > 0) ? ((profit / totalCost) * 100).toFixed(1) : '0.0';
 
     // 🔧 FIX: Don't filter out summary items yet - we need them for category subtotals
     // We'll skip rendering them in the item list instead
@@ -881,7 +890,7 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
     const paintFallbackRooms = projectComplexities?.roomBreakdowns?.paint || [];
 
     // NEW: Calculate total quantity
-    const totalQuantity = items.reduce((sum, item) => {
+    const totalQuantity = hasItems ? items.reduce((sum, item) => {
       // Exclude summary items
       if (item.source?.includes('summary') || item.source?.includes('category_summary')) {
         return sum;
@@ -898,10 +907,10 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
       }
 
       return sum;
-    }, 0);
+    }, 0) : 0;
 
-    // If no countable items exist, fall back to item count
-    const badgeCount = totalQuantity > 0 ? totalQuantity : items.length;
+    // If no countable items exist, fall back to item count (but if no items at all, show 0)
+    const badgeCount = hasItems ? (totalQuantity > 0 ? totalQuantity : items.length) : 0;
 
     return (
         <>
@@ -972,6 +981,12 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                         const categorySubtotal = summaryItem
                                             ? Number(summaryItem.totalPrice) || 0
                                             : group.items.reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0);
+
+                                        console.log(`[FloatingCart] Category ${catKey}:`, {
+                                            itemsCount: group.items.length,
+                                            summaryItem: summaryItem?.id,
+                                            categorySubtotal
+                                        });
 
                                         return (
                                             <div key={catKey} className="space-y-3">

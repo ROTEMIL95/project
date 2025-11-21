@@ -3788,7 +3788,17 @@ const ItemSelector = React.forwardRef(({
             userDefaults: userForData?.user_metadata?.tilingUserDefaults || {},
             stagedManualItems: stagedManualItems, // 🆕 Pass staged manual items
             setStagedManualItems: setStagedManualItems, // 🆕 Pass setState function
-            onRemoveItemFromQuote: (itemId) => setSelectedItems(prev => prev.filter(item => item.id !== itemId)), // 🆕 Pass remove callback
+            onRemoveItemFromQuote: (itemId) => {
+                // Use global callback to ensure parent state is updated
+                console.log('[ItemSelector Tiling] onRemoveItemFromQuote called with:', itemId);
+                if (window.__b44RemoveItemFromQuote) {
+                    console.log('[ItemSelector Tiling] Calling window.__b44RemoveItemFromQuote');
+                    window.__b44RemoveItemFromQuote(itemId);
+                } else {
+                    console.error('[ItemSelector Tiling] window.__b44RemoveItemFromQuote is not defined!');
+                }
+                // Parent state will update via props, don't update local state
+            }, // 🆕 Pass remove callback
         };
     } else if (currentCategoryForItems === 'cat_paint_plaster') {
         CategoryComponent = PaintPlasterCategory;
@@ -3807,7 +3817,17 @@ const ItemSelector = React.forwardRef(({
             setStagedManualItems: setStagedManualItems, // 🆕 Pass setState function
             selectedItems: selectedItems, // 🆕 Pass selectedItems to filter manual items
             onAddItemToQuote: onAddItemToQuote, // 🔧 FIX: Pass callback for PaintSimulatorV2
-            onRemoveItemFromQuote: (itemId) => setSelectedItems(prev => prev.filter(item => item.id !== itemId)), // 🆕 Pass remove callback
+            onRemoveItemFromQuote: (itemId) => {
+                // Use global callback to ensure parent state is updated
+                console.log('[ItemSelector Paint] onRemoveItemFromQuote called with:', itemId);
+                if (window.__b44RemoveItemFromQuote) {
+                    console.log('[ItemSelector Paint] Calling window.__b44RemoveItemFromQuote');
+                    window.__b44RemoveItemFromQuote(itemId);
+                } else {
+                    console.error('[ItemSelector Paint] window.__b44RemoveItemFromQuote is not defined!');
+                }
+                // Parent state will update via props, don't update local state
+            }, // 🆕 Pass remove callback
         };
     } else if (currentCategoryForItems === 'cat_demolition') {
         CategoryComponent = DemolitionCategory;

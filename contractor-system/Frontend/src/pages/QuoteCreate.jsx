@@ -961,7 +961,66 @@ export default function QuoteCreate() {
 
   // פונקציה להסרת פריט מההצעה
   const handleRemoveItemFromQuote = useCallback((itemId) => {
-    setSelectedItems(prev => prev.filter(item => item.id !== itemId));
+    console.log('[QuoteCreate] handleRemoveItemFromQuote called with itemId:', itemId);
+    setSelectedItems(prev => {
+      console.log('[QuoteCreate] Current items before removal:', prev.length, prev);
+      // Remove the requested item
+      const afterRemoval = prev.filter(item => item.id !== itemId);
+      console.log('[QuoteCreate] Items after removal:', afterRemoval.length, afterRemoval);
+
+      // Check if we need to remove summary items for categories that no longer have real items
+      const remainingRealItems = afterRemoval.filter(item => item.source !== 'paint_plaster_category_summary');
+
+      // Get categories that still have real items
+      const categoriesWithItems = new Set(remainingRealItems.map(item => item.categoryId).filter(Boolean));
+
+      // Filter out summary items for categories that no longer have real items
+      const afterSummaryCleanup = afterRemoval.filter(item => {
+        if (item.source === 'paint_plaster_category_summary') {
+          // Keep summary item only if its category still has real items
+          return categoriesWithItems.has(item.categoryId);
+        }
+        return true; // Keep all non-summary items
+      });
+
+      // Recalculate summary items for categories that still have items
+      const finalItems = afterSummaryCleanup.map(item => {
+        if (item.source === 'paint_plaster_category_summary') {
+          // Find all real items in this category
+          const categoryItems = afterSummaryCleanup.filter(
+            it => it.categoryId === item.categoryId && it.source !== 'paint_plaster_category_summary'
+          );
+
+          // Recalculate totals
+          const totalPrice = categoryItems.reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0);
+          const totalCost = categoryItems.reduce((sum, it) => sum + (Number(it.totalCost) || 0), 0);
+          const profit = totalPrice - totalCost;
+          const totalWorkDays = categoryItems.reduce((sum, it) => sum + (Number(it.workDuration) || 0), 0);
+
+          console.log('[QuoteCreate] Recalculating summary item:', {
+            categoryId: item.categoryId,
+            itemsCount: categoryItems.length,
+            oldTotalPrice: item.totalPrice,
+            newTotalPrice: totalPrice,
+            oldProfit: item.profit,
+            newProfit: profit
+          });
+
+          // Return updated summary item
+          return {
+            ...item,
+            totalPrice,
+            totalCost,
+            profit,
+            workDuration: totalWorkDays
+          };
+        }
+        return item;
+      });
+
+      console.log('[QuoteCreate] Final items after recalculation:', finalItems.length, finalItems);
+      return finalItems;
+    });
   }, []);
 
   // NEW: update a single item inside selectedItems by id
@@ -972,9 +1031,11 @@ export default function QuoteCreate() {
   // נשמור פונקציה גלובלית שתאפשר הוספה לעגלה גם מאזין כללי
   useEffect(() => {
     window.__b44AddItemToQuote = (item) => {
+      console.log('[QuoteCreate] window.__b44AddItemToQuote called with:', item);
       handleAddItemToQuote(item);
     };
     window.__b44RemoveItemFromQuote = (itemId) => {
+      console.log('[QuoteCreate] window.__b44RemoveItemFromQuote called with:', itemId);
       handleRemoveItemFromQuote(itemId);
     };
     return () => {
@@ -1492,7 +1553,7 @@ export default function QuoteCreate() {
         description: `הצעת המחיר "${projectInfo.projectName || 'ללא שם'}" ${isDraft ? 'נשמרה' : 'נשלחה'} בהצלחה.`,
       });
 
-      // If not a draft, show share dialog for new quotes, navigate immediately for existing quotes
+      // Navigate to SentQuotes after save
       if (!isDraft) {
         if (existingQuoteId) {
           // For existing quotes, navigate immediately after update
@@ -1500,9 +1561,13 @@ export default function QuoteCreate() {
             navigate(createPageUrl('SentQuotes'));
           }, 500);
         } else {
-          // For new quotes, show share dialog
+          // For new quotes, show share dialog and then navigate
           setSavedQuoteId(savedQuote?.id || existingQuoteId);
           setShowShareDialog(true);
+          // Navigate after a delay to allow user to see the share dialog
+          setTimeout(() => {
+            navigate(createPageUrl('SentQuotes'));
+          }, 1500);
         }
       } else {
         // For drafts, navigate immediately
@@ -2161,23 +2226,23 @@ export default function QuoteCreate() {
 
         return (
           <Card className="shadow-lg">
-            <CardHeader className="bg-gray-50/50 border-b">
-              <CardTitle className="text-xl font-semibold text-gray-800">סיכום סופי ואישור</CardTitle>
-              <CardDescription className="text-gray-600">בדוק את המסמך, תכנן את הת payments ושלח ללקוח.</CardDescription>
+            <CardHeader className="bg-white border-b-2 border-gray-200 py-8">
+              <CardTitle className="text-3xl font-bold text-gray-900 mb-2">סיכום סופי ואישור</CardTitle>
+              <CardDescription className="text-base text-gray-600">בדוק את המסמך, תכנן את התשלומים ושלח ללקוח.</CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-6 p-6">
+            <CardContent className="space-y-8 p-8">
               {(missingProjectDates || hasMissingCategoryDates) && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {missingProjectDates && (
-                    <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <div className="bg-gray-50 border-2 border-gray-900 rounded-lg p-5">
+                      <div className="flex items-start gap-4">
+                        <AlertCircle className="h-6 w-6 text-gray-900 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
-                          <h4 className="font-semibold text-yellow-900 mb-1">
-                            ⚠️ חסרים תאריכי פרויקט כלליים
+                          <h4 className="text-lg font-bold text-gray-900 mb-2">
+                            חסרים תאריכי פרויקט כלליים
                           </h4>
-                          <p className="text-sm text-yellow-800 mb-2">
+                          <p className="text-sm text-gray-700 mb-3">
                             לא נבחרו תאריך התחלה וסיום כלליים לפרויקט.
                             <strong className="font-semibold"> לכן, תחזית התשלומים בגרף התזרים לא תהיה זמינה או מדויקת.</strong>
                           </p>
@@ -2185,7 +2250,7 @@ export default function QuoteCreate() {
                             variant="outline"
                             size="sm"
                             onClick={() => setCurrentStep(1)}
-                            className="bg-yellow-100 hover:bg-yellow-200 text-yellow-900 border-yellow-400"
+                            className="bg-white hover:bg-gray-100 text-gray-900 border-gray-900 font-medium"
                           >
                             <ArrowRight className="ml-2 h-4 w-4" />
                             חזור לשלב 'פרטי פרויקט' להשלמת תאריכים
@@ -2196,14 +2261,14 @@ export default function QuoteCreate() {
                   )}
 
                   {hasMissingCategoryDates && (
-                    <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <div className="bg-gray-50 border-2 border-gray-900 rounded-lg p-5">
+                      <div className="flex items-start gap-4">
+                        <AlertCircle className="h-6 w-6 text-gray-900 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
-                          <h4 className="font-semibold text-orange-900 mb-1">
-                            ⚠️ חסרים תאריכי עבודה לקטגוריות
+                          <h4 className="text-lg font-bold text-gray-900 mb-2">
+                            חסרים תאריכי עבודה לקטגוריות
                           </h4>
-                          <p className="text-sm text-orange-800 mb-2">
+                          <p className="text-sm text-gray-700 mb-3">
                             {categoriesWithoutDates.length === 1
                               ? 'קטגוריה אחת חסרה תאריכי התחלה/סיום עבודה.'
                               : `${categoriesWithoutDates.length} קטגוריות חסרות תאריכי התחלה/סיום עבודה.`
@@ -2211,11 +2276,11 @@ export default function QuoteCreate() {
                             {' '}
                             <strong className="font-semibold">הדבר ישפיע על דיוק תחזית ההוצאות בגרף התזרים.</strong>
                           </p>
-                          <div className="flex flex-wrap gap-2 mb-3">
+                          <div className="flex flex-wrap gap-2 mb-4">
                             {categoriesWithoutDates.map(catId => {
                               const cat = (userCategories.length ? userCategories : AVAILABLE_CATEGORIES).find(c => c.id === catId);
                               return cat ? (
-                                <Badge key={catId} variant="outline" className="bg-orange-100 text-orange-900 border-orange-300">
+                                <Badge key={catId} variant="outline" className="bg-gray-100 text-gray-900 border-gray-400 font-medium">
                                   {cat.name}
                                 </Badge>
                               ) : null;
@@ -2225,7 +2290,7 @@ export default function QuoteCreate() {
                             variant="outline"
                             size="sm"
                             onClick={() => setCurrentStep(3)}
-                            className="bg-orange-100 hover:bg-orange-200 text-orange-900 border-orange-400"
+                            className="bg-white hover:bg-gray-100 text-gray-900 border-gray-900 font-medium"
                           >
                             <ArrowRight className="ml-2 h-4 w-4" />
                             חזור לשלב 'פריטים' להגדרת תאריכי קטגוריות
@@ -2252,54 +2317,54 @@ export default function QuoteCreate() {
                 <Button
                   onClick={() => setShowPreview(true)}
                   size="lg"
-                  className="text-base px-10 py-6 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 font-semibold rounded-xl"
+                  className="text-lg px-12 py-7 bg-gray-900 hover:bg-gray-800 text-white shadow-xl hover:shadow-2xl transition-all duration-300 font-bold rounded-xl border-2 border-gray-900"
                 >
                   <svg className="ml-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
-                  הצג את המסמך המ מלא לפני שליחה
+                  הצג את המסמך המלא לפני שליחה
                 </Button>
               </div>
 
-              <Separator className="my-6" />
+              <Separator className="my-8 h-0.5 bg-gray-300" />
 
               {workDaysFromForm > 0 && (
-                <div className="p-4 bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-xl">
+                <div className="p-6 bg-white border-2 border-gray-300 rounded-xl shadow-md">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-emerald-100 rounded-lg">
-                        <CalendarDays className="w-5 h-5 text-emerald-600" />
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-gray-100 rounded-lg">
+                        <CalendarDays className="w-6 h-6 text-gray-900" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-emerald-900">רווח יומי ממוצע</h4>
-                        <p className="text-sm text-emerald-700">
+                        <h4 className="text-lg font-bold text-gray-900">רווח יומי ממוצע</h4>
+                        <p className="text-sm text-gray-600 mt-1">
                           {workDaysFromForm} ימי עבודה נטו (ללא שישי-שבת)
                         </p>
                       </div>
                     </div>
 
                     <div className="text-left">
-                      <div className="text-2xl font-bold text-emerald-900">
+                      <div className="text-3xl font-bold text-gray-900">
                         ₪ {dailyProfit.toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </div>
-                      <div className="text-sm text-emerald-700">ליום עבודה</div>
+                      <div className="text-sm text-gray-600 mt-1">ליום עבודה</div>
                     </div>
                   </div>
 
                   {desiredDailyProfit > 0 && (
-                    <div className="mt-3 pt-3 border-t border-emerald-200">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-emerald-700">רווח יומי רצוי (יעד):</span>
-                        <span className="font-medium text-emerald-800">
+                    <div className="mt-4 pt-4 border-t-2 border-gray-200">
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <span className="text-gray-700 font-medium">רווח יומי רצוי (יעד):</span>
+                        <span className="font-bold text-gray-900">
                           ₪ {desiredDailyProfit.toLocaleString('he-IL')}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-sm mt-1">
-                        <span className="text-emerald-700">פער מהיעד:</span>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700 font-medium">פער מהיעד:</span>
                         <span className={cn(
                           "font-bold flex items-center gap-1",
-                          dailyProfitDiff >= 0 ? "text-green-600" : "text-red-600"
+                          dailyProfitDiff >= 0 ? "text-gray-900" : "text-gray-900"
                         )}>
                           {dailyProfitDiff >= 0 ? (
                             <>
@@ -2315,8 +2380,8 @@ export default function QuoteCreate() {
                         </span>
                       </div>
                       {dailyProfitDiff < 0 && (
-                        <p className="text-xs text-orange-600 mt-2 flex items-center gap-1">
-                          <Info className="w-3 h-3" />
+                        <p className="text-xs text-gray-700 mt-3 flex items-center gap-1 bg-gray-50 p-2 rounded border border-gray-300">
+                          <Info className="w-4 h-4" />
                           שקול להעלות את המחיר ללקוח או להפחית הנחה כדי להגיע ליעד הרווח היומי
                         </p>
                       )}

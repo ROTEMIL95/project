@@ -22,29 +22,27 @@ export default function QuotePreviewSnapshot({ projectInfo, totals, selectedItem
 
   return (
     <div className="relative">
-      {/* מסגרת חיצונית עדינה */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200 shadow-sm">
-        
-        {/* המסמך עצמו - חתוך בגובה */}
-        <div 
-          className="bg-white rounded-lg shadow-xl overflow-hidden relative"
-          style={{ 
-            maxHeight: '500px',
-            transform: 'perspective(1200px) rotateX(0.5deg)',
-            transformStyle: 'preserve-3d'
+      {/* מסגרת חיצונית אלגנטית */}
+      <div className="bg-gray-50 p-8 rounded-2xl border-2 border-gray-300 shadow-2xl">
+
+        {/* המסמך עצמו - גובה מוגדל */}
+        <div
+          className="bg-white rounded-xl shadow-2xl overflow-hidden relative border border-gray-200"
+          style={{
+            maxHeight: '650px'
           }}
         >
           {/* השתמש ב-QuoteToHTML הממשי */}
-          <div style={{ 
+          <div style={{
             overflow: 'hidden',
-            maxHeight: '500px',
+            maxHeight: '650px',
             position: 'relative'
           }}>
             <QuoteToHTML quote={previewQuote} />
-            
+
             {/* Gradient fade בתחתית */}
-            <div 
-              className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
+            <div
+              className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
               style={{
                 background: 'linear-gradient(to bottom, transparent, white)'
               }}
@@ -53,22 +51,22 @@ export default function QuotePreviewSnapshot({ projectInfo, totals, selectedItem
         </div>
 
         {/* אפקט "המסמך ממשיך" */}
-        <div className="mt-4 text-center">
-          <div className="inline-block bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
-            <span className="text-xs text-gray-600 font-medium">המסמך ממשיך...</span>
+        <div className="mt-6 text-center">
+          <div className="inline-block bg-white px-6 py-3 rounded-full shadow-md border-2 border-gray-300">
+            <span className="text-sm text-gray-700 font-semibold">המסמך ממשיך...</span>
           </div>
         </div>
 
-        {/* צל תלת-ממדי */}
+        {/* צל עמוק */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -bottom-2 left-4 right-4 h-4 bg-gradient-to-b from-transparent to-gray-300 blur-sm rounded-b-lg opacity-20"></div>
+          <div className="absolute -bottom-3 left-6 right-6 h-6 bg-black/10 blur-xl rounded-b-2xl"></div>
         </div>
       </div>
 
-      {/* טקסט הסבר */}
-      <div className="text-center mt-4">
-        <p className="text-sm text-gray-600">
-          💡 זוהי תצוגה מקדימה של הצעת המחיר שלך. לחץ על הכפתור מטה לצפייה מלאה.
+      {/* טקסט הסבר - ללא אמוג'י */}
+      <div className="text-center mt-6">
+        <p className="text-base text-gray-600">
+          זוהי תצוגה מקדימה של הצעת המחיר שלך. לחץ על הכפתור מטה לצפייה מלאה.
         </p>
       </div>
     </div>
