@@ -944,6 +944,34 @@ export default function QuoteToHTML({ quote }) {
                       </thead>
                       <tbody>
                         ${items.map(item => {
+                          // Helper function to get complexity display text
+                          const getComplexityText = (item) => {
+                            if (!item.complexity || item.complexity === 'none') return '';
+
+                            const complexityMap = {
+                              'simple': { name: 'פשוט', percent: 5 },
+                              'moderate': { name: 'בינוני', percent: 15 },
+                              'complex': { name: 'מורכב', percent: 25 },
+                              'very_complex': { name: 'מאוד מורכב', percent: 35 },
+                              'custom': { name: item.customComplexityDescription || 'מותאם אישית', percent: null }
+                            };
+
+                            const complexityData = complexityMap[item.complexity];
+                            if (!complexityData) return '';
+
+                            // Try to get percentage from quote.projectComplexities first, then fallback to default
+                            let complexityPercent = quote.projectComplexities?.complexities?.[item.complexity]?.percentage;
+                            if (complexityPercent === undefined || complexityPercent === null) {
+                              complexityPercent = complexityData.percent;
+                            }
+
+                            if (complexityPercent && complexityPercent > 0) {
+                              return ` (${complexityData.name} +${complexityPercent}%)`;
+                            }
+
+                            return ` (${complexityData.name})`;
+                          };
+
                           // Helper function to get paint type name
                           const getPaintTypeName = (item, subType) => {
                             const type = subType || item.paintType || item.plasterType;
@@ -956,11 +984,12 @@ export default function QuoteToHTML({ quote }) {
                               return '-';
                             }
 
-                            // Remove "עבודת צבע" or similar suffixes from paint names
-                            typeStr = typeStr.replace(/\s*-\s*עבודת\s+צבע\s*$/i, '').trim();
-                            typeStr = typeStr.replace(/\s*עבודת\s+צבע\s*$/i, '').trim();
-                            typeStr = typeStr.replace(/\s*-\s*עבודת\s+שפכטל\s*$/i, '').trim();
-                            typeStr = typeStr.replace(/\s*עבודת\s+שפכטל\s*$/i, '').trim();
+                            // Remove "עבודת צבע" or similar prefixes from paint names (from START and END)
+                            typeStr = typeStr.replace(/^עבודת\s+צבע\s*-?\s*/gi, '').trim();
+                            typeStr = typeStr.replace(/^עבודת\s+שפכטל\s*-?\s*/gi, '').trim();
+                            typeStr = typeStr.replace(/^עבודת\s+טיח\s*-?\s*/gi, '').trim();
+                            typeStr = typeStr.replace(/\s*-\s*עבודת\s+צבע\s*$/gi, '').trim();
+                            typeStr = typeStr.replace(/\s*-\s*עבודת\s+שפכטל\s*$/gi, '').trim();
 
                             // Map English IDs to Hebrew names
                             const paintTypeMap = {
@@ -1000,7 +1029,7 @@ export default function QuoteToHTML({ quote }) {
 
                               rows += `
                               <tr>
-                                <td><strong>${item.name || item.description || ''} - קירות</strong></td>
+                                <td><strong>${item.name || item.description || ''} - קירות${getComplexityText(item)}</strong></td>
                                 <td>${getPaintTypeName(item, item.wallPaintName)}</td>
                                 <td>${item.wallPaintLayers || item.layers || 1}</td>
                                 <td>${formatPrice(item.wallPaintQuantity || 0)} מ"ר</td>
@@ -1015,7 +1044,7 @@ export default function QuoteToHTML({ quote }) {
 
                               rows += `
                               <tr>
-                                <td><strong>${item.name || item.description || ''} - תקרה</strong></td>
+                                <td><strong>${item.name || item.description || ''} - תקרה${getComplexityText(item)}</strong></td>
                                 <td>${getPaintTypeName(item, item.ceilingPaintName)}</td>
                                 <td>${item.ceilingPaintLayers || item.layers || 1}</td>
                                 <td>${formatPrice(item.ceilingPaintQuantity || 0)} מ"ר</td>
@@ -1031,7 +1060,7 @@ export default function QuoteToHTML({ quote }) {
 
                               return `
                               <tr>
-                                <td><strong>${item.name || item.description || ''}</strong></td>
+                                <td><strong>${item.name || item.description || ''}${getComplexityText(item)}</strong></td>
                                 ${categoryId === 'cat_tiling' && item.workType ? `
                                 <td>${item.workType || '-'}</td>
                                 <td>${item.selectedSize || '-'}</td>

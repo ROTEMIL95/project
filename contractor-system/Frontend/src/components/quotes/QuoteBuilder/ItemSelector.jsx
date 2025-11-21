@@ -1682,7 +1682,7 @@ const PaintRoomsManager = React.forwardRef(({
                     const itemToAdd = {
                         ...metricsWithoutItemName,
                         id: `${room.id}_paint`,
-                        name: room.name || 'עבודת צבע', // Just room name
+                        name: room.name || 'צבע', // Just room name
                         description: description, // Paint name + layers
                         categoryId: categoryId,
                         categoryName: 'צבע וטיח',

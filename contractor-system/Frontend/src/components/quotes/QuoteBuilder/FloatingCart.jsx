@@ -72,6 +72,16 @@ const firstPositive = (arr = []) => {
 // Helper: is manual-calc item
 const isManualCalcItem = (item) => item && item.source === "manual_calc" && (item.manualFormSnapshot || item.manualMeta);
 
+// Helper: clean item name from "עבודת צבע" or "עבודת שפכטל" prefix
+const cleanItemName = (name) => {
+    if (!name) return '';
+    let cleaned = String(name);
+    cleaned = cleaned.replace(/^עבודת צבע\s*-?\s*/g, '');
+    cleaned = cleaned.replace(/^עבודת שפכטל\s*-?\s*/g, '');
+    cleaned = cleaned.replace(/^עבודת טיח\s*-?\s*/g, '');
+    return cleaned.trim();
+};
+
 // Helper: extract walls/ceiling data from snapshot (support nested keys)
 const extractManualParts = (item) => {
   const snap = item?.manualFormSnapshot || item?.manualMeta || {};
@@ -304,8 +314,9 @@ const renderPaintRoomDetail = (item, onRemoveItem) => {
     const isPaint = descLower.includes('צבע') || item.paintType;
     const isPlaster = descLower.includes('טיח') || descLower.includes('שפכטל') || item.plasterType;
 
-    // Get the item name - prefer itemName from metrics
-    const itemName = item.itemName || item.paintName || item.plasterName || '';
+    // Get the item name - prefer itemName from metrics, and clean it
+    const rawItemName = item.itemName || item.paintName || item.plasterName || '';
+    const itemName = cleanItemName(rawItemName);
 
     // Get the paint/plaster type ID
     const typeId = item.paintType || item.plasterType || '';
@@ -410,7 +421,7 @@ const renderPaintRoomDetail = (item, onRemoveItem) => {
                                         {item.wallPaintName ? (
                                             <div className="flex items-center gap-1">
                                                 <span className="font-medium">סוג:</span>
-                                                <span>{item.wallPaintName}</span>
+                                                <span>{cleanItemName(item.wallPaintName)}</span>
                                             </div>
                                         ) : wallsText && !wallsText.includes('|') ? (
                                             <span>{wallsText}</span>
@@ -451,7 +462,7 @@ const renderPaintRoomDetail = (item, onRemoveItem) => {
                                         {item.ceilingPaintName ? (
                                             <div className="flex items-center gap-1">
                                                 <span className="font-medium">סוג:</span>
-                                                <span>{item.ceilingPaintName}</span>
+                                                <span>{cleanItemName(item.ceilingPaintName)}</span>
                                             </div>
                                         ) : ceilingText && !ceilingText.includes('|') ? (
                                             <span>{ceilingText}</span>
@@ -632,11 +643,12 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
         item?.paintItem ||
         item?.wallPaint;
 
-    const globalWallPaintName =
+    const rawWallPaintName =
         wallPaintGlobalItem?.itemName ||
         wallPaintGlobalItem?.paintName ||
         wallPaintGlobalItem?.name ||
         (typeof wallPaintGlobalItem === "string" ? wallPaintGlobalItem : "צבע לקירות");
+    const globalWallPaintName = cleanItemName(rawWallPaintName);
 
     const globalWallLayers = firstPositive([
         item?.wallPaintLayers,
@@ -653,11 +665,12 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
         item?.ceilingPaint ||
         item?.selectedCeilingPaint;
 
-    const globalCeilingPaintName =
+    const rawCeilingPaintName =
         ceilingPaintGlobalItem?.itemName ||
         ceilingPaintGlobalItem?.paintName ||
         ceilingPaintGlobalItem?.name ||
         (typeof ceilingPaintGlobalItem === "string" ? ceilingPaintGlobalItem : "צבע לתקרה");
+    const globalCeilingPaintName = cleanItemName(rawCeilingPaintName);
 
     // read ceiling layers only from ceiling-specific sources
     const globalCeilingLayers = firstPositive([
@@ -812,7 +825,7 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
                                     <div className="text-xs text-gray-600 mt-1">
                                         <div className="font-medium text-gray-700">צבע</div>
                                         <div>
-                                            {room.paintItemName && <span>סוג: {room.paintItemName}</span>}
+                                            {room.paintItemName && <span>סוג: {cleanItemName(room.paintItemName)}</span>}
                                             {!room.paintItemName && globalWallPaintName && <span>סוג: {globalWallPaintName}</span>}
                                             {room.paintLayers > 0 && <span> • שכבות: {room.paintLayers}</span>}
                                             {room.paintLayers === 0 && globalWallLayers > 0 && <span> • שכבות: {safeToFixed(globalWallLayers, 0)}</span>}
