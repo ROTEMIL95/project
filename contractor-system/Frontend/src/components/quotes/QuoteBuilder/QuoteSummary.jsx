@@ -497,12 +497,6 @@ export default function QuoteSummary({
 
     return (
         <div className="space-y-6">
-            {/* Items Review */}
-            <div className="space-y-3 pt-4">
-                <h3 className="text-lg font-semibold text-gray-800">סקירת פריטים ועלויות</h3>
-                <ItemsReview items={selectedItems} onRemoveItem={onRemoveItem} title="פריטים" />
-                <ItemsReview items={projectComplexities.additionalCostDetails} title="עלויות נוספות" />
-            </div>
 
             {/* Client-Side Calculation - Full Width */}
             <div className="pt-6 border-t">
@@ -678,37 +672,6 @@ export default function QuoteSummary({
                 </div>
             )}
 
-            {/* NEW: Per-room complexity list for paint (if exists) */}
-            {paintComplexityRooms.length > 0 && (
-                <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
-                    <div className="flex items-center justify-between p-4 bg-purple-50/80 border-b">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-purple-100 rounded-lg">
-                                <Calculator className="h-5 w-5 text-purple-600" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-800">פירוט מורכבות לפי חדרים (צבע)</h3>
-                                <p className="text-sm text-gray-600">המורכבויות שנבחרו בחישוב המתקדם הוחלו על העלויות והזמנים.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="p-4 space-y-2">
-                        {paintComplexityRooms.map((r, i) => (
-                            <div key={i} className="flex justify-between text-sm bg-gray-50 rounded-md p-2">
-                                <div className="text-gray-700">
-                                    <span className="font-medium">{r.roomName}</span>
-                                    <span className="text-gray-400 mx-2">•</span>
-                                    <span className="text-gray-600">{r.itemDescription}</span>
-                                </div>
-                                <div className="text-gray-700">
-                                    {r.label && <span className="ml-3">מורכבות: {r.label}</span>}
-                                    {r.factor && <Badge variant="outline">מקדמה ×{r.factor.toFixed(2)}</Badge>}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
 
             {/* NEW: Tiling Panel Summary - show detailed breakdown when items have panel work */}
             {(() => {

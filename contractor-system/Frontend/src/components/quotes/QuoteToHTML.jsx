@@ -944,15 +944,29 @@ export default function QuoteToHTML({ quote }) {
                       </thead>
                       <tbody>
                         ${items.map(item => {
+                          // Debug log
+                          if (categoryId === 'cat_paint_plaster') {
+                            console.log('🔍 [QuoteToHTML] Paint item:', {
+                              name: item.name,
+                              complexity: item.complexity,
+                              customComplexityDescription: item.customComplexityDescription,
+                              allFields: Object.keys(item)
+                            });
+                          }
+
                           // Helper function to get complexity display text
                           const getComplexityText = (item) => {
                             if (!item.complexity || item.complexity === 'none') return '';
 
                             const complexityMap = {
+                              'low': { name: 'פשוט', percent: 5 },
                               'simple': { name: 'פשוט', percent: 5 },
                               'moderate': { name: 'בינוני', percent: 15 },
+                              'medium': { name: 'בינוני', percent: 15 },
+                              'high': { name: 'מורכב', percent: 25 },
                               'complex': { name: 'מורכב', percent: 25 },
                               'very_complex': { name: 'מאוד מורכב', percent: 35 },
+                              'very_high': { name: 'מאוד מורכב', percent: 35 },
                               'custom': { name: item.customComplexityDescription || 'מותאם אישית', percent: null }
                             };
 
