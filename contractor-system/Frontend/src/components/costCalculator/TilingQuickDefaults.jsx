@@ -16,20 +16,11 @@ export default function TilingQuickDefaults({ defaults, onSave }) {
   // REMOVED: applyToExisting toggle (now always true by default)
 
   React.useEffect(() => {
-    console.log('[TilingQuickDefaults] 🔄 useEffect triggered - updating data from defaults:', defaults);
-
     // Support both camelCase and snake_case from database
     const laborCostMethod = defaults?.laborCostMethod || defaults?.labor_cost_method || "perDay";
     const laborCostPerDay = defaults?.laborCostPerDay ?? defaults?.labor_cost_per_day ?? "";
     const laborCostPerSqM = defaults?.laborCostPerSqM ?? defaults?.labor_cost_per_sqm ?? defaults?.labor_cost_per_sq_m ?? "";
     const desiredProfitPercent = defaults?.desiredProfitPercent ?? defaults?.desired_profit_percent ?? "";
-
-    console.log('[TilingQuickDefaults] 📊 Parsed values:', {
-      laborCostMethod,
-      laborCostPerDay,
-      laborCostPerSqM,
-      desiredProfitPercent
-    });
 
     setData({
       laborCostMethod,
@@ -68,12 +59,13 @@ export default function TilingQuickDefaults({ defaults, onSave }) {
       desiredProfitPercent: parseNumber(data.desiredProfitPercent),
     };
 
-    console.log('[TilingQuickDefaults] 💾 Saving data:', dataToSave);
-
-    await onSave(dataToSave, { applyToExisting: true }); // ALWAYS apply to all items
-
-    console.log('[TilingQuickDefaults] ✅ Save completed');
-    setSaving(false);
+    try {
+      await onSave(dataToSave, { applyToExisting: true }); // ALWAYS apply to all items
+    } catch (error) {
+      console.error('[TilingQuickDefaults] ❌ Save failed:', error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

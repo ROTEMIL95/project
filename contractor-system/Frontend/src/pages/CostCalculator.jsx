@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
@@ -160,6 +160,9 @@ export default function CostCalculator() {
     const [showTilingDefaultsSettings, setShowTilingDefaultsSettings] = useState(false);
     const [userTilingDefaults, setUserTilingDefaults] = useState(null);
     const [userPaintDefaults, setUserPaintDefaults] = useState(null);
+
+    // 🔧 FIX: Track if we're in the middle of saving to prevent double refresh
+    const isSavingTilingDefaultsRef = useRef(false);
 
     // Detailed columns state for each tab (keeping existing, but not directly used in outline)
     const [showDetailedColumnsTiling, setShowDetailedColumnsTiling] = useState(false);
@@ -733,83 +736,129 @@ export default function CostCalculator() {
 
     // New handler to save tiling defaults
     const handleSaveTilingDefaults = async (defaults) => {
+        // 🔧 FIX: Set flag to prevent double refresh from UserContext
+        isSavingTilingDefaultsRef.current = true;
+
         try {
             if (typeof User.updateMyUserData === 'function') {
-                await User.updateMyUserData({ tilingUserDefaults: defaults });
+                const result = await User.updateMyUserData({ tilingUserDefaults: defaults });
+
+                // 🔧 FIX: Server returns both snake_case (old) and camelCase (new) keys
+                // We need to prefer camelCase values when they exist
+                if (result?.data?.tiling_user_defaults) {
+                    const serverData = result.data.tiling_user_defaults;
+
+                    // Build clean object with camelCase keys, preferring camelCase values from server
+                    const cleanDefaults = {
+                        laborCostMethod: serverData.laborCostMethod || serverData.labor_cost_method || 'perDay',
+                        laborCostPerDay: serverData.laborCostPerDay ?? serverData.labor_cost_per_day ?? '',
+                        laborCostPerSqM: serverData.laborCostPerSqM ?? serverData.labor_cost_per_sq_m ?? '',
+                        additionalCost: serverData.additionalCost ?? serverData.additional_cost ?? '',
+                        desiredProfitPercent: serverData.desiredProfitPercent ?? serverData.desired_profit_percent ?? '',
+                        wastagePercent: serverData.wastagePercent ?? serverData.wastage_percent ?? '',
+                        panelLaborWorkCapacity: serverData.panelLaborWorkCapacity ?? serverData.panel_labor_work_capacity ?? '',
+                        panelUtilizationPercent: serverData.panelUtilizationPercent ?? serverData.panel_utilization_percent ?? '',
+                        expenseTiming: serverData.expenseTiming || serverData.expense_timing || {}
+                    };
+
+                    setUserTilingDefaults(cleanDefaults);
+                } else {
+                    // Fallback: update with what we sent
+                    setUserTilingDefaults(defaults);
+                }
             } else {
-                console.log('User.updateMyUserData not available - backend not connected');
+                setUserTilingDefaults(defaults);
             }
-            setUserTilingDefaults(defaults);
+
             setShowTilingDefaultsSettings(false);
+
+            // 🔧 FIX: Reset flag after a short delay to allow UserContext update to be ignored
+            setTimeout(() => {
+                isSavingTilingDefaultsRef.current = false;
+            }, 500);
         } catch (error) {
-            console.error("Error saving tiling defaults:", error);
-            alert('שגיאה בשמירת ברירות המחדל');
+            console.error("[CostCalculator handleSaveTilingDefaults] ❌ Error saving tiling defaults:", error);
+            alert('שגיאה בשמירת ברירות המחדל: ' + error.message);
+            isSavingTilingDefaultsRef.current = false;
         }
     };
 
     // שמירת ברירות מחדל לריצוף + החלה אופציונלית על כל הפריטים השמורים עם חישוב אוטומטי
     const handleSaveTilingQuickDefaults = async (partialDefaults, options = {}) => {
-        console.log('[CostCalculator] 📥 Received data to save:', partialDefaults);
-        console.log('[CostCalculator] 📋 Current userTilingDefaults:', userTilingDefaults);
+        // 🔧 FIX: Set flag to prevent double refresh from UserContext
+        isSavingTilingDefaultsRef.current = true;
 
         const merged = {
             ...(userTilingDefaults || {}),
             ...partialDefaults,
         };
 
-        console.log('[CostCalculator] 🔀 Merged data:', merged);
-
-        if (typeof User.updateMyUserData === 'function') {
-            await User.updateMyUserData({ tilingUserDefaults: merged });
-            console.log('[CostCalculator] ✅ Database updated successfully');
-        } else {
-            console.log('User.updateMyUserData not available - backend not connected');
-        }
-        // Force update with a new object reference to trigger re-render
-        setUserTilingDefaults({ ...merged });
-        console.log('[CostCalculator] 🔄 State updated with new object reference');
-
-        // החלת ההגדרות על כל פריטי הריצוף השמורים (ללא כניסה לפריטים)
-        if (options.applyToExisting) {
-            const ok = window.confirm("להחיל את עלות העובד ואחוז הרווח הרצוי על כל פריטי הריצוף השמורים? הפעולה תעדכן גם את המחיר/עלות/רווח הממוצעים להצגה.");
-            if (ok) {
-                const method = merged.laborCostMethod || 'perDay';
-                const perDay = Number(merged.laborCostPerDay || 0);
-                const perSqM = Number(merged.laborCostPerSqM || 0);
-                const desiredProfit = merged.desiredProfitPercent !== undefined ? Number(merged.desiredProfitPercent) : undefined;
-
-                const updatedItems = (tilingItems || []).map((item) => {
-                    const newItem = {
-                        ...item,
-                        laborCostMethod: method,
-                        laborCostPerDay: method === 'perDay' ? perDay : 0,
-                        laborCostPerSqM: method === 'perSqM' ? perSqM : 0,
-                    };
-
-                    // אם יש אחוז רווח רצוי – נחשב ונעדכן ערכי תצוגה ממוצעים (נראות)
-                    if (desiredProfit !== undefined) {
-                        // שימוש בפונקציה הקיימת שמחשבת עלות בסיסית למ"ר (כולל בלאי אם קיים)
-                        const baseCostPerMeter = Math.round(calculateBasicCostPerMeter(newItem) || 0);
-                        const avgCustomerPrice = Math.round(baseCostPerMeter * (1 + (desiredProfit / 100)));
-                        const avgProfitPerMeter = Math.round(avgCustomerPrice - baseCostPerMeter);
-
-                        newItem.desiredProfitPercent = desiredProfit;
-                        newItem.averageCostPerMeter = baseCostPerMeter;
-                        newItem.averageCustomerPrice = avgCustomerPrice;
-                        newItem.averageProfitPerMeter = avgProfitPerMeter;
-                        newItem.averageProfitPercent = desiredProfit;
-                    }
-
-                    return newItem;
-                });
-
-                if (typeof User.updateMyUserData === 'function') {
-                    await User.updateMyUserData({ tilingItems: updatedItems });
-                } else {
-                    console.log('User.updateMyUserData not available - backend not connected');
+        try {
+            if (typeof User.updateMyUserData === 'function') {
+                try {
+                    await User.updateMyUserData({ tilingUserDefaults: merged });
+                } catch (error) {
+                    console.error('[CostCalculator] ❌ Database update failed:', error);
+                    alert('שגיאה בשמירת ברירות המחדל: ' + error.message);
+                    return; // Don't update state if DB update failed
                 }
-                setTilingItems(updatedItems);
             }
+            // Force update with a new object reference to trigger re-render
+            setUserTilingDefaults({ ...merged });
+
+            // החלת ההגדרות על כל פריטי הריצוף השמורים (ללא כניסה לפריטים)
+            if (options.applyToExisting) {
+                const ok = window.confirm("להחיל את עלות העובד ואחוז הרווח הרצוי על כל פריטי הריצוף השמורים? הפעולה תעדכן גם את המחיר/עלות/רווח הממוצעים להצגה.");
+                if (ok) {
+                    const method = merged.laborCostMethod || 'perDay';
+                    const perDay = Number(merged.laborCostPerDay || 0);
+                    const perSqM = Number(merged.laborCostPerSqM || 0);
+                    const desiredProfit = merged.desiredProfitPercent !== undefined ? Number(merged.desiredProfitPercent) : undefined;
+
+                    const updatedItems = (tilingItems || []).map((item) => {
+                        const newItem = {
+                            ...item,
+                            laborCostMethod: method,
+                            laborCostPerDay: method === 'perDay' ? perDay : 0,
+                            laborCostPerSqM: method === 'perSqM' ? perSqM : 0,
+                        };
+
+                        // אם יש אחוז רווח רצוי – נחשב ונעדכן ערכי תצוגה ממוצעים (נראות)
+                        if (desiredProfit !== undefined) {
+                            // שימוש בפונקציה הקיימת שמחשבת עלות בסיסית למ"ר (כולל בלאי אם קיים)
+                            const baseCostPerMeter = Math.round(calculateBasicCostPerMeter(newItem) || 0);
+                            const avgCustomerPrice = Math.round(baseCostPerMeter * (1 + (desiredProfit / 100)));
+                            const avgProfitPerMeter = Math.round(avgCustomerPrice - baseCostPerMeter);
+
+                            newItem.desiredProfitPercent = desiredProfit;
+                            newItem.averageCostPerMeter = baseCostPerMeter;
+                            newItem.averageCustomerPrice = avgCustomerPrice;
+                            newItem.averageProfitPerMeter = avgProfitPerMeter;
+                            newItem.averageProfitPercent = desiredProfit;
+                        }
+
+                        return newItem;
+                    });
+
+                    if (typeof User.updateMyUserData === 'function') {
+                        try {
+                            await User.updateMyUserData({ tilingItems: updatedItems });
+                        } catch (error) {
+                            console.error('[CostCalculator] ❌ Failed to update tiling items:', error);
+                            alert('שגיאה בעדכון פריטי הריצוף: ' + error.message);
+                            return; // Don't update state if DB update failed
+                        }
+                    } else {
+                        console.log('User.updateMyUserData not available - backend not connected');
+                    }
+                    setTilingItems(updatedItems);
+                }
+            }
+        } finally {
+            // 🔧 FIX: Reset flag after all operations complete (including applyToExisting)
+            setTimeout(() => {
+                isSavingTilingDefaultsRef.current = false;
+            }, 500);
         }
     };
 
@@ -1122,10 +1171,28 @@ export default function CostCalculator() {
                 }
 
                 // Load user's tiling defaults (from profile first, fallback to user_metadata)
-                const tilingDefaultsFromProfile = profile?.tiling_user_defaults;
-                const tilingDefaultsFromMetadata = userData.user_metadata?.tilingUserDefaults;
-                if (tilingDefaultsFromProfile || tilingDefaultsFromMetadata) {
-                    setUserTilingDefaults(tilingDefaultsFromProfile || tilingDefaultsFromMetadata);
+                // 🔧 FIX: Only update if we're not in the middle of saving (to prevent double refresh)
+                if (!isSavingTilingDefaultsRef.current) {
+                    const tilingDefaultsFromProfile = profile?.tiling_user_defaults;
+                    const tilingDefaultsFromMetadata = userData.user_metadata?.tilingUserDefaults;
+                    if (tilingDefaultsFromProfile || tilingDefaultsFromMetadata) {
+                        const rawDefaults = tilingDefaultsFromProfile || tilingDefaultsFromMetadata;
+
+                        // 🔧 FIX: Clean up duplicates - prefer camelCase over snake_case
+                        const cleanDefaults = {
+                            laborCostMethod: rawDefaults.laborCostMethod || rawDefaults.labor_cost_method || 'perDay',
+                            laborCostPerDay: rawDefaults.laborCostPerDay ?? rawDefaults.labor_cost_per_day ?? '',
+                            laborCostPerSqM: rawDefaults.laborCostPerSqM ?? rawDefaults.labor_cost_per_sq_m ?? '',
+                            additionalCost: rawDefaults.additionalCost ?? rawDefaults.additional_cost ?? '',
+                            desiredProfitPercent: rawDefaults.desiredProfitPercent ?? rawDefaults.desired_profit_percent ?? '',
+                            wastagePercent: rawDefaults.wastagePercent ?? rawDefaults.wastage_percent ?? '',
+                            panelLaborWorkCapacity: rawDefaults.panelLaborWorkCapacity ?? rawDefaults.panel_labor_work_capacity ?? '',
+                            panelUtilizationPercent: rawDefaults.panelUtilizationPercent ?? rawDefaults.panel_utilization_percent ?? '',
+                            expenseTiming: rawDefaults.expenseTiming || rawDefaults.expense_timing || {}
+                        };
+
+                        setUserTilingDefaults(cleanDefaults);
+                    }
                 }
 
                 // Load user's paint defaults (from profile first, fallback to user_metadata)

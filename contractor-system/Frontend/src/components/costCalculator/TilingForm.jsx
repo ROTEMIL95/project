@@ -256,9 +256,9 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
     materialCost: editItem?.materialCost || '',
     additionalCost: editItem?.additionalCost || userTilingDefaults?.additionalCost || '',
     laborCostMethod: editItem?.laborCostMethod || userTilingDefaults?.laborCostMethod || 'perDay',
-    laborCostPerDay: editItem?.laborCostPerDay || editItem?.laborCost || userTilingDefaults?.laborCostPerDay || '',
-    laborCostPerSqM: editItem?.laborCostPerSqM || userTilingDefaults?.laborCostPerSqM || '',
-    dailyOutput: editItem?.dailyOutput || '',
+    laborCostPerDay: editItem?.laborCostPerDay !== undefined ? editItem.laborCostPerDay : (editItem?.laborCost !== undefined ? editItem.laborCost : (userTilingDefaults?.laborCostPerDay ?? '')),
+    laborCostPerSqM: editItem?.laborCostPerSqM !== undefined ? editItem.laborCostPerSqM : (userTilingDefaults?.laborCostPerSqM ?? ''),
+    dailyOutput: editItem?.dailyOutput !== undefined ? editItem.dailyOutput : '',
     wastagePercent: editItem?.wastagePercent !== undefined ? editItem.wastagePercent : (userTilingDefaults?.wastagePercent ?? ''),
     priceTiers: editItem?.priceTiers && editItem.priceTiers.length > 0 ? editItem.priceTiers : [{ minArea: 0, maxArea: '', price: '' }],
     category: 'tiling',
@@ -272,7 +272,7 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
     averageProfitPercent: 0,
     // הוספת שדות פאנל - רק הגדרות, לא כמות
     hasPanel: editItem?.hasPanel || false,
-    panelLaborWorkCapacity: editItem?.panelLaborWorkCapacity || userTilingDefaults?.panelLaborWorkCapacity || '',
+    panelLaborWorkCapacity: editItem?.panelLaborWorkCapacity !== undefined ? editItem.panelLaborWorkCapacity : (userTilingDefaults?.panelLaborWorkCapacity ?? ''),
     panelUtilizationPercent: editItem?.panelUtilizationPercent !== undefined ? editItem.panelUtilizationPercent : (userTilingDefaults?.panelUtilizationPercent ?? '')
   });
 
@@ -326,24 +326,37 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
         selectedSizes: editItem.selectedSizes || (editItem.size ? [editItem.size] : []),
         workType: editItem.workType ? (Array.isArray(editItem.workType) ? editItem.workType : [editItem.workType]) : [],
         selectedQuality: editItem.selectedQuality || '',
-        wastagePercent: editItem.wastagePercent !== undefined ? editItem.wastagePercent : '',
+        wastagePercent: editItem.wastagePercent !== undefined ? editItem.wastagePercent : (userTilingDefaults?.wastagePercent ?? ''),
         priceTiers: editItem.priceTiers && editItem.priceTiers.length > 0 ? editItem.priceTiers : [{ minArea: 0, maxArea: '', price: '' }],
-        laborCostMethod: editItem.laborCostMethod || 'perDay',
-        laborCostPerDay: editItem.laborCostPerDay !== undefined ? editItem.laborCostPerDay : editItem.laborCost || '',
-        laborCostPerSqM: editItem.laborCostPerSqM !== undefined ? editItem.laborCostPerSqM : '',
+        laborCostMethod: editItem.laborCostMethod || userTilingDefaults?.laborCostMethod || 'perDay',
+        laborCostPerDay: editItem.laborCostPerDay !== undefined ? editItem.laborCostPerDay : (editItem.laborCost !== undefined ? editItem.laborCost : (userTilingDefaults?.laborCostPerDay ?? '')),
+        laborCostPerSqM: editItem.laborCostPerSqM !== undefined ? editItem.laborCostPerSqM : (userTilingDefaults?.laborCostPerSqM ?? ''),
         dailyOutput: editItem.dailyOutput !== undefined ? editItem.dailyOutput : '',
         materialCost: editItem.materialCost !== undefined ? editItem.materialCost : '',
-        additionalCost: editItem.additionalCost !== undefined ? editItem.additionalCost : '',
+        additionalCost: editItem.additionalCost !== undefined ? editItem.additionalCost : (userTilingDefaults?.additionalCost ?? ''),
         maxProjectRange: editItem.maxProjectRange || '',
         desiredProfitPercent: editItem.desiredProfitPercent !== undefined ? editItem.desiredProfitPercent : '', // Retain value or allow empty for default
         hasPanel: editItem.hasPanel || false,
-        panelLaborWorkCapacity: editItem.panelLaborWorkCapacity || '',
-        panelUtilizationPercent: editItem.panelUtilizationPercent !== undefined ? editItem.panelUtilizationPercent : '',
+        panelLaborWorkCapacity: editItem.panelLaborWorkCapacity !== undefined ? editItem.panelLaborWorkCapacity : (userTilingDefaults?.panelLaborWorkCapacity ?? ''),
+        panelUtilizationPercent: editItem.panelUtilizationPercent !== undefined ? editItem.panelUtilizationPercent : (userTilingDefaults?.panelUtilizationPercent ?? ''),
         complexityValue: undefined,
         pricingMethod: 'quick' // Always force quick pricing method
       }));
+    } else if (!editItem && userTilingDefaults) {
+      // Update defaults for new items when userTilingDefaults changes
+      // Only update fields that are still empty (haven't been modified by user)
+      setFormData(prev => ({
+        ...prev,
+        additionalCost: prev.additionalCost === '' || prev.additionalCost === undefined ? (userTilingDefaults.additionalCost ?? '') : prev.additionalCost,
+        laborCostMethod: (prev.laborCostPerDay === '' || prev.laborCostPerDay === undefined) && (prev.laborCostPerSqM === '' || prev.laborCostPerSqM === undefined) ? (userTilingDefaults.laborCostMethod || 'perDay') : prev.laborCostMethod,
+        laborCostPerDay: prev.laborCostPerDay === '' || prev.laborCostPerDay === undefined ? (userTilingDefaults.laborCostPerDay ?? '') : prev.laborCostPerDay,
+        laborCostPerSqM: prev.laborCostPerSqM === '' || prev.laborCostPerSqM === undefined ? (userTilingDefaults.laborCostPerSqM ?? '') : prev.laborCostPerSqM,
+        wastagePercent: prev.wastagePercent === '' || prev.wastagePercent === undefined ? (userTilingDefaults.wastagePercent ?? '') : prev.wastagePercent,
+        panelLaborWorkCapacity: prev.panelLaborWorkCapacity === '' || prev.panelLaborWorkCapacity === undefined ? (userTilingDefaults.panelLaborWorkCapacity ?? '') : prev.panelLaborWorkCapacity,
+        panelUtilizationPercent: prev.panelUtilizationPercent === '' || prev.panelUtilizationPercent === undefined ? (userTilingDefaults.panelUtilizationPercent ?? '') : prev.panelUtilizationPercent,
+      }));
     }
-  }, [editItem, user]);
+  }, [editItem, user, userTilingDefaults]);
 
   // THIS useEffect IS NOW REMOVED TO PREVENT OVERWRITING VALUES
 

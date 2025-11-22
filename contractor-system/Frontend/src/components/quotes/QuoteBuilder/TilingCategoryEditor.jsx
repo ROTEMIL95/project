@@ -138,9 +138,19 @@ const calculateTilingMetrics = (item, tilingItemData, userDefaults) => {
   const baseLaborCost = baseWorkDays * laborCostPerDay;
   const totalLaborCost = totalWorkDays * laborCostPerDay;
 
-  // Separate labor costs for display
-  const quantityLaborCost = quantityWorkDays * laborCostPerDay;
-  const panelLaborCost = panelWorkDays * laborCostPerDay;
+  // 🔧 FIX: Separate labor costs for display - include complexity proportionally
+  // Each component gets its base cost plus its proportional share of complexity cost
+  const baseQuantityLaborCost = quantityWorkDays * laborCostPerDay;
+  const basePanelLaborCost = panelWorkDays * laborCostPerDay;
+  const complexityLaborCost = totalLaborCost - baseLaborCost;
+
+  // Distribute complexity cost proportionally to base costs
+  const quantityLaborCost = baseWorkDays > 0
+    ? baseQuantityLaborCost + (complexityLaborCost * (quantityWorkDays / baseWorkDays))
+    : 0;
+  const panelLaborCost = baseWorkDays > 0
+    ? basePanelLaborCost + (complexityLaborCost * (panelWorkDays / baseWorkDays))
+    : 0;
 
   // Total Contractor Cost
   const fixedProjectCost = parseFloat(safeTilingItemData.fixedProjectCost || safeUserDefaults.fixedProjectCost) || 0;
@@ -1129,8 +1139,31 @@ export default React.forwardRef(function TilingCategoryEditor({
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
+  // 🔍 Check if labor cost is missing
+  const isLaborCostMissing = !userTilingDefaults?.laborCostPerDay || userTilingDefaults.laborCostPerDay === 0;
+
   return (
     <div className="space-y-6">
+      {/* ⚠️ Warning Banner if labor cost is missing */}
+      {isLaborCostMissing && (
+        <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-6 w-6 text-red-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="text-lg font-bold text-red-800 mb-2">
+                ⚠️ חסר הגדרת עלות עובד ליום!
+              </h4>
+              <p className="text-sm text-red-700 mb-3">
+                לא הוגדרה עלות עובד ליום בהגדרות הריצוף. <strong>עלויות העבודה יהיו 0 ₪</strong> עד שתגדיר את העלות.
+              </p>
+              <p className="text-sm text-red-700 mb-3">
+                כדי לתקן זאת, עבור ל-<strong>Cost Calculator → Tiling → ניהול מתקדם</strong> והגדר את "עלות עובד ליום".
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         <div className="p-6 space-y-6">
           {/* Section for adding new items from the catalog */}

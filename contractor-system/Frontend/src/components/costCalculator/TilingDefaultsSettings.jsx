@@ -63,8 +63,8 @@ export default function TilingDefaultsSettings({ isOpen, onClose, onSave, initia
     try {
       await onSave(defaults);
     } catch (error) {
-      console.error("Failed to save tiling defaults:", error);
-      // Display error to user
+      console.error("[TilingDefaultsSettings] ❌ Failed to save tiling defaults:", error);
+      alert('שגיאה בשמירת הגדרות: ' + error.message);
     } finally {
       setSaving(false);
     }
