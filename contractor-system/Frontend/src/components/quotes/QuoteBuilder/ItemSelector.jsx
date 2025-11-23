@@ -1265,6 +1265,50 @@ const PaintRoomsManager = React.forwardRef(({
     const [preciseWorkDays, setPreciseWorkDays] = useState(false);
     const [preciseBucketCalculation, setPreciseBucketCalculation] = useState(false);
 
+    // 🔧 FIX: סנכרן rooms state עם categoryDataMap - אפס אזורים כשמוחקים הכל מהעגלה
+    useEffect(() => {
+        // בדוק אם יש פריטים מסוג paint_room_detail בעגלה
+        const paintPlasterItemsInCart = selectedItems.filter(item =>
+            item.categoryId === categoryId && item.source === 'paint_room_detail'
+        );
+
+        // אם אין פריטים בעגלה וה-existingCategoryData ריק, אפס את rooms למצב התחלתי
+        if (paintPlasterItemsInCart.length === 0 &&
+            (!existingCategoryData || !existingCategoryData.rooms || existingCategoryData.rooms.length === 0)) {
+
+            console.log('🧹 [PaintRoomsManager] Resetting rooms - no items in cart');
+
+            setRooms([{
+                id: Date.now(),
+                name: `אזור 1`,
+                isPaintSelected: false,
+                isPlasterSelected: false,
+                isDetailedPaint: false,
+                isPlasterDetailed: false,
+                paintItemId: '',
+                paintQuantity: '',
+                paintLayers: 0,
+                wallPaintId: '', wallPaintQuantity: '', wallPaintLayers: 0,
+                ceilingPaintId: '', ceilingPaintQuantity: '', ceilingPaintLayers: 0,
+                calculatedWallArea: 0,
+                calculatedCeilingArea: 0,
+                roomBreakdown: [],
+                plasterItemId: '',
+                plasterQuantity: '',
+                plasterLayers: 0,
+                wallPlasterId: '', wallPlasterQuantity: '', wallPlasterLayers: 0,
+                ceilingPlasterId: '', ceilingPlasterQuantity: '', ceilingPlasterLayers: 0,
+                isComplexityOpen: false,
+                paintComplexity: '',
+                paintCustomComplexityDescription: '',
+                plasterComplexity: '',
+                plasterCustomComplexityDescription: '',
+                paintCalculatedMetrics: null,
+                plasterCalculatedMetrics: null,
+            }]);
+        }
+    }, [selectedItems, categoryId, existingCategoryData]);
+
     // 🔧 FIX: סנכרן stagedManualItems עם selectedItems - הסר פריטים שנמחקו מהעגלה
     useEffect(() => {
         // מצא פריטים ידניים בעגלה (source of truth)
