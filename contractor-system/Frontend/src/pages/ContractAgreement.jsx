@@ -248,36 +248,32 @@ export default function ContractAgreementPage() {
 
         setPaymentTerms(loadedTerms);
 
-        // Load company info from JSONB company_info field
-        if (profile?.company_info && Object.keys(profile.company_info).length > 0) {
-          setCompanyInfo({
-            companyName: profile.company_info.companyName || '',
-            companyOwnerName: profile.company_info.companyOwnerName || '',
-            businessNumber: profile.company_info.businessNumber || '',
-            address: profile.company_info.address || '',
-            email: profile.company_info.email || '',
-            phone: profile.company_info.phone || '',
-            website: profile.company_info.website || '',
-            logoUrl: profile.company_info.logoUrl || '',
-            specialization: profile.company_info.specialization || '',
-            facebookUrl: profile.company_info.facebookUrl || '',
-            instagramUrl: profile.company_info.instagramUrl || ''
-          });
-        } else {
-          setCompanyInfo({
-            companyName: '',
-            companyOwnerName: '',
-            businessNumber: '',
-            address: '',
-            email: '',
-            phone: '',
-            website: '',
-            logoUrl: '',
-            specialization: '',
-            facebookUrl: '',
-            instagramUrl: ''
-          });
-        }
+        // Load company info - support BOTH formats:
+        // 1. JSONB company_info field (preferred, camelCase)
+        // 2. Direct columns (legacy, snake_case)
+        const companyInfoFromJSONB = profile?.company_info || {};
+        const hasJSONBData = Object.keys(companyInfoFromJSONB).length > 0;
+
+        setCompanyInfo({
+          // Try JSONB first (camelCase), then fallback to direct columns (snake_case)
+          companyName: companyInfoFromJSONB.companyName || profile?.company_name || '',
+          companyOwnerName: companyInfoFromJSONB.companyOwnerName || profile?.company_owner_name || '',
+          businessNumber: companyInfoFromJSONB.businessNumber || profile?.business_number || '',
+          address: companyInfoFromJSONB.address || profile?.address || '',
+          email: companyInfoFromJSONB.email || profile?.email || '',
+          phone: companyInfoFromJSONB.phone || profile?.phone || '',
+          website: companyInfoFromJSONB.website || profile?.website || '',
+          logoUrl: companyInfoFromJSONB.logoUrl || profile?.logo_url || '',
+          specialization: companyInfoFromJSONB.specialization || profile?.specialization || '',
+          facebookUrl: companyInfoFromJSONB.facebookUrl || profile?.facebook_url || '',
+          instagramUrl: companyInfoFromJSONB.instagramUrl || profile?.instagram_url || ''
+        });
+
+        console.log('[ContractAgreement] 📋 Loaded company info:', {
+          hasJSONBData,
+          companyName: companyInfoFromJSONB.companyName || profile?.company_name,
+          source: hasJSONBData ? 'JSONB company_info' : 'Direct columns'
+        });
 
         // Load category commitments from JSONB category_commitments field
         setCommitments({
@@ -370,7 +366,7 @@ export default function ContractAgreementPage() {
       }
 
       console.log('[ContractAgreement] ✅ Saved successfully!');
-      navigate(createPageUrl('Dashboard'));
+      alert('✅ הנתונים נשמרו בהצלחה!');
     } catch (error) {
       console.error("[ContractAgreement] ❌ Error saving contract:", error);
       alert('שגיאה בשמירת הנתונים: ' + error.message);

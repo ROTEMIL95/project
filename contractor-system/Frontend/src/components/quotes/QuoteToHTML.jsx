@@ -1242,14 +1242,21 @@ export default function QuoteToHTML({ quote }) {
                 </div>
                 <div class="final-item">
                   <div class="final-label">סה"כ פריטים</div>
-                  <div class="final-value">${formatPrice((quote.items || [])
-                    .filter(item => item.source !== 'paint_plaster_category_summary')
-                    .reduce((sum, item) => {
-                      if (item.unit === "יחידה") {
-                        return sum + (Number(item.quantity) || 1);
-                      }
-                      return sum + 1;
-                    }, 0))}</div>
+                  <div class="final-value">${formatPrice(
+                    // Count regular items
+                    (quote.items || [])
+                      .filter(item => item.source !== 'paint_plaster_category_summary')
+                      .reduce((sum, item) => {
+                        if (item.unit === "יחידה") {
+                          return sum + (Number(item.quantity) || 1);
+                        }
+                        return sum + 1;
+                      }, 0) +
+                    // Add additional costs count
+                    ((quote.projectComplexities?.additionalCostDetails || [])
+                      .filter(cost => (cost.cost || 0) > 0)
+                      .length)
+                  )}</div>
                 </div>
               </div>
             </div>
