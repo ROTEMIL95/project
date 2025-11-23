@@ -1267,31 +1267,35 @@ const PaintRoomsManager = React.forwardRef(({
 
     // 🔧 FIX: סנכרן stagedManualItems עם selectedItems - הסר פריטים שנמחקו מהעגלה
     useEffect(() => {
-        // מצא פריטים ידניים בעגלה
+        // מצא פריטים ידניים בעגלה (source of truth)
         const manualItemsInCart = selectedItems
             .filter(item => item.source === 'manual_calc' && item.categoryId === categoryId)
             .map(item => item.id);
 
-        // מצא פריטים ידניים בקטגוריה הנוכחית ב-stagedManualItems
-        const stagedForCategory = stagedManualItems.filter(item =>
-            item.categoryId === categoryId && item.source === 'manual_calc'
-        );
-
-        // מצא פריטים שצריך למחוק (נמצאים ב-staged אבל לא בעגלה)
-        const itemsToRemove = stagedForCategory.filter(item =>
-            !manualItemsInCart.includes(item.id)
-        );
-
-        // אם יש פריטים למחוק, עדכן את stagedManualItems
-        if (itemsToRemove.length > 0 && setStagedManualItems && typeof setStagedManualItems === 'function') {
-            console.log('🧹 [PaintRoomsManager] Removing deleted manual items from stagedManualItems:',
-                itemsToRemove.map(i => i.id));
-
-            setStagedManualItems(prev =>
-                prev.filter(item => !itemsToRemove.some(toRemove => toRemove.id === item.id))
+        // Use functional setState to access current stagedManualItems
+        // This avoids race conditions from having stagedManualItems in dependencies
+        setStagedManualItems(prev => {
+            // מצא פריטים ידניים בקטגוריה הנוכחית ב-stagedManualItems (CURRENT value)
+            const stagedForCategory = prev.filter(item =>
+                item.categoryId === categoryId && item.source === 'manual_calc'
             );
-        }
-    }, [selectedItems, stagedManualItems, categoryId, setStagedManualItems]);
+
+            // מצא פריטים שצריך למחוק (נמצאים ב-staged אבל לא בעגלה)
+            const itemsToRemove = stagedForCategory.filter(item =>
+                !manualItemsInCart.includes(item.id)
+            );
+
+            // אם יש פריטים למחוק, החזר רשימה מעודכנת
+            if (itemsToRemove.length > 0) {
+                console.log('🧹 [PaintRoomsManager] Removing deleted manual items from stagedManualItems:',
+                    itemsToRemove.map(i => i.id));
+
+                return prev.filter(item => !itemsToRemove.some(toRemove => toRemove.id === item.id));
+            }
+
+            return prev; // No changes needed
+        });
+    }, [selectedItems, categoryId, setStagedManualItems]); // ✅ Removed stagedManualItems to prevent race conditions
 
     const handleAddRoom = () => setRooms(prev => [
         ...prev,
@@ -3350,12 +3354,17 @@ const ItemSelector = React.forwardRef(({
     );
 
     // 🔧 FIX: Clear categoryDataMap when no paint/plaster items in cart
-    if (paintPlasterItems.length === 0 && categoryDataMap['cat_paint_plaster']) {
-      console.log('🧹 [ItemSelector] Clearing categoryDataMap for cat_paint_plaster - no items in cart');
+    // Use functional setState to check CURRENT value (not stale closure)
+    if (paintPlasterItems.length === 0) {
       setCategoryDataMap(prev => {
-        const newMap = { ...prev };
-        delete newMap['cat_paint_plaster'];
-        return newMap;
+        // Check the CURRENT state (prev), not the stale closure value
+        if (prev['cat_paint_plaster']) {
+          console.log('🧹 [ItemSelector] Clearing categoryDataMap for cat_paint_plaster - no items in cart');
+          const newMap = { ...prev };
+          delete newMap['cat_paint_plaster'];
+          return newMap;
+        }
+        return prev; // No change needed
       });
       return; // Exit early
     }
