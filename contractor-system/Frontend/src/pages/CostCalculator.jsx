@@ -734,22 +734,34 @@ export default function CostCalculator() {
     // New handler to save tiling defaults
     const handleSaveTilingDefaults = async (defaults) => {
         try {
-            if (typeof User.updateMyUserData === 'function') {
-                await User.updateMyUserData({ tilingUserDefaults: defaults });
-            } else {
-                console.log('User.updateMyUserData not available - backend not connected');
+            console.log('[CostCalculator] 💾 Saving advanced tiling defaults to user_profiles:', defaults);
+
+            // ✅ FIXED: Save to user_profiles table instead of user_metadata
+            const { error } = await supabase
+                .from('user_profiles')
+                .update({
+                    tiling_user_defaults: defaults
+                })
+                .eq('auth_user_id', userData.id);
+
+            if (error) {
+                console.error('[CostCalculator] ❌ Error saving tiling defaults:', error);
+                alert('שגיאה בשמירת ברירות המחדל: ' + error.message);
+                return;
             }
+
+            console.log('[CostCalculator] ✅ Advanced tiling defaults saved successfully');
             setUserTilingDefaults(defaults);
             setShowTilingDefaultsSettings(false);
         } catch (error) {
-            console.error("Error saving tiling defaults:", error);
+            console.error('[CostCalculator] ❌ Exception saving tiling defaults:', error);
             alert('שגיאה בשמירת ברירות המחדל');
         }
     };
 
     // שמירת ברירות מחדל לריצוף + החלה אופציונלית על כל הפריטים השמורים עם חישוב אוטומטי
     const handleSaveTilingQuickDefaults = async (partialDefaults, options = {}) => {
-        console.log('[CostCalculator] 📥 Received data to save:', partialDefaults);
+        console.log('[CostCalculator] 📥 Received tiling data to save:', partialDefaults);
         console.log('[CostCalculator] 📋 Current userTilingDefaults:', userTilingDefaults);
 
         const merged = {
@@ -757,14 +769,30 @@ export default function CostCalculator() {
             ...partialDefaults,
         };
 
-        console.log('[CostCalculator] 🔀 Merged data:', merged);
+        console.log('[CostCalculator] 🔀 Merged tiling data:', merged);
 
-        if (typeof User.updateMyUserData === 'function') {
-            await User.updateMyUserData({ tilingUserDefaults: merged });
-            console.log('[CostCalculator] ✅ Database updated successfully');
-        } else {
-            console.log('User.updateMyUserData not available - backend not connected');
+        // ✅ FIXED: Save to user_profiles table instead of user_metadata
+        try {
+            const { error } = await supabase
+                .from('user_profiles')
+                .update({
+                    tiling_user_defaults: merged
+                })
+                .eq('auth_user_id', userData.id);
+
+            if (error) {
+                console.error('[CostCalculator] ❌ Error saving tiling defaults:', error);
+                alert('שגיאה בשמירת הגדרות ריצוף: ' + error.message);
+                return;
+            }
+
+            console.log('[CostCalculator] ✅ Tiling defaults saved successfully to user_profiles');
+        } catch (error) {
+            console.error('[CostCalculator] ❌ Exception saving tiling defaults:', error);
+            alert('שגיאה בשמירת הגדרות ריצוף');
+            return;
         }
+
         // Force update with a new object reference to trigger re-render
         setUserTilingDefaults({ ...merged });
         console.log('[CostCalculator] 🔄 State updated with new object reference');
@@ -819,12 +847,31 @@ export default function CostCalculator() {
             ...(userPaintDefaults || {}),
             ...partialDefaults,
         };
-        if (typeof User.updateMyUserData === 'function') {
-            await User.updateMyUserData({ paintUserDefaults: merged });
-        } else {
-            console.log('User.updateMyUserData not available - backend not connected');
+
+        console.log('[CostCalculator] 💾 Saving paint defaults to user_profiles:', merged);
+
+        // ✅ FIXED: Save to user_profiles table instead of user_metadata
+        try {
+            const { error } = await supabase
+                .from('user_profiles')
+                .update({
+                    paint_user_defaults: merged
+                })
+                .eq('auth_user_id', userData.id);
+
+            if (error) {
+                console.error('[CostCalculator] ❌ Error saving paint defaults:', error);
+                alert('שגיאה בשמירת הגדרות: ' + error.message);
+                return;
+            }
+
+            console.log('[CostCalculator] ✅ Paint defaults saved successfully');
+            setUserPaintDefaults(merged);
+        } catch (error) {
+            console.error('[CostCalculator] ❌ Exception saving paint defaults:', error);
+            alert('שגיאה בשמירת הגדרות');
+            return;
         }
-        setUserPaintDefaults(merged);
 
         if (options.applyToExisting) {
             const ok = window.confirm("להחיל את עלות הפועל ואחוז הרווח על כל פריטי הצבע/שפכטל השמורים? הפעולה תעדכן גם מחיר/עלות/רווח ממוצעים להצגה.");
