@@ -3360,6 +3360,10 @@ const ItemSelector = React.forwardRef(({
         // Check the CURRENT state (prev), not the stale closure value
         if (prev['cat_paint_plaster']) {
           console.log('🧹 [ItemSelector] Clearing categoryDataMap for cat_paint_plaster - no items in cart');
+
+          // 🔧 FIX: Reset the flag so data can be reloaded if items are added back later
+          hasLoadedFromSelectedItems.current = false;
+
           const newMap = { ...prev };
           delete newMap['cat_paint_plaster'];
           return newMap;
