@@ -1265,6 +1265,34 @@ const PaintRoomsManager = React.forwardRef(({
     const [preciseWorkDays, setPreciseWorkDays] = useState(false);
     const [preciseBucketCalculation, setPreciseBucketCalculation] = useState(false);
 
+    // 🔧 FIX: סנכרן stagedManualItems עם selectedItems - הסר פריטים שנמחקו מהעגלה
+    useEffect(() => {
+        // מצא פריטים ידניים בעגלה
+        const manualItemsInCart = selectedItems
+            .filter(item => item.source === 'manual_calc' && item.categoryId === categoryId)
+            .map(item => item.id);
+
+        // מצא פריטים ידניים בקטגוריה הנוכחית ב-stagedManualItems
+        const stagedForCategory = stagedManualItems.filter(item =>
+            item.categoryId === categoryId && item.source === 'manual_calc'
+        );
+
+        // מצא פריטים שצריך למחוק (נמצאים ב-staged אבל לא בעגלה)
+        const itemsToRemove = stagedForCategory.filter(item =>
+            !manualItemsInCart.includes(item.id)
+        );
+
+        // אם יש פריטים למחוק, עדכן את stagedManualItems
+        if (itemsToRemove.length > 0 && setStagedManualItems && typeof setStagedManualItems === 'function') {
+            console.log('🧹 [PaintRoomsManager] Removing deleted manual items from stagedManualItems:',
+                itemsToRemove.map(i => i.id));
+
+            setStagedManualItems(prev =>
+                prev.filter(item => !itemsToRemove.some(toRemove => toRemove.id === item.id))
+            );
+        }
+    }, [selectedItems, stagedManualItems, categoryId, setStagedManualItems]);
+
     const handleAddRoom = () => setRooms(prev => [
         ...prev,
         {
@@ -3317,13 +3345,24 @@ const ItemSelector = React.forwardRef(({
 
   // ✅ FIX: Load existing quote data from selectedItems into categoryDataMap on mount
   useEffect(() => {
+    const paintPlasterItems = selectedItems.filter(item =>
+      item.categoryId === 'cat_paint_plaster' && item.source === 'paint_room_detail'
+    );
+
+    // 🔧 FIX: Clear categoryDataMap when no paint/plaster items in cart
+    if (paintPlasterItems.length === 0 && categoryDataMap['cat_paint_plaster']) {
+      console.log('🧹 [ItemSelector] Clearing categoryDataMap for cat_paint_plaster - no items in cart');
+      setCategoryDataMap(prev => {
+        const newMap = { ...prev };
+        delete newMap['cat_paint_plaster'];
+        return newMap;
+      });
+      return; // Exit early
+    }
+
     // Only run once when selectedItems has data and we haven't loaded yet
     if (selectedItems && selectedItems.length > 0 && !hasLoadedFromSelectedItems.current) {
       console.log('🔄 [ItemSelector] Initializing categoryDataMap from selectedItems');
-
-      const paintPlasterItems = selectedItems.filter(item =>
-        item.categoryId === 'cat_paint_plaster' && item.source === 'paint_room_detail'
-      );
 
       if (paintPlasterItems.length > 0) {
         // Reconstruct rooms from paint items
