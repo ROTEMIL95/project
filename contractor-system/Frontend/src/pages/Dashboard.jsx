@@ -10,6 +10,7 @@ import RecentQuotes from '@/components/dashboard/RecentQuotes';
 import RevenueChart from '@/components/dashboard/RevenueChart';
 import MonthlyCashFlowChart from '@/components/dashboard/MonthlyCashFlowChart';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 const subtitles = [
     "בלי נתונים אתה בונה על מזל – אצלנו אתה בונה על ודאות.",
@@ -27,6 +28,34 @@ export default function Dashboard() {
   const { user, loading: userLoading } = useUser();
   const [greeting, setGreeting] = useState('');
   const [dynamicSubtitle, setDynamicSubtitle] = useState('');
+  const [tokenRefreshed, setTokenRefreshed] = useState(false);
+
+  // PREEMPTIVE TOKEN REFRESH
+  // Fixes: Initial 401 errors when loading dashboard due to stale/invalid tokens
+  // This runs BEFORE the dashboard components try to fetch data
+  useEffect(() => {
+    const refreshTokenPreemptively = async () => {
+      if (!user || tokenRefreshed) return;
+
+      try {
+        console.log('[Dashboard] 🔄 Preemptively refreshing Supabase session...');
+        const { data, error } = await supabase.auth.refreshSession();
+
+        if (error) {
+          console.warn('[Dashboard] ⚠️ Failed to refresh session:', error.message);
+          // Don't throw - let the API retry mechanism handle it
+        } else if (data?.session) {
+          console.log('[Dashboard] ✅ Session refreshed successfully before loading data');
+          setTokenRefreshed(true);
+        }
+      } catch (err) {
+        console.warn('[Dashboard] ⚠️ Error refreshing session:', err);
+        // Don't throw - let the API retry mechanism handle it
+      }
+    };
+
+    refreshTokenPreemptively();
+  }, [user, tokenRefreshed]);
 
   useEffect(() => {
     // Select a random subtitle on component mount
