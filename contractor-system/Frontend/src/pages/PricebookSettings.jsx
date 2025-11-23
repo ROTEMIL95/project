@@ -416,7 +416,7 @@ export default function PricebookSettings() {
         title: "נשמר בהצלחה",
         description: "ההגדרות נשמרו בהצלחה.",
       });
-      navigate(-1);
+      // Don't navigate away - stay on settings page
     } catch (error) {
       console.error("Error saving settings:", error);
       toast({
