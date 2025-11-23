@@ -23,24 +23,34 @@ const PageLayout = ({ children, currentPageName }) => {
   const location = useLocation(); // NEW: track route for transitions
 
   const handleLogout = async () => {
+    console.log('[Layout] 🚪 Starting logout process...');
+
+    // STEP 1: Clear local storage FIRST (before anything else)
+    // This prevents userStore from reloading cached data
+    console.log('[Layout] 📦 Clearing local storage...');
+    localStorage.clear();
+    sessionStorage.clear();
+
     try {
-      // Sign out from Supabase
+      // STEP 2: Sign out from Supabase
+      console.log('[Layout] 🔐 Signing out from Supabase...');
       const { error } = await signOut();
+
       if (error) {
-        console.error('Logout error:', error);
+        console.error('[Layout] ⚠️ Logout error:', error);
+        // Don't throw - continue with redirect even if signOut fails
+      } else {
+        console.log('[Layout] ✅ Signed out successfully');
       }
-
-      // Clear old tokens (backward compatibility)
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-
-      // Redirect to login
-      window.location.href = '/login';
     } catch (error) {
-      console.error('Logout failed:', error);
-      // Force redirect even if logout fails
-      window.location.href = '/login';
+      console.error('[Layout] ❌ Failed to sign out:', error);
+      // Continue with redirect anyway
     }
+
+    // STEP 3: Force immediate redirect with full page reload
+    // This ensures all React state and Zustand store are cleared
+    console.log('[Layout] 🔄 Redirecting to login...');
+    window.location.href = '/login';
   };
 
   if (isCheckingStatus) {

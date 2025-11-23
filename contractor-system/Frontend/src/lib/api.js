@@ -283,12 +283,13 @@ class APIClient {
 export const api = new APIClient();
 
 // Export specific API modules
+// NOTE: quotes router requires trailing slash, others don't - mixed configuration
 export const quotesAPI = {
-  list: (params) => api.get('/api/quotes', params),
-  get: (id) => api.get(`/api/quotes/${id}`),
-  create: (data) => api.post('/api/quotes', data),
-  update: (id, data) => api.put(`/api/quotes/${id}`, data),
-  delete: (id) => api.delete(`/api/quotes/${id}`),
+  list: (params) => api.get('/api/quotes/', params),
+  get: (id) => api.get(`/api/quotes/${id}/`),
+  create: (data) => api.post('/api/quotes/', data),
+  update: (id, data) => api.put(`/api/quotes/${id}/`, data),
+  delete: (id) => api.delete(`/api/quotes/${id}/`),
 };
 
 export const clientsAPI = {

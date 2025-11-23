@@ -182,26 +182,52 @@ export default function ContractAgreementPage() {
       }
 
       try {
-        if (user.user_metadata?.contractTemplate) {
-          setContractText(user.user_metadata.contractTemplate);
+        console.log('[ContractAgreement] 🔄 Loading user profile from database...');
+
+        // Refresh session to get latest JWT
+        const { data: sessionData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          console.warn('[ContractAgreement] ⚠️ Failed to refresh session:', refreshError);
+        }
+
+        // Load from user_profiles table (database) instead of user_metadata (JWT)
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('auth_user_id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('[ContractAgreement] ❌ Error loading profile:', profileError);
+          throw profileError;
+        }
+
+        console.log('[ContractAgreement] ✅ Profile loaded successfully');
+
+        // Load contract template
+        if (profile?.contract_template) {
+          setContractText(profile.contract_template);
         } else {
           setContractText(DEFAULT_CONTRACT_TEMPLATE);
         }
 
-        if (user.user_metadata?.contractorCommitments) {
-          setContractorCommitments(user.user_metadata.contractorCommitments);
+        // Load contractor commitments
+        if (profile?.contractor_commitments) {
+          setContractorCommitments(profile.contractor_commitments);
         } else {
           setContractorCommitments(DEFAULT_CONTRACTOR_COMMITMENTS);
         }
 
-        if (user.user_metadata?.clientCommitments) {
-          setClientCommitments(user.user_metadata.clientCommitments);
+        // Load client commitments
+        if (profile?.client_commitments) {
+          setClientCommitments(profile.client_commitments);
         } else {
           setClientCommitments(DEFAULT_CLIENT_COMMITMENTS);
         }
 
-        let loadedTerms = (user.user_metadata?.defaultPaymentTerms && user.user_metadata.defaultPaymentTerms.length === 3)
-            ? user.user_metadata.defaultPaymentTerms.map(term => ({
+        // Load payment terms from database (snake_case: default_payment_terms)
+        let loadedTerms = (profile?.default_payment_terms && profile.default_payment_terms.length === 3)
+            ? profile.default_payment_terms.map(term => ({
                 ...term,
                 id: term.id || crypto.randomUUID(),
                 paymentDateRule: term.paymentDateRule || { type: 'proportional', days: 0 }
@@ -211,7 +237,7 @@ export default function ContractAgreementPage() {
                 { id: crypto.randomUUID(), milestone: '', percentage: 40, orderIndex: 2, paymentDateRule: { type: 'proportional', days: 0 } },
                 { id: crypto.randomUUID(), milestone: '', percentage: 30, orderIndex: 3, paymentDateRule: { type: 'on_completion', days: 0 } }
               ];
-        
+
         if (loadedTerms[1] && ['midpoint', 'manual_date'].includes(loadedTerms[1].paymentDateRule.type)) {
             loadedTerms[1].paymentDateRule.type = 'proportional';
         }
@@ -222,51 +248,53 @@ export default function ContractAgreementPage() {
 
         setPaymentTerms(loadedTerms);
 
-        if (user.user_metadata?.companyInfo) {
+        // Load company info from JSONB company_info field
+        if (profile?.company_info && Object.keys(profile.company_info).length > 0) {
           setCompanyInfo({
-            companyName: user.user_metadata.companyInfo.companyName || '',
-            companyOwnerName: user.user_metadata.companyInfo.companyOwnerName || '',
-            businessNumber: user.user_metadata.companyInfo.businessNumber || '',
-            address: user.user_metadata.companyInfo.address || '',
-            email: user.user_metadata.companyInfo.email || '',
-            phone: user.user_metadata.companyInfo.phone || '',
-            website: user.user_metadata.companyInfo.website || '',
-            logoUrl: user.user_metadata.companyInfo.logoUrl || '',
-            specialization: user.user_metadata.companyInfo.specialization || '',
-            facebookUrl: user.user_metadata.companyInfo.facebookUrl || '',
-            instagramUrl: user.user_metadata.companyInfo.instagramUrl || ''
+            companyName: profile.company_info.companyName || '',
+            companyOwnerName: profile.company_info.companyOwnerName || '',
+            businessNumber: profile.company_info.businessNumber || '',
+            address: profile.company_info.address || '',
+            email: profile.company_info.email || '',
+            phone: profile.company_info.phone || '',
+            website: profile.company_info.website || '',
+            logoUrl: profile.company_info.logoUrl || '',
+            specialization: profile.company_info.specialization || '',
+            facebookUrl: profile.company_info.facebookUrl || '',
+            instagramUrl: profile.company_info.instagramUrl || ''
           });
         } else {
-            setCompanyInfo({
-                companyName: '',
-                companyOwnerName: '',
-                businessNumber: '',
-                address: '',
-                email: '',
-                phone: '',
-                website: '',
-                logoUrl: '',
-                specialization: '',
-                facebookUrl: '',
-                instagramUrl: ''
-            });
+          setCompanyInfo({
+            companyName: '',
+            companyOwnerName: '',
+            businessNumber: '',
+            address: '',
+            email: '',
+            phone: '',
+            website: '',
+            logoUrl: '',
+            specialization: '',
+            facebookUrl: '',
+            instagramUrl: ''
+          });
         }
 
+        // Load category commitments from JSONB category_commitments field
         setCommitments({
-          cat_paint_plaster: user?.user_metadata?.categoryCommitments?.cat_paint_plaster || "",
-          cat_tiling: user?.user_metadata?.categoryCommitments?.cat_tiling || "",
-          cat_demolition: user?.user_metadata?.categoryCommitments?.cat_demolition || "",
-          cat_electricity: user?.user_metadata?.categoryCommitments?.cat_electricity || "",
-          cat_plumbing: user?.user_metadata?.categoryCommitments?.cat_plumbing || "",
-          cat_construction: user?.user_metadata?.categoryCommitments?.cat_construction || "",
+          cat_paint_plaster: profile?.category_commitments?.cat_paint_plaster || "",
+          cat_tiling: profile?.category_commitments?.cat_tiling || "",
+          cat_demolition: profile?.category_commitments?.cat_demolition || "",
+          cat_electricity: profile?.category_commitments?.cat_electricity || "",
+          cat_plumbing: profile?.category_commitments?.cat_plumbing || "",
+          cat_construction: profile?.category_commitments?.cat_construction || "",
         });
 
       } catch (error) {
-        console.error("Error loading user contract:", error);
+        console.error("[ContractAgreement] ❌ Error loading user contract:", error);
         setContractText(DEFAULT_CONTRACT_TEMPLATE);
         setContractorCommitments(DEFAULT_CONTRACTOR_COMMITMENTS);
         setClientCommitments(DEFAULT_CLIENT_COMMITMENTS);
-        
+
         const defaultTermsOnError = [
             { id: crypto.randomUUID(), milestone: '', percentage: 30, orderIndex: 1, paymentDateRule: { type: 'on_approval', days: 0 }, isFirst: true, isLast: false },
             { id: crypto.randomUUID(), milestone: '', percentage: 40, orderIndex: 2, paymentDateRule: { type: 'proportional', days: 0 }, isFirst: false, isLast: false },
@@ -275,7 +303,7 @@ export default function ContractAgreementPage() {
         defaultTermsOnError[0].milestone = generateMilestoneName('first', defaultTermsOnError[0].paymentDateRule);
         defaultTermsOnError[1].milestone = generateMilestoneName('middle', defaultTermsOnError[1].paymentDateRule);
         defaultTermsOnError[2].milestone = generateMilestoneName('last', defaultTermsOnError[2].paymentDateRule);
-        
+
         setPaymentTerms(defaultTermsOnError);
 
         setCompanyInfo({
@@ -318,22 +346,34 @@ export default function ContractAgreementPage() {
 
     setSaving(true);
     try {
+      console.log('[ContractAgreement] 💾 Saving to user_profiles table...');
+
       const termsToSave = paymentTerms.map(({ id, isFirst, isLast, ...rest }) => rest);
-      await supabase.auth.updateUser({
-        data: {
-          ...user.user_metadata,
-          contractTemplate: contractText,
-          contractorCommitments: contractorCommitments,
-          clientCommitments: clientCommitments,
-          defaultPaymentTerms: termsToSave,
-          companyInfo: companyInfo,
-          categoryCommitments: commitments,
-        }
-      });
+
+      // Save to user_profiles table (database) instead of user_metadata (JWT)
+      // This prevents JWT token from becoming too large
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          contract_template: contractText,
+          contractor_commitments: contractorCommitments,
+          client_commitments: clientCommitments,
+          default_payment_terms: termsToSave,
+          company_info: companyInfo,
+          category_commitments: commitments,
+        })
+        .eq('auth_user_id', user.id);
+
+      if (error) {
+        console.error('[ContractAgreement] ❌ Error saving:', error);
+        throw error;
+      }
+
+      console.log('[ContractAgreement] ✅ Saved successfully!');
       navigate(createPageUrl('Dashboard'));
     } catch (error) {
-      console.error("Error saving contract:", error);
-      alert('שגיאה בשמירת הנתונים');
+      console.error("[ContractAgreement] ❌ Error saving contract:", error);
+      alert('שגיאה בשמירת הנתונים: ' + error.message);
     } finally {
       setSaving(false);
     }

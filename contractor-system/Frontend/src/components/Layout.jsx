@@ -32,8 +32,34 @@ export default function Layout({ children, currentPageName }) {
   }, [user]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate(createPageUrl('Login'));
+    console.log('[Layout] 🚪 Starting logout process...');
+
+    // STEP 1: Clear local storage FIRST (before anything else)
+    // This prevents userStore from reloading cached data
+    console.log('[Layout] 📦 Clearing local storage...');
+    localStorage.clear();
+    sessionStorage.clear();
+
+    try {
+      // STEP 2: Sign out from Supabase
+      console.log('[Layout] 🔐 Signing out from Supabase...');
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        console.error('[Layout] ⚠️ Logout error:', error);
+        // Don't throw - continue with redirect even if signOut fails
+      } else {
+        console.log('[Layout] ✅ Signed out successfully');
+      }
+    } catch (error) {
+      console.error('[Layout] ❌ Failed to sign out:', error);
+      // Continue with redirect anyway
+    }
+
+    // STEP 3: Force immediate redirect with full page reload
+    // This ensures all React state and Zustand store are cleared
+    console.log('[Layout] 🔄 Redirecting to login...');
+    window.location.href = createPageUrl('Login');
   };
 
   const toggleSidebar = () => {
@@ -112,7 +138,10 @@ export default function Layout({ children, currentPageName }) {
                 <span>עזרה ותמיכה</span>
               </a>
               <button
-                onClick={handleLogout}
+                onClick={() => {
+                  console.log('[Layout] 🔴 LOGOUT BUTTON CLICKED!!!');
+                  handleLogout();
+                }}
                 className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-50"
               >
                 <LogOut className="h-5 w-5 ml-3" />
