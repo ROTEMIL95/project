@@ -480,13 +480,72 @@ export default React.forwardRef(function TilingCategoryEditor({
   // ✅ Restore localItems from initialRooms when returning to category
   const [hasInitializedFromProp, setHasInitializedFromProp] = useState(false);
 
+  // ✅ FIX: Track if we've initialized from selectedItems to prevent re-initialization
+  const hasInitializedFromSelectedItems = React.useRef(false);
+
   useEffect(() => {
     if (initialRooms && initialRooms.length > 0 && !hasInitializedFromProp) {
       console.log('[TilingCategoryEditor] Restoring items from initialRooms:', initialRooms.length);
       setLocalItems(initialRooms);
       setHasInitializedFromProp(true);
+      hasInitializedFromSelectedItems.current = true; // Mark as initialized
     }
   }, [initialRooms, hasInitializedFromProp]);
+
+  // ✅ NEW: Sync deletions from cart back to localItems
+  useEffect(() => {
+    // Only run after initial setup is complete
+    if (!hasInitializedFromSelectedItems.current || !Array.isArray(selectedItems)) {
+      return;
+    }
+
+    // Get all tiling item IDs that exist in selectedItems (cart)
+    const tilingItemsInCart = selectedItems
+      .filter(item => item.categoryId === categoryId && item.itemType === 'tiling')
+      .map(item => {
+        // Extract base ID (remove _tiling or _panel suffix if exists)
+        if (item.id.endsWith('_tiling') || item.id.endsWith('_panel')) {
+          return item.id.substring(0, item.id.lastIndexOf('_'));
+        }
+        return item.id;
+      });
+
+    const uniqueCartIds = new Set(tilingItemsInCart);
+
+    // Check if any localItems need to be removed (they're not in cart anymore)
+    setLocalItems(prevItems => {
+      // Only update if there's an actual difference
+      const itemsToRemove = prevItems.filter(localItem => !uniqueCartIds.has(localItem.id));
+
+      // If no items need to be removed, don't update state
+      if (itemsToRemove.length === 0) {
+        return prevItems;
+      }
+
+      console.log('[TilingCategoryEditor] 🗑️ Syncing deletions from cart:', itemsToRemove.map(i => i.id));
+
+      const itemsToKeep = prevItems.filter(localItem => uniqueCartIds.has(localItem.id));
+
+      // If all items were removed and none remain, reset to default blank item
+      if (itemsToKeep.length === 0) {
+        console.log('[TilingCategoryEditor] All items removed, resetting to blank item');
+        return [{
+          id: `new_item_${Date.now()}`,
+          name: `אזור 1`,
+          subCategory: '',
+          quantity: 0,
+          panelQuantity: 0,
+          manualPriceOverride: false,
+          manualCustomerPrice: null,
+          complexity: { level: 'none', description: TILING_COMPLEXITY_OPTIONS.find((opt) => opt.value === 'none')?.description || '', multiplier: 0 },
+          selectedSize: null,
+          workType: '',
+        }];
+      }
+
+      return itemsToKeep;
+    });
+  }, [selectedItems, categoryId]);
 
   // Helper: toggle inline editor below a specific available item
   const toggleInlineFormFor = useCallback((catalogItemId) => {
@@ -540,6 +599,12 @@ export default React.forwardRef(function TilingCategoryEditor({
   }, [tilingItems]);
 
   useEffect(() => {
+    // ✅ FIX: Only initialize from selectedItems if we haven't already initialized from initialRooms
+    if (hasInitializedFromSelectedItems.current) {
+      console.log('[TilingCategoryEditor] ⏭️ Skipping selectedItems initialization - already initialized from initialRooms');
+      return;
+    }
+
     if (tilingItems.length > 0) {
       const existingTilingItems = Array.isArray(selectedItems) ?
       selectedItems.filter((item) => item.categoryId === categoryId && item.itemType === 'tiling') :
@@ -586,6 +651,7 @@ export default React.forwardRef(function TilingCategoryEditor({
       }];
 
       setLocalItems(initialLocalItems);
+      hasInitializedFromSelectedItems.current = true; // Mark as initialized
     } else {
         // If tilingItems are not loaded yet, or if there are no existing selected items, start with a blank item
         if (selectedItems.length === 0 && localItems.length === 0) {
@@ -601,6 +667,7 @@ export default React.forwardRef(function TilingCategoryEditor({
                 selectedSize: null,
                 workType: '',
             }]);
+            hasInitializedFromSelectedItems.current = true; // Mark as initialized
         }
     }
   }, [categoryId, selectedItems, tilingItems]);
