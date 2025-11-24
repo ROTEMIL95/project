@@ -2506,12 +2506,10 @@ const DemolitionItemManager = React.forwardRef(({
       const hourlyRate = baseLaborCostPerDay / 8;
 
       const contractorCostPerUnit = hourlyRate * adjustedHoursPerUnit;
-      let clientPricePerUnit;
-      if (baseProfitPercent >= 100) {
-          clientPricePerUnit = contractorCostPerUnit * 2;
-      } else {
-          clientPricePerUnit = contractorCostPerUnit / (1 - (baseProfitPercent / 100));
-      }
+      // FIX: Changed from markup calculation to profit margin calculation
+      // Profit margin = (price - cost) / cost
+      // So: price = cost * (1 + profit%)
+      const clientPricePerUnit = contractorCostPerUnit * (1 + (baseProfitPercent / 100));
 
       const totalCost = contractorCostPerUnit * quantity;
       const totalPrice = clientPricePerUnit * quantity;
@@ -2803,21 +2801,20 @@ const ElectricalItemManager = React.forwardRef(({
       const catalogItem = getElectricalItemDetails(item.electricalItemId) || {};
       const quantity = Number(item.quantity || 0);
 
-      const unitPrice = Number(item.unitPrice || catalogItem.unitPrice || 0);
-      const unitCost = Number(item.unitCost || catalogItem.unitCost || 0);
+      let unitPrice = Number(item.unitPrice || catalogItem.unitPrice || 0);
+      let unitCost = Number(item.unitCost || catalogItem.unitCost || 0);
       const profitPercent = Number(item.profitPercent || user?.electricalDefaults?.profitPercent || 0);
 
+      // FIX: Calculate missing unit values first, before multiplying by quantity
+      if (unitPrice === 0 && unitCost > 0 && profitPercent > 0) {
+          unitPrice = Math.round(unitCost * (1 + (profitPercent / 100)));
+      } else if (unitPrice > 0 && unitCost === 0 && profitPercent > 0) {
+          unitCost = Math.round(unitPrice / (1 + (profitPercent / 100)));
+      }
+
+      // Now calculate totals based on corrected unit values
       let totalCost = quantity * unitCost;
       let totalPrice = quantity * unitPrice;
-
-      if (unitPrice === 0 && unitCost > 0 && profitPercent > 0) {
-          totalPrice = totalCost * (1 + (profitPercent / 100));
-      } else if (unitPrice > 0 && unitCost === 0 && profitPercent > 0) {
-          totalCost = totalPrice / (1 + (profitPercent / 100));
-      } else if (unitPrice === 0 && unitCost === 0 && profitPercent > 0) {
-          totalPrice = 0;
-          totalCost = 0;
-      }
 
       const totalProfit = totalPrice - totalCost;
 
