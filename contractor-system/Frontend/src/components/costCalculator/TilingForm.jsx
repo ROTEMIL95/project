@@ -181,18 +181,14 @@ const calculateMetrics = (area, formData, tierPrice = null, defaults = {}) => {
         const costOfBlackMaterial = whiteMaterialCostPerMeter * validArea;
         const materialCost = Math.round(costOfTilesWithWastage + costOfBlackMaterial);
 
-        // מקור עלות עובד: ברירות מחדל גלובליות (fallback לערכי הפריט אם קיימים)
-        const laborCostMethod = (defaults?.laborCostMethod || formData.laborCostMethod || 'perDay');
+        // ✅ FIX: Labor cost values priority - use ONLY category defaults, ignore item-specific values
+        // Category settings should ALWAYS be used, not item-specific values
+        const laborCostMethod = defaults?.laborCostMethod || 'perDay';
         const laborCostPerDay = Number(
-          defaults?.laborCostPerDay ??
-          formData.laborCostPerDay ??
-          formData.laborCost ??
-          0
+          defaults?.laborCostPerDay ?? 0
         );
         const laborCostPerSqM = Number(
-          defaults?.laborCostPerSqM ??
-          formData.laborCostPerSqM ??
-          0
+          defaults?.laborCostPerSqM ?? 0
         );
 
         const laborCost = calculateLaborCost(laborCostMethod, workDays, laborCostPerDay, validArea, laborCostPerSqM);

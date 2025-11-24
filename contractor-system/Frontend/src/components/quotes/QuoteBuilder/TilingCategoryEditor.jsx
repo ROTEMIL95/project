@@ -102,9 +102,24 @@ const calculateTilingMetrics = (item, tilingItemData, userDefaults) => {
   const safeUserDefaults = userDefaults || {};
   const safeTilingItemData = tilingItemData || {};
 
+  // 🔍 DEBUG: Log the parameters to identify the issue
+  console.log('🔍 calculateTilingMetrics called with:', {
+    itemQuantity: item.quantity,
+    userDefaults: userDefaults,
+    laborCostPerDayFromDefaults: safeUserDefaults.laborCostPerDay,
+    tilingItemData: tilingItemData
+  });
+
   const quantity = parseFloat(item.quantity) || 0;
   const panelQuantity = parseFloat(item.panelQuantity) || 0;
+
+  // ✅ FIX: In stage 3, labor cost is saved WITH the item (tilingItemData), not in userDefaults
+  // Priority: item's saved laborCostPerDay first, then user defaults as fallback
   const laborCostPerDay = parseFloat(safeTilingItemData.laborCostPerDay || safeUserDefaults.laborCostPerDay) || 0;
+
+  console.log('🔍 laborCostPerDay calculated as:', laborCostPerDay, 'from item:', safeTilingItemData.laborCostPerDay, 'from defaults:', safeUserDefaults.laborCostPerDay);
+
+  // Keep original logic for other fields (item first, then defaults)
   const dailyOutput = parseFloat(safeTilingItemData.dailyOutput || safeUserDefaults.dailyOutput) || 1;
   const panelWorkCapacity = parseFloat(safeTilingItemData.panelLaborWorkCapacity || safeUserDefaults.panelLaborWorkCapacity) || 1;
   const complexityMultiplier = (item.complexity?.multiplier || 0) / 100; // Convert percentage to decimal
