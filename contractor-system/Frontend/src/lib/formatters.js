@@ -6,7 +6,7 @@
  */
 
 // קבועים גלובליים
-export const MAX_PRICE = 99999; // 99,999 ₪ - ערך מקסימלי סביר למחיר (5 ספרות)
+export const MAX_PRICE = Number.MAX_SAFE_INTEGER; // No limit - allow any reasonable price
 export const MAX_QUANTITY = 99999; // 99,999 - כמות מקסימלית
 export const MAX_PERCENTAGE = 100; // 100% - אחוז מקסימלי
 export const MAX_HOURS = 9999; // 9,999 שעות - מקסימום שעות עבודה

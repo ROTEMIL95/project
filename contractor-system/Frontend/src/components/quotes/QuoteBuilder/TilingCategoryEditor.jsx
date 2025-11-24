@@ -102,22 +102,12 @@ const calculateTilingMetrics = (item, tilingItemData, userDefaults) => {
   const safeUserDefaults = userDefaults || {};
   const safeTilingItemData = tilingItemData || {};
 
-  // 🔍 DEBUG: Log the parameters to identify the issue
-  console.log('🔍 calculateTilingMetrics called with:', {
-    itemQuantity: item.quantity,
-    userDefaults: userDefaults,
-    laborCostPerDayFromDefaults: safeUserDefaults.laborCostPerDay,
-    tilingItemData: tilingItemData
-  });
-
   const quantity = parseFloat(item.quantity) || 0;
   const panelQuantity = parseFloat(item.panelQuantity) || 0;
 
   // ✅ FIX: In stage 3, labor cost is saved WITH the item (tilingItemData), not in userDefaults
   // Priority: item's saved laborCostPerDay first, then user defaults as fallback
   const laborCostPerDay = parseFloat(safeTilingItemData.laborCostPerDay || safeUserDefaults.laborCostPerDay) || 0;
-
-  console.log('🔍 laborCostPerDay calculated as:', laborCostPerDay, 'from item:', safeTilingItemData.laborCostPerDay, 'from defaults:', safeUserDefaults.laborCostPerDay);
 
   // Keep original logic for other fields (item first, then defaults)
   const dailyOutput = parseFloat(safeTilingItemData.dailyOutput || safeUserDefaults.dailyOutput) || 1;
@@ -1474,70 +1464,6 @@ export default React.forwardRef(function TilingCategoryEditor({
               </p>
             </div>
           </div>
-
-          {/* Overall Summary Section */}
-          {currentCategorySummaryMetrics && currentCategorySummaryMetrics.totalQuantity > 0 && (
-            <div className="mt-8 p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border-2 border-orange-200 shadow-lg">
-              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <BarChart3 className="w-6 h-6 text-orange-600" />
-                סיכום כללי - ריצוף וחיפוי
-              </h3>
-
-              {/* Main Metrics Grid */}
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div className="p-4 bg-blue-50 rounded-lg text-center shadow-sm border border-blue-200">
-                  <div className="text-sm text-blue-700 mb-1">מחיר כולל ללקוח</div>
-                  <div className="text-2xl font-bold text-blue-800">₪{formatPrice(currentCategorySummaryMetrics.totalPrice)}</div>
-                  <div className="text-xs text-blue-600 mt-1">{formatPrice(currentCategorySummaryMetrics.pricePerMeter)} ₪ למ"ר</div>
-                </div>
-                <div className="p-4 bg-red-50 rounded-lg text-center shadow-sm border border-red-200">
-                  <div className="text-sm text-red-700 mb-1">עלות כוללת לקבלן</div>
-                  <div className="text-2xl font-bold text-red-800">₪{formatPrice(currentCategorySummaryMetrics.totalContractorCost)}</div>
-                  <div className="text-xs text-red-600 mt-1">{formatPrice(currentCategorySummaryMetrics.costPerMeter)} ₪ למ"ר</div>
-                </div>
-                <div className="p-4 bg-green-50 rounded-lg text-center shadow-sm border border-green-200">
-                  <div className="text-sm text-green-700 mb-1">רווח כולל</div>
-                  <div className="text-2xl font-bold text-green-800">₪{formatPrice(currentCategorySummaryMetrics.profit)}</div>
-                  <div className="text-xs text-green-600 mt-1">{currentCategorySummaryMetrics.profitPercent.toFixed(1)}%</div>
-                </div>
-              </div>
-
-              {/* Secondary Metrics Grid */}
-              <div className="grid grid-cols-4 gap-3 mb-4">
-                <div className="p-3 bg-gray-50 rounded-lg shadow-sm text-center">
-                  <div className="text-base font-bold text-gray-800">₪{formatPrice(currentCategorySummaryMetrics.totalMaterialCost)}</div>
-                  <div className="text-xs text-gray-600">עלות חומרים</div>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg shadow-sm text-center">
-                  <div className="text-base font-bold text-gray-800">₪{formatPrice(currentCategorySummaryMetrics.totalLaborCost)}</div>
-                  <div className="text-xs text-gray-600">עלות עבודה</div>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg shadow-sm text-center">
-                  <div className="text-base font-bold text-gray-800">
-                    {preciseWorkDays ? currentCategorySummaryMetrics.unroundedWorkDays.toFixed(1) : Math.ceil(currentCategorySummaryMetrics.unroundedWorkDays)}
-                  </div>
-                  <div className="text-xs text-gray-600">ימי עבודה</div>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg shadow-sm text-center">
-                  <div className="text-base font-bold text-gray-800">{currentCategorySummaryMetrics.totalQuantity.toFixed(1)}</div>
-                  <div className="text-xs text-gray-600">סה"כ מ"ר</div>
-                </div>
-              </div>
-
-              {/* Work Days Precision Checkbox */}
-              <div className="flex justify-center pt-4 border-t border-orange-200">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={preciseWorkDays}
-                    onChange={(e) => setPreciseWorkDays(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700 group-hover:text-gray-900">ימי עבודה מדויקים</span>
-                </label>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
