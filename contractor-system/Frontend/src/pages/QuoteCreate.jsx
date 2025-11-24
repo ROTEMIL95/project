@@ -1444,12 +1444,20 @@ export default function QuoteCreate() {
 
   // Totals calculation (kept existing detailed logic)
   const totals = useMemo(() => {
-    const subtotalItems = selectedItems.reduce((accumulator, item) => accumulator + (item.totalPrice || 0), 0);
+    // ✅ FIX: Filter out summary items to prevent double counting
+    const realItems = selectedItems.filter(item => item.source !== 'paint_plaster_category_summary');
+
+    const subtotalItems = realItems.reduce((accumulator, item) => accumulator + (item.totalPrice || 0), 0);
     const projectAdditionalCosts = (projectComplexities?.additionalCostDetails || []).reduce((accumulator, cost) => accumulator + (cost.cost || 0), 0);
 
-    const total = subtotalItems + projectAdditionalCosts;
+    const finalSubtotal = subtotalItems + projectAdditionalCosts;
 
-    const totalItemsCost = selectedItems.reduce((accumulator, item) => accumulator + (item.totalCost || 0), 0);
+    // ✅ FIX: Apply priceIncrease and discount to calculate final amount
+    const subtotalAfterIncrease = finalSubtotal + (finalSubtotal * priceIncrease) / 100;
+    const discountAmount = (subtotalAfterIncrease * discountPercent) / 100;
+    const total = subtotalAfterIncrease - discountAmount;
+
+    const totalItemsCost = realItems.reduce((accumulator, item) => accumulator + (item.totalCost || 0), 0);
     const totalContractorAdditionalCosts = (projectComplexities?.additionalCostDetails || []).reduce(
       (accumulator, cost) => accumulator + (cost.contractorCost || 0), 0
     );
@@ -1458,13 +1466,13 @@ export default function QuoteCreate() {
     const profit = total - totalContractorCost;
     const profitPercent = totalContractorCost > 0 ? (profit / totalContractorCost * 100) : 0;
 
-    const totalWorkDays = selectedItems.reduce((accumulator, item) => accumulator + (Number(item.workDuration) || 0), 0);
+    const totalWorkDays = realItems.reduce((accumulator, item) => accumulator + (Number(item.workDuration) || 0), 0);
 
     return {
       baseAmount: subtotalItems + projectAdditionalCosts,
-      priceIncreaseAmount: 0,
-      totalBeforeDiscount: 0,
-      discountAmount: 0,
+      priceIncreaseAmount: (finalSubtotal * priceIncrease) / 100,
+      totalBeforeDiscount: subtotalAfterIncrease,
+      discountAmount: discountAmount,
       total,
       totalWorkDays,
       totalCost: totalContractorCost,
@@ -1472,7 +1480,7 @@ export default function QuoteCreate() {
       profitPercent: profitPercent.toFixed(1),
       projectAdditionalCosts: projectAdditionalCosts
     };
-  }, [selectedItems, projectComplexities]);
+  }, [selectedItems, projectComplexities, priceIncrease, discountPercent]);
 
   // פונקציה לחישוב ימי עבודה נטו (ללא שישי-שבת)
   const calculateWorkingDays = (startDate, endDate) => {

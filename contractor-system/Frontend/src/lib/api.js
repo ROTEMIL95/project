@@ -283,58 +283,58 @@ class APIClient {
 export const api = new APIClient();
 
 // Export specific API modules
-// NOTE: quotes router requires trailing slash, others don't - mixed configuration
+// NOTE: quotes router uses trailing slashes for root paths (/api/quotes/) but not for parameter paths (/api/quotes/{id})
 export const quotesAPI = {
   list: (params) => api.get('/api/quotes/', params),
-  get: (id) => api.get(`/api/quotes/${id}/`),
+  get: (id) => api.get(`/api/quotes/${id}`),
   create: (data) => api.post('/api/quotes/', data),
-  update: (id, data) => api.put(`/api/quotes/${id}/`, data),
-  delete: (id) => api.delete(`/api/quotes/${id}/`),
+  update: (id, data) => api.put(`/api/quotes/${id}`, data),
+  delete: (id) => api.delete(`/api/quotes/${id}`),
 };
 
 export const clientsAPI = {
-  list: (params) => api.get('/api/clients', params),
+  list: (params) => api.get('/api/clients/', params),
   get: (id) => api.get(`/api/clients/${id}`),
-  create: (data) => api.post('/api/clients', data),
+  create: (data) => api.post('/api/clients/', data),
   update: (id, data) => api.put(`/api/clients/${id}`, data),
   delete: (id) => api.delete(`/api/clients/${id}`),
 };
 
 export const catalogAPI = {
-  list: (params) => api.get('/api/catalog', params),
-  get: (id) => api.get(`/api/catalog/${id}`),
-  create: (data) => api.post('/api/catalog', data),
-  update: (id, data) => api.put(`/api/catalog/${id}`, data),
-  delete: (id) => api.delete(`/api/catalog/${id}`),
+  list: (params) => api.get('/api/catalog/items', params),
+  get: (id) => api.get(`/api/catalog/items/${id}`),
+  create: (data) => api.post('/api/catalog/items', data),
+  update: (id, data) => api.put(`/api/catalog/items/${id}`, data),
+  delete: (id) => api.delete(`/api/catalog/items/${id}`),
   categories: () => api.get('/api/catalog/categories'),
 };
 
 export const projectsAPI = {
-  list: (params) => api.get('/api/projects', params),
+  list: (params) => api.get('/api/projects/', params),
   get: (id) => api.get(`/api/projects/${id}`),
-  create: (data) => api.post('/api/projects', data),
+  create: (data) => api.post('/api/projects/', data),
   update: (id, data) => api.put(`/api/projects/${id}`, data),
   delete: (id) => api.delete(`/api/projects/${id}`),
 };
 
 export const templatesAPI = {
-  list: (params) => api.get('/api/templates', params),
+  list: (params) => api.get('/api/templates/', params),
   get: (id) => api.get(`/api/templates/${id}`),
-  create: (data) => api.post('/api/templates', data),
+  create: (data) => api.post('/api/templates/', data),
   update: (id, data) => api.put(`/api/templates/${id}`, data),
   delete: (id) => api.delete(`/api/templates/${id}`),
 };
 
 export const financialAPI = {
   // Analytics endpoints
-  summary: () => api.get('/api/financial/summary'),
-  revenue: (params) => api.get('/api/financial/revenue', params),
-  expenses: (params) => api.get('/api/financial/expenses', params),
-  cashFlow: (params) => api.get('/api/financial/cash-flow', params),
+  summary: () => api.get('/api/financial/summary/'),
+  revenue: (params) => api.get('/api/financial/revenue/', params),
+  expenses: (params) => api.get('/api/financial/expenses/', params),
+  cashFlow: (params) => api.get('/api/financial/cash-flow/', params),
   // CRUD operations
-  list: (params) => api.get('/api/financial', params),
+  list: (params) => api.get('/api/financial/', params),
   get: (id) => api.get(`/api/financial/${id}`),
-  create: (data) => api.post('/api/financial', data),
+  create: (data) => api.post('/api/financial/', data),
   update: (id, data) => api.put(`/api/financial/${id}`, data),
   delete: (id) => api.delete(`/api/financial/${id}`),
 };
@@ -348,17 +348,17 @@ export const categoriesAPI = {
 };
 
 export const contractorPricingAPI = {
-  list: (params) => api.get('/api/contractor-pricing', params),
+  list: (params) => api.get('/api/contractor-pricing/', params),
   get: (id) => api.get(`/api/contractor-pricing/${id}`),
-  create: (data) => api.post('/api/contractor-pricing', data),
+  create: (data) => api.post('/api/contractor-pricing/', data),
   update: (id, data) => api.put(`/api/contractor-pricing/${id}`, data),
   delete: (id) => api.delete(`/api/contractor-pricing/${id}`),
 };
 
 export const inquiriesAPI = {
-  list: (params) => api.get('/api/inquiries', params),
+  list: (params) => api.get('/api/inquiries/', params),
   get: (id) => api.get(`/api/inquiries/${id}`),
-  create: (data) => api.post('/api/inquiries', data),
+  create: (data) => api.post('/api/inquiries/', data),
   update: (id, data) => api.put(`/api/inquiries/${id}`, data),
   delete: (id) => api.delete(`/api/inquiries/${id}`),
 };
