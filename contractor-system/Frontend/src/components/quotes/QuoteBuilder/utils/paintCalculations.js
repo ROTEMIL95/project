@@ -23,18 +23,19 @@ const getItemDisplayName = (item) => {
 
 /**
  * Calculate exact paint metrics based on quantity, layers, and paint item properties.
- * 
+ *
  * This function computes material costs, labor costs, selling prices, profit, and work days
  * for a given paint/plaster item. It accounts for multiple layers with adjustable coverage
  * and daily output per layer.
- * 
+ *
  * @param {number} quantity - The area in square meters to be painted.
  * @param {number} layers - The number of paint layers to apply.
  * @param {object} paintItem - The paint/plaster item object with properties like bucketPrice, coverage, etc.
  * @param {boolean} [roundBuckets=false] - Whether to round up the total buckets needed for material cost.
+ * @param {boolean} [roundWorkDays=false] - Whether to round up the total work days needed for labor cost.
  * @returns {object|null} - An object containing calculated metrics or null if inputs are invalid.
 */
-export const calculateExactPaintMetrics = (quantity, layers, paintItem, roundBuckets = false) => {
+export const calculateExactPaintMetrics = (quantity, layers, paintItem, roundBuckets = false, roundWorkDays = false) => {
   if (!paintItem || quantity <= 0) {
     return {
         materialCost: 0, laborCost: 0, otherCosts: 0, equipmentCost: 0,
@@ -124,9 +125,12 @@ export const calculateExactPaintMetrics = (quantity, layers, paintItem, roundBuc
   // Apply rounding to buckets if requested for cost calculation
   const finalBucketsForCost = roundBuckets ? Math.ceil(exactTotalBucketsNeeded) : exactTotalBucketsNeeded;
 
+  // Apply rounding to work days if requested for cost calculation
+  const finalWorkDays = roundWorkDays ? Math.ceil(totalWorkDays) : totalWorkDays;
+
   // Cost calculations
   const materialCost = finalBucketsForCost * bucketPrice;
-  const laborCost = totalWorkDays * workerDailyCost;
+  const laborCost = finalWorkDays * workerDailyCost;
   const otherCosts = (qty * cleaningCostPerMeter) + (qty * preparationCostPerMeter) + equipmentCost;
   const totalCost = materialCost + laborCost + otherCosts;
 
@@ -147,7 +151,8 @@ export const calculateExactPaintMetrics = (quantity, layers, paintItem, roundBuc
     sellingPricePerMeter,
     totalProfit,
     profitPercentage: profitPercent,
-    totalWorkDays,
+    totalWorkDays: finalWorkDays, // Use finalWorkDays (rounded if requested)
+    exactWorkDays: totalWorkDays, // Keep exact work days for reference
     totalBucketsNeeded: finalBucketsForCost,
     originalBucketsNeeded: exactTotalBucketsNeeded,
     quantity: qty,

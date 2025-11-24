@@ -110,8 +110,8 @@ const calculatePaintMetrics = ({
     if (isDetailed) {
 
         // Ensure both wall and ceiling items are valid for detailed calculation
-        const wallMetrics = wallPaintItem && Number(wallQuantity) > 0 ? calculateExactPaintMetrics(Number(wallQuantity), wallLayers, wallPaintItem, bucketCalculationEnabled) : null;
-        const ceilingMetrics = ceilingPaintItem && Number(ceilingQuantity) > 0 ? calculateExactPaintMetrics(Number(ceilingQuantity), ceilingLayers, ceilingPaintItem, bucketCalculationEnabled) : null;
+        const wallMetrics = wallPaintItem && Number(wallQuantity) > 0 ? calculateExactPaintMetrics(Number(wallQuantity), wallLayers, wallPaintItem, bucketCalculationEnabled, wallPaintItem.roundWorkDays || false) : null;
+        const ceilingMetrics = ceilingPaintItem && Number(ceilingQuantity) > 0 ? calculateExactPaintMetrics(Number(ceilingQuantity), ceilingLayers, ceilingPaintItem, bucketCalculationEnabled, ceilingPaintItem.roundWorkDays || false) : null;
 
 
         // Sum properties from individual metrics
@@ -157,7 +157,7 @@ const calculatePaintMetrics = ({
         return { totalCost: 0, totalSellingPrice: 0, totalProfit: 0, profitPercentage: 0, totalBucketsNeeded: 0, originalBucketsNeeded: 0, equipmentCost: 0 };
     }
 
-    const simpleMetrics = calculateExactPaintMetrics(Number(quantity), layers, paintItem, bucketCalculationEnabled);
+    const simpleMetrics = calculateExactPaintMetrics(Number(quantity), layers, paintItem, bucketCalculationEnabled, paintItem.roundWorkDays || false);
 
     // Return exact metrics directly, no need for remapping from totalPrice/profit
     return simpleMetrics;

@@ -372,39 +372,42 @@ export default function QuoteSummary({
         return sum + 1;
     }, 0);
 
-    const subtotalItems = selectedItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+    // ✅ FIX: Filter out summary items to prevent double counting
+    const realItems = selectedItems.filter(item => item.source !== 'paint_plaster_category_summary');
+
+    const subtotalItems = realItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
     const projectAdditionalCosts = (projectComplexities?.additionalCostDetails || []).reduce((sum, cost) => sum + (cost.cost || 0), 0);
     const finalSubtotal = subtotalItems + projectAdditionalCosts;
-    
+
     const subtotalAfterIncrease = finalSubtotal + (finalSubtotal * priceIncrease) / 100;
     const discountAmount = (subtotalAfterIncrease * discount) / 100;
     const total = subtotalAfterIncrease - discountAmount;
 
-    const totalItemsCost = selectedItems.reduce((sum, item) => sum + (item.totalCost || 0), 0);
+    const totalItemsCost = realItems.reduce((sum, item) => sum + (item.totalCost || 0), 0);
     const totalContractorAdditionalCosts = (projectComplexities?.additionalCostDetails || []).reduce((sum, cost) => sum + (cost.contractorCost || cost.cost || 0), 0);
-    const contractorComplexitySum = selectedItems.reduce((sum, it) => {
+    const contractorComplexitySum = realItems.reduce((sum, it) => {
         return sum + (Number(it.complexityLaborAddedCost) || 0);
     }, 0);
     const totalContractorCost = totalItemsCost + totalContractorAdditionalCosts + contractorComplexitySum;
-    
+
     const profit = total - totalContractorCost;
     const profitPercent = totalContractorCost > 0 ? (profit / totalContractorCost * 100) : (total > 0 ? 100 : 0);
-    
-    const totalWorkDays = selectedItems.reduce((sum, item) => {
+
+    const totalWorkDays = realItems.reduce((sum, item) => {
         const workDuration = Number(item.workDuration) || 0;
         return sum + workDuration;
     }, 0);
 
-    const complexityExtraHours = selectedItems.reduce((sum, it) => {
+    const complexityExtraHours = realItems.reduce((sum, it) => {
         return sum + (Number(it.complexityHoursAdded) || 0);
     }, 0);
     
     const workforceData = Object.entries(categoryTimings || {})
         .map(([categoryId, timings]) => {
             if (!timings || !timings.startDate || !timings.endDate) return null;
-            const categoryItems = selectedItems.filter(item => item.categoryId === categoryId);
+            const categoryItems = realItems.filter(item => item.categoryId === categoryId);
             if (categoryItems.length === 0) return null;
-            
+
             const totalWorkDaysNeeded = categoryItems.reduce((sum, item) => {
                 const workDuration = Number(item.workDuration) || 0;
                 return sum + workDuration;
@@ -419,10 +422,10 @@ export default function QuoteSummary({
 
     const isLowProfit = profitPercent < 30;
 
-    const allMaterialCosts = selectedItems.reduce((sum, item) => sum + (Number(item.materialCost) || 0), 0);
-    const allLaborCosts = selectedItems.reduce((sum, item) => sum + (Number(item.laborCost) || 0), 0);
+    const allMaterialCosts = realItems.reduce((sum, item) => sum + (Number(item.materialCost) || 0), 0);
+    const allLaborCosts = realItems.reduce((sum, item) => sum + (Number(item.laborCost) || 0), 0);
 
-    const materialBreakdown = selectedItems.reduce((acc, item) => {
+    const materialBreakdown = realItems.reduce((acc, item) => {
         const categoryId = item.categoryId || 'other';
         const categoryName = item.categoryName || `קטגוריה ${categoryId.replace('cat_', '')}`;
         
@@ -453,7 +456,7 @@ export default function QuoteSummary({
         return acc;
     }, {});
 
-    const laborBreakdown = selectedItems.reduce((acc, item) => {
+    const laborBreakdown = realItems.reduce((acc, item) => {
         const categoryId = item.categoryId || 'other';
         const categoryName = item.categoryName || `קטגוריה ${categoryId.replace('cat_', '')}`;
         if (!acc[categoryId]) {
