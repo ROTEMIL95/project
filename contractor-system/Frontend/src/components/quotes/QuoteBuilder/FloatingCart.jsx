@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -135,6 +135,65 @@ const extractManualParts = (item) => {
   }
 
   return { walls, ceiling, totalPrice };
+};
+
+/**
+ * Distribute total price proportionally across items to ensure sum matches exactly
+ * @param {Array} items - Array of items with totalPrice
+ * @param {number} targetTotal - The target total to match (from totalMetrics)
+ * @returns {Map} - Map of item.id -> adjusted totalPrice
+ */
+const distributeProportionally = (items, targetTotal) => {
+  const result = new Map();
+
+  // Calculate original sum
+  const originalSum = items.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
+
+  if (originalSum === 0 || items.length === 0) {
+    return result;
+  }
+
+  // Calculate proportional prices (not rounded yet)
+  const proportionalPrices = items.map(item => {
+    const originalPrice = Number(item.totalPrice) || 0;
+    const proportionalPrice = (originalPrice / originalSum) * targetTotal;
+    return { id: item.id, price: proportionalPrice };
+  });
+
+  // Round all prices
+  const roundedPrices = proportionalPrices.map(({ id, price }) => ({
+    id,
+    rounded: Math.round(price),
+    original: price
+  }));
+
+  // Calculate rounding difference
+  const roundedSum = roundedPrices.reduce((sum, p) => sum + p.rounded, 0);
+  const difference = targetTotal - roundedSum;
+
+  // Distribute the rounding difference to the largest items
+  if (difference !== 0) {
+    // Sort by rounding error (descending)
+    const sortedByError = roundedPrices
+      .map((p, index) => ({ ...p, index, error: p.original - p.rounded }))
+      .sort((a, b) => Math.abs(b.error) - Math.abs(a.error));
+
+    // Add/subtract 1 from the largest errors until difference is 0
+    let remaining = Math.abs(difference);
+    const direction = difference > 0 ? 1 : -1;
+
+    for (let i = 0; i < sortedByError.length && remaining > 0; i++) {
+      sortedByError[i].rounded += direction;
+      remaining--;
+    }
+  }
+
+  // Create result map
+  roundedPrices.forEach(({ id, rounded }) => {
+    result.set(id, rounded);
+  });
+
+  return result;
 };
 
 // Renders the manual details block inside cart for a single item (without prices)
@@ -305,9 +364,16 @@ const renderRoomCalcItem = (item, onRemoveItem) => {
 
 
 // NEW: Render paint/plaster room detail items (simple single-room items)
-const renderPaintRoomDetail = (item, onRemoveItem) => {
-    // Removed verbose logging - only log when debugging
-    // console.log('🎨 [renderPaintRoomDetail] Item data:', {...});
+const renderPaintRoomDetail = (item, onRemoveItem, adjustedPricesMap) => {
+    // Get adjusted price if available (for proportional distribution)
+    const displayPrice = adjustedPricesMap?.get(item.id) ?? item.totalPrice ?? 0;
+
+    console.log('🎨 [renderPaintRoomDetail]', item.id, {
+      hasAdjustedPrice: adjustedPricesMap?.has(item.id),
+      adjustedPrice: adjustedPricesMap?.get(item.id),
+      originalPrice: item.totalPrice,
+      displayPrice
+    });
 
     // Determine if it's paint or plaster from description
     const descLower = (item.description || '').toLowerCase();
@@ -508,7 +574,7 @@ const renderPaintRoomDetail = (item, onRemoveItem) => {
                 </div>
             </div>
             <div className="text-right flex items-center gap-2">
-                <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
+                <p className="font-bold text-gray-900">{formatPrice(displayPrice)} ₪</p>
                 <Button
                     variant="ghost"
                     size="icon"
@@ -523,7 +589,17 @@ const renderPaintRoomDetail = (item, onRemoveItem) => {
 };
 
 // פונקציה לעיבוד פריט בודד (לא מורכב או ידני)
-const renderItem = (item, onRemoveItem) => {
+const renderItem = (item, onRemoveItem, adjustedPricesMap) => {
+    // Get adjusted price if available (for proportional distribution)
+    const displayPrice = adjustedPricesMap?.get(item.id) ?? item.totalPrice ?? 0;
+
+    console.log('📦 [renderItem]', item.id, {
+      hasAdjustedPrice: adjustedPricesMap?.has(item.id),
+      adjustedPrice: adjustedPricesMap?.get(item.id),
+      originalPrice: item.totalPrice,
+      displayPrice
+    });
+
     // בדיקה אם זה פריט הריסה עם רמת קושי
     const hasDifficulty = item.source === 'demolition_calculator' && item.difficultyData;
 
@@ -535,8 +611,8 @@ const renderItem = (item, onRemoveItem) => {
                           item.name && item.name.trim() &&
                           item.description !== item.name;
 
-    // Calculate unit price
-    const unitPrice = item.clientPricePerUnit || item.unitPrice || (item.totalPrice && item.quantity ? item.totalPrice / item.quantity : 0);
+    // Calculate unit price - use adjusted price if available
+    const unitPrice = item.clientPricePerUnit || item.unitPrice || (displayPrice && item.quantity ? displayPrice / item.quantity : 0);
 
     return (
         <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border flex items-start gap-3">
@@ -574,7 +650,7 @@ const renderItem = (item, onRemoveItem) => {
                 )}
             </div>
             <div className="text-right flex items-center gap-2">
-                <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
+                <p className="font-bold text-gray-900">{formatPrice(displayPrice)} ₪</p>
                 <Button
                     variant="ghost"
                     size="icon"
@@ -864,17 +940,36 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
 
     console.log('[FloatingCart render] Items count:', items.length);
 
-    // Filter out summary items for hasItems check - we don't want to show prices if only summary items remain
-    const realItems = items.filter(item => item.source !== 'paint_plaster_category_summary');
-    const hasItems = realItems.length > 0;
+    // 🔧 FIX: Count visible items (not summary items) for hasItems check
+    const visibleItems = items.filter(item => item.source !== 'paint_plaster_category_summary');
+    const hasItems = visibleItems.length > 0;
 
-    // Calculate totals - FIXED: Use realItems to avoid counting summary items (which would cause duplication)
-    // If no items, set all values to 0
-    const totalPrice = hasItems ? realItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0) : 0;
+    // 🔧 FIX: Calculate totals using summary items for paint/plaster (includes totalMetrics precision)
+    // This ensures cart totals match step 3 summary (which uses totalMetrics)
+    const totalPrice = hasItems ? items.reduce((sum, item) => {
+      // For paint/plaster: use summary item (from totalMetrics with precision adjustments)
+      if (item.source === 'paint_plaster_category_summary') {
+        return sum + (Number(item.totalPrice) || 0);
+      }
+      // Skip individual paint/plaster items if there's a summary (avoid double-counting)
+      if (item.categoryId === 'cat_paint_plaster' && items.some(i => i.source === 'paint_plaster_category_summary')) {
+        return sum;
+      }
+      // Regular items from other categories
+      return sum + (Number(item.totalPrice) || 0);
+    }, 0) : 0;
 
-    // NEW: Calculate totalCost directly from realItems (exclude summary items to avoid duplication)
-    const totalCost = hasItems ? realItems.reduce((sum, item) => {
-      // For tiling items, make sure we use the correct cost field
+    // 🔧 FIX: Calculate totalCost using summary items for paint/plaster
+    const totalCost = hasItems ? items.reduce((sum, item) => {
+      // For paint/plaster: use summary item (from totalMetrics)
+      if (item.source === 'paint_plaster_category_summary') {
+        return sum + (Number(item.totalCost) || 0);
+      }
+      // Skip individual paint/plaster items if there's a summary
+      if (item.categoryId === 'cat_paint_plaster' && items.some(i => i.source === 'paint_plaster_category_summary')) {
+        return sum;
+      }
+      // Regular items from other categories
       const itemCost = Number(item.totalCost) || Number(item.baseCost) || 0;
       return sum + itemCost;
     }, 0) : 0;
@@ -889,8 +984,8 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
     // NEW: fallback from project breakdowns (advanced calc)
     const paintFallbackRooms = projectComplexities?.roomBreakdowns?.paint || [];
 
-    // NEW: Calculate total quantity from realItems (already excludes summary items)
-    const totalQuantity = hasItems ? realItems.reduce((sum, item) => {
+    // NEW: Calculate total quantity from visible items (exclude summary items for counting)
+    const totalQuantity = hasItems ? visibleItems.reduce((sum, item) => {
       // For items with "יחידה" or "נקודה" unit, count the actual quantity
       if (item.unit === "יחידה" || item.unit === "נקודה") {
         return sum + (Number(item.quantity) || 1);
@@ -904,8 +999,53 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
       return sum;
     }, 0) : 0;
 
-    // If no countable items exist, fall back to realItems count (exclude summary items)
-    const badgeCount = hasItems ? (totalQuantity > 0 ? totalQuantity : realItems.length) : 0;
+    // If no countable items exist, fall back to visibleItems count (exclude summary items)
+    const badgeCount = hasItems ? (totalQuantity > 0 ? totalQuantity : visibleItems.length) : 0;
+
+    // 🔧 FIX: Distribute totalPrice proportionally to ensure items sum matches exactly
+    const adjustedPricesMap = useMemo(() => {
+      console.log('🔧 [adjustedPricesMap] Recalculating...');
+
+      if (!hasItems) {
+        console.log('🔧 [adjustedPricesMap] No items, returning empty map');
+        return new Map();
+      }
+
+      // Get visible items (exclude summary items)
+      const visItems = items.filter(item => item.source !== 'paint_plaster_category_summary');
+
+      // Get paint/plaster items that need adjustment
+      const paintPlasterItems = visItems.filter(item => item.categoryId === 'cat_paint_plaster');
+
+      console.log('🔧 [adjustedPricesMap] Found paint/plaster items:', paintPlasterItems.length);
+
+      if (paintPlasterItems.length === 0) {
+        console.log('🔧 [adjustedPricesMap] No paint/plaster items, returning empty map');
+        return new Map();
+      }
+
+      // Find the summary item to get the target total (from totalMetrics)
+      const summaryItem = items.find(item => item.source === 'paint_plaster_category_summary');
+
+      console.log('🔧 [adjustedPricesMap] Summary item:', summaryItem ? `Found (${summaryItem.totalPrice}₪)` : 'NOT FOUND');
+
+      if (!summaryItem) {
+        console.log('🔧 [adjustedPricesMap] No summary item, returning empty map');
+        return new Map();
+      }
+
+      const targetTotal = Number(summaryItem.totalPrice) || 0;
+
+      // Distribute proportionally
+      const adjustedMap = distributeProportionally(paintPlasterItems, targetTotal);
+
+      console.log('🔧 [adjustedPricesMap] Generated map with', adjustedMap.size, 'entries');
+      adjustedMap.forEach((price, id) => {
+        console.log(`  - ${id}: ${price}₪`);
+      });
+
+      return adjustedMap;
+    }, [items]);
 
     return (
         <>
@@ -970,16 +1110,20 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                     categoriesOrder.map((catKey) => {
                                         const group = categoriesMap[catKey];
 
-                                        // 🔧 FIX: For paint/plaster category, use summary item's totalPrice
-                                        // (which includes precision adjustments) instead of summing individual items
+                                        // 🔧 FIX: Calculate category subtotal
+                                        // For paint/plaster: use summary item (from totalMetrics with precision adjustments)
+                                        // For other categories: sum visible items
                                         const summaryItem = group.items.find(it => it.source === 'paint_plaster_category_summary');
                                         const categorySubtotal = summaryItem
                                             ? Number(summaryItem.totalPrice) || 0
-                                            : group.items.reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0);
+                                            : group.items
+                                                .filter(it => it.source !== 'paint_plaster_category_summary')
+                                                .reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0);
 
                                         console.log(`[FloatingCart] Category ${catKey}:`, {
                                             itemsCount: group.items.length,
-                                            summaryItem: summaryItem?.id,
+                                            visibleItemsCount: group.items.filter(it => it.source !== 'paint_plaster_category_summary').length,
+                                            hasSummaryItem: !!summaryItem,
                                             categorySubtotal
                                         });
 
@@ -1022,6 +1166,16 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
 
                                                       // Manual calc items - render with simple styling matching paint room detail
                                                       if (isManualItem) {
+                                                          // Get adjusted price if available (for proportional distribution)
+                                                          const displayPrice = adjustedPricesMap?.get(item.id) ?? item.totalPrice ?? 0;
+
+                                                          console.log('🖐️ [renderManualItem]', item.id, {
+                                                            hasAdjustedPrice: adjustedPricesMap?.has(item.id),
+                                                            adjustedPrice: adjustedPricesMap?.get(item.id),
+                                                            originalPrice: item.totalPrice,
+                                                            displayPrice
+                                                          });
+
                                                           // Extract clean item name - remove extra details that are shown in ManualCartDetails
                                                           const itemName = item.description || item.name || 'עבודה ידנית';
 
@@ -1032,7 +1186,7 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                                       <ManualCartDetails item={item} />
                                                                   </div>
                                                                   <div className="text-right flex items-center gap-2">
-                                                                      <p className="font-bold text-gray-900">{formatPrice(item.totalPrice || 0)} ₪</p>
+                                                                      <p className="font-bold text-gray-900">{formatPrice(displayPrice)} ₪</p>
                                                                       <Button
                                                                           variant="ghost"
                                                                           size="icon"
@@ -1053,11 +1207,11 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                             // NEW: Render room calculator items with breakdown
                                                             return renderRoomCalcItem(item, onRemoveItem);
                                                       } else if (isPaintRoomDetail) {
-                                                            // NEW: Render paint room detail items with simple styling
-                                                            return renderPaintRoomDetail(item, onRemoveItem);
+                                                            // NEW: Render paint room detail items with simple styling (using adjusted prices)
+                                                            return renderPaintRoomDetail(item, onRemoveItem, adjustedPricesMap);
                                                       } else {
-                                                            // Default: render as regular item
-                                                            return renderItem(item, onRemoveItem);
+                                                            // Default: render as regular item (using adjusted prices)
+                                                            return renderItem(item, onRemoveItem, adjustedPricesMap);
                                                       }
                                                     })}
                                                 </div>
