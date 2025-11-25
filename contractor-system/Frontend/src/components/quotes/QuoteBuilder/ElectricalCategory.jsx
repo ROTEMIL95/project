@@ -491,17 +491,12 @@ export default function ElectricalCategory({
         hideUnit
         initialQuantity={editingItem ? getQty(editingItem.id) : 1}
         onSaved={(updatedItem) => {
-          // Note: `updatedItem` here will contain the edited fields from the dialog,
-          // including any manually set quantity.
-          // `editingItem.id` is the original ID from the catalog.
+          // Update the quantity in the qtyMap
           const q = Number(updatedItem.quantity) || 1;
-          setQty(updatedItem.id, q); // Update qtyMap for the original item id
+          setQty(editingItem.id, q);
 
-          // The patched item for adding to quote: combines original item with updated fields,
-          // and explicitly sets ignoreQuantity to true as per requirements.
-          // This ensures that even an item originating from the catalog,
-          // once edited and added via this dialog, becomes quantity-independent for its total price calculation in the quote.
-          const patched = { ...editingItem, ...updatedItem, ignoreQuantity: true }; // NEW
+          // Add the updated item to the quote
+          const patched = { ...editingItem, ...updatedItem, ignoreQuantity: true };
           addItem(patched);
           setShowEdit(false);
           setEditingItem(null);

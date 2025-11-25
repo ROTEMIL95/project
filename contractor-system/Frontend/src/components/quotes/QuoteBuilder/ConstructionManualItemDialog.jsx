@@ -13,6 +13,7 @@ export default function ConstructionManualItemDialog({
   onOpenChange,
   onAdd,
   defaults = {},
+  initialItem = null,
   title = "פריט בינוי ידני",
   submitLabel = "הוסף"
 }) {
@@ -34,13 +35,34 @@ export default function ConstructionManualItemDialog({
   // רווח
   const desiredProfitPercent = defaults.desiredProfitPercent || 30;
 
+  // Load initial item values when dialog opens or initialItem changes
   useEffect(() => {
+    if (open && initialItem) {
+      console.log('Loading initial item values:', initialItem);
+      setName(initialItem.name || '');
+      setDescription(initialItem.description || '');
+      setQuantity(initialItem.quantity || 1);
+      setMaterialCostPerUnit(initialItem.materialCostPerUnit || 0);
+      setWorkTimeValue(initialItem.workTimeValue || 0);
+      setWorkTimeUnit(initialItem.workTimeUnit || 'days');
+      setUnit(initialItem.unit || 'יחידה');
+    } else if (open && !initialItem) {
+      // Reset to defaults when opening without initialItem
+      setName('');
+      setDescription('');
+      setQuantity(1);
+      setMaterialCostPerUnit(0);
+      setWorkTimeValue(0);
+      setWorkTimeUnit('days');
+      setUnit('יחידה');
+    }
+
     if (open) {
       const dayCost = defaults.laborCostPerDay || defaults.laborDayCost || 1000;
       console.log('Loading labor cost from defaults:', { defaults, dayCost });
       setLaborDayCost(dayCost);
     }
-  }, [open, defaults]);
+  }, [open, initialItem, defaults]);
 
   const handleClose = () => {
     setName('');

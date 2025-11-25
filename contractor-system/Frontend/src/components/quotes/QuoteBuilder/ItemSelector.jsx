@@ -2541,13 +2541,17 @@ const DemolitionItemManager = React.forwardRef(({
 
   useEffect(() => {
       if (existingCategoryData && existingCategoryData.items && existingCategoryData.items.length > 0) {
-          const reCalculatedExistingItems = existingCategoryData.items.map(item =>
-              calculateDemolitionItemPrice({
-                  ...item,
-                  baseLaborCostPerDay: user?.demolitionDefaults?.laborCostPerDay || 1000,
-                  baseProfitPercent: user?.demolitionDefaults?.profitPercent || 40
-              })
-          );
+          const reCalculatedExistingItems = existingCategoryData.items.map(item => {
+              // Skip recalculation for custom-edited items and custom demolition items
+              // This preserves user's manual edits (hours, prices, etc.)
+              if (item.isCustomEdited || item.source === 'demolition_custom') {
+                  return item;
+              }
+
+              // Don't override baseProfitPercent and baseLaborCostPerDay - calculateDemolitionItemPrice already handles fallback
+              // This preserves the saved values instead of overriding with defaults
+              return calculateDemolitionItemPrice(item);
+          });
           setSelectedItems(reCalculatedExistingItems);
       } else {
           setSelectedItems([]);
@@ -2845,12 +2849,16 @@ const ElectricalItemManager = React.forwardRef(({
 
   useEffect(() => {
       if (existingCategoryData && existingCategoryData.items && existingCategoryData.items.length > 0) {
-          const reCalculatedExistingItems = existingCategoryData.items.map(item =>
-              calculateElectricalItemPrice({
-                  ...item,
-                  profitPercent: user?.electricalDefaults?.profitPercent || 0
-              })
-          );
+          const reCalculatedExistingItems = existingCategoryData.items.map(item => {
+              // Skip recalculation for custom-edited items
+              if (item.isCustomEdited) {
+                  return item;
+              }
+
+              // Don't override profitPercent - calculateElectricalItemPrice already handles fallback
+              // This preserves the saved profitPercent (e.g., 150%) instead of overriding with default (40%)
+              return calculateElectricalItemPrice(item);
+          });
           setSelectedItems(reCalculatedExistingItems);
       } else {
           setSelectedItems([]);
