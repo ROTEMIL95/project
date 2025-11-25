@@ -3289,6 +3289,7 @@ class ErrorBoundary extends React.Component {
 
 // --- Main ItemSelector Component ---
 const ItemSelector = React.forwardRef(({
+  visible = true, // 🔧 FIX: Track visibility to prevent state updates when hidden
   selectedItems,
   setSelectedItems,
   onAddItemToQuote,
@@ -3398,6 +3399,12 @@ const ItemSelector = React.forwardRef(({
 
   // ✅ FIX: Load existing quote data from selectedItems into categoryDataMap on mount
   useEffect(() => {
+    // 🔧 FIX: Don't run useEffect when ItemSelector is hidden to prevent navigation blocking
+    if (!visible) {
+      console.log('⏸️ [ItemSelector] Skipping useEffect - component is hidden');
+      return;
+    }
+
     const paintPlasterItems = selectedItems.filter(item =>
       item.categoryId === 'cat_paint_plaster' && item.source === 'paint_room_detail'
     );

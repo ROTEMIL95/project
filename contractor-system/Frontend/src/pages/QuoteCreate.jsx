@@ -340,6 +340,7 @@ function PersistedStep3({
 
           <ItemSelector
             ref={itemSelectorRef}
+            visible={visible}
             selectedItems={selectedItems}
             setSelectedItems={setSelectedItems}
             onAddItemToQuote={onAddItemToQuote}
