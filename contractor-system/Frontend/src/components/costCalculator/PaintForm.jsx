@@ -96,15 +96,36 @@ const calculateInternalPaintMetrics = (formData, squareMeters, layersToApply, de
   let totalBucketsNeeded = 0;
   let totalWorkDays = 0;
 
+  console.log('🎨 Paint Calculation Debug:', {
+    layersToApply,
+    squareMeters,
+    baseCoverage,
+    baseDailyOutput,
+    layerSettings: formData.layerSettings
+  });
+
   for (let i = 0; i < layersToApply; i++) {
-    const layerSetting = formData.layerSettings?.[i] || { coverage: 0, discountPercent: 0 };
-    const currentLayerCoverage = i === 0 
-      ? baseCoverage 
-      : baseCoverage * (1 + (Number(layerSetting.coverage || 0) / 100));
-    const currentLayerDailyOutput = i === 0
-      ? baseDailyOutput
-      : baseDailyOutput * (1 + (Number(layerSetting.discountPercent || 0) / 100));
-    
+    const layerSetting = formData.layerSettings?.[i] || {};
+
+    // FIX: חישוב עצמאי - כל שכבה משתמשת בערך המוחלט שלה
+    // זה מבטיח שסדר השכבות לא משפיע על התוצאה
+    // אם אין ערך מוגדר, משתמשים בבסיס
+    const currentLayerCoverage = Number(layerSetting.coverage) > 0
+      ? Number(layerSetting.coverage)
+      : baseCoverage;
+
+    const currentLayerDailyOutput = Number(layerSetting.dailyOutput || layerSetting.discountPercent) > 0
+      ? Number(layerSetting.dailyOutput || layerSetting.discountPercent)
+      : baseDailyOutput;
+
+    console.log(`Layer ${i}:`, {
+      layerSetting,
+      currentLayerCoverage,
+      currentLayerDailyOutput,
+      bucketsForLayer: squareMeters / currentLayerCoverage,
+      workDaysForLayer: squareMeters / currentLayerDailyOutput
+    });
+
     if (currentLayerCoverage > 0) {
       totalBucketsNeeded += squareMeters / currentLayerCoverage;
     }
@@ -112,6 +133,11 @@ const calculateInternalPaintMetrics = (formData, squareMeters, layersToApply, de
       totalWorkDays += squareMeters / currentLayerDailyOutput;
     }
   }
+
+  console.log('🎨 Paint Calculation Result:', {
+    totalBucketsNeeded,
+    totalWorkDays
+  });
 
   const finalBuckets = roundBucketCost ? Math.ceil(totalBucketsNeeded) : totalBucketsNeeded;
   const finalWorkDays = roundWorkDays ? Math.ceil(totalWorkDays) : totalWorkDays;
@@ -126,11 +152,9 @@ const calculateInternalPaintMetrics = (formData, squareMeters, layersToApply, de
   const totalCost = (totalMaterialCost + totalLaborCost + totalOtherCosts) * difficultyMultiplier;
   const costPerMeter = squareMeters > 0 ? totalCost / squareMeters : 0;
 
-  const profitMultiplier = 1 + (desiredProfitPercent / 100);
-  const sellingPrice = totalCost * profitMultiplier;
+  const profit = totalCost * (desiredProfitPercent / 100);
+  const sellingPrice = totalCost + profit;
   const pricePerMeter = squareMeters > 0 ? sellingPrice / squareMeters : 0;
-  
-  const profit = sellingPrice - totalCost;
   const profitPerMeter = squareMeters > 0 ? profit / squareMeters : 0; // Corrected calculation
   const profitPercentage = totalCost > 0 ? (profit / totalCost) * 100 : 0;
 
@@ -237,19 +261,101 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
   
   const initialLayerSettings = useMemo(() => {
     if (editItem?.layerSettings && editItem.layerSettings.length > 0) {
-      // Ensure layerSettings[0] has dailyOutput and coverage if it's supposed to hold base values now
-      return editItem.layerSettings.map((layer, idx) => ({
-        ...layer,
-        // For layer 0, use existing value or empty string for default
-        dailyOutput: idx === 0 ? (editItem?.dailyOutput ?? layer.dailyOutput ?? '') : layer.dailyOutput,
-        coverage: idx === 0 ? (editItem?.coverage ?? layer.coverage ?? '') : layer.coverage,
-      }));
+      // Check if this item was already converted (has _isConverted flag or all layers use absolute values)
+      const alreadyConverted = editItem._isConverted ||
+        (editItem.layerSettings.length > 1 &&
+         editItem.layerSettings.slice(1).every(layer => {
+           const coverage = Number(layer.coverage || 0);
+           const dailyOutput = Number(layer.dailyOutput || layer.discountPercent || 0);
+           // If all layers have values between -10 and 50, assume they're already absolute
+           return (coverage === 0 || (coverage > -10 && coverage <= 200)) &&
+                  (dailyOutput === 0 || (dailyOutput > -10 && dailyOutput <= 200));
+         }));
+
+      // If already converted, return as-is
+      if (alreadyConverted) {
+        return editItem.layerSettings.map((layer, idx) => ({
+          ...layer,
+          _isConverted: true
+        }));
+      }
+
+      // FIX: Convert old percentage-based format to new absolute value format
+      const baseCoverage = Number(editItem?.coverage ?? editItem.layerSettings[0]?.coverage ?? 0);
+      const baseDailyOutput = Number(editItem?.dailyOutput ?? editItem.layerSettings[0]?.dailyOutput ?? 0);
+
+      let currentCoverage = baseCoverage;
+      let currentDailyOutput = baseDailyOutput;
+
+      return editItem.layerSettings.map((layer, idx) => {
+        if (idx === 0) {
+          // Base layer - use direct values
+          currentCoverage = baseCoverage;
+          currentDailyOutput = baseDailyOutput;
+          return {
+            ...layer,
+            dailyOutput: baseDailyOutput || '',
+            coverage: baseCoverage || '',
+            discountPercent: 0,
+            _isConverted: true
+          };
+        } else {
+          // Other layers - convert from cumulative percentage to absolute
+          const layerCoveragePercent = Number(layer.coverage || 0);
+          const layerDailyOutputPercent = Number(layer.dailyOutput || layer.discountPercent || 0);
+
+          // Check if this looks like percentage-based data (negative or >50)
+          let absoluteCoverage;
+          let absoluteDailyOutput;
+
+          if (layerCoveragePercent < -10 || layerCoveragePercent > 50) {
+            // This is percentage - calculate cumulative absolute value
+            currentCoverage = currentCoverage * (1 + layerCoveragePercent / 100);
+            absoluteCoverage = currentCoverage;
+          } else if (layerCoveragePercent > 0) {
+            // This is already absolute
+            absoluteCoverage = layerCoveragePercent;
+            currentCoverage = layerCoveragePercent;
+          } else {
+            // Use base coverage
+            absoluteCoverage = baseCoverage;
+            currentCoverage = baseCoverage;
+          }
+
+          if (layerDailyOutputPercent < -10 || layerDailyOutputPercent > 50) {
+            // This is percentage - calculate cumulative absolute value
+            currentDailyOutput = currentDailyOutput * (1 + layerDailyOutputPercent / 100);
+            absoluteDailyOutput = currentDailyOutput;
+          } else if (layerDailyOutputPercent > 0) {
+            // This is already absolute
+            absoluteDailyOutput = layerDailyOutputPercent;
+            currentDailyOutput = layerDailyOutputPercent;
+          } else {
+            // Use base output
+            absoluteDailyOutput = baseDailyOutput;
+            currentDailyOutput = baseDailyOutput;
+          }
+
+          console.log(`🔄 Converting layer ${idx + 1}:`, {
+            original: { coverage: layerCoveragePercent, dailyOutput: layerDailyOutputPercent },
+            converted: { coverage: absoluteCoverage, dailyOutput: absoluteDailyOutput }
+          });
+
+          return {
+            ...layer,
+            coverage: absoluteCoverage,
+            dailyOutput: absoluteDailyOutput,
+            discountPercent: absoluteDailyOutput,
+            _isConverted: true
+          };
+        }
+      });
     } else {
       // For new items, default base layer values to empty string
       return [
-        { layer: 1, name: `שכבה 1`, coverage: '', discountPercent: 0, dailyOutput: '' },
-        { layer: 2, name: `שכבה 2`, coverage: 20, discountPercent: 20 },
-        { layer: 3, name: `שכבה 3`, coverage: 20, discountPercent: 20 }
+        { layer: 1, name: `שכבה 1`, coverage: '', discountPercent: 0, dailyOutput: '', _isConverted: true },
+        { layer: 2, name: `שכבה 2`, coverage: 20, discountPercent: 20, dailyOutput: 20, _isConverted: true },
+        { layer: 3, name: `שכבה 3`, coverage: 20, discountPercent: 20, dailyOutput: 20, _isConverted: true }
       ];
     }
   }, [editItem]);
@@ -309,6 +415,14 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
         selectedLayers: editItem?.priceTiers?.[0]?.selectedLayers || 3,
     }],
   });
+
+  // FIX: Update formData.layerSettings when initialLayerSettings changes (after conversion)
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      layerSettings: initialLayerSettings
+    }));
+  }, [initialLayerSettings]);
 
   const getAutoGeneratedItemName = useCallback(() => {
     let baseCategoryName = '';
@@ -533,35 +647,27 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
     : (userPaintDefaults?.desiredProfitPercent ?? '');
 
   const calculateActualCoverage = useCallback((targetLayerIndex) => {
-    const baseCoverage = Number(formData.layerSettings[0]?.coverage) || 0;
-    if (baseCoverage <= 0) return 0;
-
-    let effectiveCoverage = baseCoverage;
-    for (let i = 1; i <= targetLayerIndex; i++) {
-        if (i < formData.layerSettings.length) { 
-            const coverageChangePercent = Number(formData.layerSettings[i].coverage) || 0; // This is a percentage change
-            effectiveCoverage *= (1 + coverageChangePercent / 100);
-        } else {
-            break; 
-        }
+    // FIX: Now we use absolute values directly, not percentages
+    if (targetLayerIndex >= 0 && targetLayerIndex < formData.layerSettings.length) {
+      const layerCoverage = Number(formData.layerSettings[targetLayerIndex]?.coverage);
+      if (layerCoverage > 0) {
+        return layerCoverage;
+      }
     }
-    return effectiveCoverage;
+    // Fallback to base coverage
+    return Number(formData.layerSettings[0]?.coverage) || 0;
   }, [formData.layerSettings]);
 
   const calculateActualOutput = useCallback((targetLayerIndex) => {
-    const baseDailyOutput = Number(formData.layerSettings[0]?.dailyOutput) || 0;
-    if (baseDailyOutput <= 0) return 0;
-
-    let effectiveOutput = baseDailyOutput;
-    for (let i = 1; i <= targetLayerIndex; i++) {
-        if (i < formData.layerSettings.length) { 
-            const outputChangePercent = Number(formData.layerSettings[i].discountPercent) || 0; // This is a percentage change
-            effectiveOutput *= (1 + outputChangePercent / 100);
-        } else {
-            break;
-        }
+    // FIX: Now we use absolute values directly, not percentages
+    if (targetLayerIndex >= 0 && targetLayerIndex < formData.layerSettings.length) {
+      const layerOutput = Number(formData.layerSettings[targetLayerIndex]?.dailyOutput) || Number(formData.layerSettings[targetLayerIndex]?.discountPercent);
+      if (layerOutput > 0) {
+        return layerOutput;
+      }
     }
-    return effectiveOutput;
+    // Fallback to base output
+    return Number(formData.layerSettings[0]?.dailyOutput) || 0;
   }, [formData.layerSettings]);
 
   // NEW: smart number formatter to avoid trailing .0 and keep 1 decimal only when needed
@@ -589,68 +695,18 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
     }));
   };
 
-  // NEW: Update layer using absolute value (converts back to percent so storage stays identical)
+  // FIX: Update layer using absolute value - store absolute values directly
   const handleUpdateLayerAbsolute = (index, field, rawValue) => {
     const value = rawValue === '' ? '' : Number(rawValue);
 
-    if (index === 0) {
-      // Base layer uses direct absolute values
-      handleUpdateLayer(index, field === 'coverage' ? 'coverage' : 'dailyOutput', rawValue);
-      return;
-    }
-
+    // All layers now use direct absolute values - no percentage conversion
     setFormData(prev => {
-      const ls = prev.layerSettings || [];
-
-      // effective calculators based on local ls (not from outer state)
-      const getEffectiveCoverageAt = (targetIdx) => {
-        const base = Number(ls[0]?.coverage) || 0;
-        if (base <= 0) return 0;
-        let eff = base;
-        for (let i = 1; i <= targetIdx; i++) {
-          if (i < ls.length) {
-            const pct = Number(ls[i]?.coverage || 0);
-            eff *= (1 + (pct / 100));
-          }
-        }
-        return eff;
-      };
-      const getEffectiveOutputAt = (targetIdx) => {
-        const base = Number(ls[0]?.dailyOutput) || 0;
-        if (base <= 0) return 0;
-        let eff = base;
-        for (let i = 1; i <= targetIdx; i++) {
-          if (i < ls.length) {
-            const pct = Number(ls[i]?.discountPercent || 0);
-            eff *= (1 + (pct / 100));
-          }
-        }
-        return eff;
-      };
-
-      const prevEff = field === 'coverage'
-        ? getEffectiveCoverageAt(index - 1)
-        : getEffectiveOutputAt(index - 1);
-
-      let percentChange = 0; // Default to 0% change if calculation fails or value is empty/invalid
-      if (value !== '' && !isNaN(value) && isFinite(value) && prevEff > 0) {
-        percentChange = ((Number(value) / prevEff) - 1) * 100;
-      } else if (value !== '') { // If a non-empty, but invalid value is entered, default to some reasonable percentage, or clear
-          // For now, if prevEff is 0 but an absolute value is entered, we can't calculate % accurately.
-          // This implies base layer values are missing/zero. We'll rely on form validation for base layer.
-          // If value is not empty, but prevEff is 0, we can't derive a meaningful percentage.
-          // Let's set it to 0% change, essentially making this layer's output same as prev (which would be 0).
-          // This case should ideally not happen if base layer validation is strict.
-          percentChange = 0;
-      }
-
-
-      const newLayerSettings = ls.map((layer, i) => {
+      const newLayerSettings = prev.layerSettings.map((layer, i) => {
         if (i !== index) return layer;
         if (field === 'coverage') {
-          return { ...layer, coverage: Number(percentChange) };
+          return { ...layer, coverage: value, discountPercent: 0, _isConverted: true };
         } else {
-          return { ...layer, discountPercent: Number(percentChange) };
+          return { ...layer, dailyOutput: value, discountPercent: value, _isConverted: true };
         }
       });
 
@@ -658,13 +714,20 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
     });
   };
 
-  // CHANGE: When adding a new layer, default to +20% on both coverage and output
+  // CHANGE: When adding a new layer, default to +20 on both coverage and output (absolute values)
   const handleAddLayer = () => {
     setFormData(prev => ({
       ...prev,
       layerSettings: [
         ...prev.layerSettings,
-        { layer: prev.layerSettings.length + 1, name: `שכבה ${prev.layerSettings.length + 1}`, coverage: 20, discountPercent: 20, dailyOutput: 0 }
+        {
+          layer: prev.layerSettings.length + 1,
+          name: `שכבה ${prev.layerSettings.length + 1}`,
+          coverage: 20,
+          discountPercent: 20,
+          dailyOutput: 20,
+          _isConverted: true
+        }
       ],
       layers: prev.layerSettings.length + 1
     }));
@@ -803,10 +866,12 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
             layerSettings: formData.layerSettings.map(layer => ({
               layer: layer.layer,
               name: layer.name,
-              coverage: Number(layer.coverage) || 0, // This is base for layer 0, percentage for others
-              discountPercent: Number(layer.discountPercent) || 0, // This is 0 for layer 0, percentage for others
-              dailyOutput: Number(layer.dailyOutput) || 0 // Only relevant for layer 0
+              coverage: Number(layer.coverage) || 0, // Absolute values now
+              discountPercent: Number(layer.discountPercent) || 0,
+              dailyOutput: Number(layer.dailyOutput) || 0,
+              _isConverted: true // Mark as converted to prevent re-conversion on next load
             })),
+            _isConverted: true, // Mark the entire item as converted
             priceTiers: savedPriceTiers, 
 
             averageCustomerPrice: Number(avgCustomerPrice.toFixed(2)),

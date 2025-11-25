@@ -163,13 +163,13 @@ export const calculateItemMetricsForQuantity = (item, quantity, allItems = [], o
     const bucketPrice = parseFloat(item.bucketPrice) || 0;
     const baseCoverage = parseFloat(item.coverage) || 1;
     let totalBucketsNeeded = 0;
-    for (let layerNum = 1; layerNum <= layers; layerNum++) {
+    for (let layerNum = 0; layerNum < layers; layerNum++) {
         let layerCoverage = baseCoverage;
         if (item.layerSettings && Array.isArray(item.layerSettings)) {
-            const layerSetting = item.layerSettings.find(ls => parseInt(ls.layer) === layerNum);
-            if (layerSetting && layerSetting.discountPercent !== undefined) {
-                const coverageBonus = parseFloat(layerSetting.discountPercent) || 0;
-                layerCoverage = baseCoverage * (1 + coverageBonus / 100);
+            const layerSetting = item.layerSettings[layerNum];
+            if (layerSetting && layerSetting.coverage !== undefined) {
+                // FIX: Use absolute values instead of percentage-based
+                layerCoverage = Number(layerSetting.coverage) > 0 ? Number(layerSetting.coverage) : baseCoverage;
             }
         }
         totalBucketsNeeded += quantity / layerCoverage;
@@ -179,14 +179,17 @@ export const calculateItemMetricsForQuantity = (item, quantity, allItems = [], o
 
     // Labor cost calculation
     const workerDailyCost = parseFloat(item.workerDailyCost) || 0;
-    const dailyOutput = parseFloat(item.dailyOutput) || 1;
+    const baseDailyOutput = parseFloat(item.dailyOutput) || 1;
     let totalRawWorkDays = 0;
-    for (let i = 1; i <= layers; i++) {
-        let layerOutput = dailyOutput;
+    for (let i = 0; i < layers; i++) {
+        let layerOutput = baseDailyOutput;
         if (item.layerSettings && Array.isArray(item.layerSettings)) {
-            const layerSetting = item.layerSettings.find(ls => ls.layer === i);
-            if (layerSetting && layerSetting.discountPercent) {
-                layerOutput = dailyOutput * (1 + (parseFloat(layerSetting.discountPercent) || 0) / 100);
+            const layerSetting = item.layerSettings[i];
+            if (layerSetting && (layerSetting.dailyOutput !== undefined || layerSetting.discountPercent !== undefined)) {
+                // FIX: Use absolute values instead of percentage-based
+                layerOutput = Number(layerSetting.dailyOutput || layerSetting.discountPercent) > 0
+                    ? Number(layerSetting.dailyOutput || layerSetting.discountPercent)
+                    : baseDailyOutput;
             }
         }
         totalRawWorkDays += quantity / layerOutput;
@@ -218,9 +221,9 @@ export const calculateItemMetricsForQuantity = (item, quantity, allItems = [], o
     if (item.desiredProfitPercent && Number(item.desiredProfitPercent) > 0) {
         // --- Use new Profit Percentage method ---
         pricingMethod = 'profit_percent';
-        const desiredProfitFactor = 1 + (Number(item.desiredProfitPercent) / 100);
-        totalCustomerPrice = totalContractorCost * desiredProfitFactor;
-        
+        const profit = totalContractorCost * (Number(item.desiredProfitPercent) / 100);
+        totalCustomerPrice = totalContractorCost + profit;
+
         if (totalSquareMetersForPainting > 0) {
             unitPriceCustomer = totalCustomerPrice / totalSquareMetersForPainting;
         } else {
@@ -337,10 +340,10 @@ export const calculateTilingMetrics = (tilingItem, area, projectComplexities = {
         const totalLaborCost = Math.round(billableWorkDays * dailyLaborCost);
         
         const totalCost = totalMaterialsCost + totalLaborCost;
-        
+
         const desiredProfitPercent = Number(tilingItem.desiredProfitPercent) || 30;
-        const customerPrice = Math.round(totalCost * (1 + desiredProfitPercent / 100));
-        const profit = customerPrice - totalCost;
+        const profit = totalCost * (desiredProfitPercent / 100);
+        const customerPrice = Math.round(totalCost + profit);
 
         console.log("🔧 calculateTilingMetrics FIXED - Using laborCostPerDay:", dailyLaborCost);
         console.log("🔧 calculateTilingMetrics FIXED - Total labor cost:", totalLaborCost);
@@ -437,14 +440,17 @@ export const calculateExactPaintMetrics = (item, squareMeters, layersToApply, ro
             const layerSetting = item.layerSettings[i] || item.layerSettings[item.layerSettings.length - 1];
             if (!layerSetting) continue;
 
-            const coverageBonusPercent = Number(layerSetting.coverage || 0);
-            const currentLayerCoverage = baseCoverage * (1 + coverageBonusPercent / 100);
+            // FIX: חישוב עצמאי - כל שכבה משתמשת בערך המוחלט שלה
+            // זה מבטיח שסדר השכבות לא משפיע על התוצאה
+            // אם אין ערך מוגדר, משתמשים בבסיס
+            const currentLayerCoverage = Number(layerSetting.coverage) > 0
+                ? Number(layerSetting.coverage)
+                : baseCoverage;
 
-            // FIX: Daily output calculation for layer 0 (first layer) uses baseDailyOutput directly
-            const currentLayerDailyOutput = i === 0
-                ? baseDailyOutput
-                : baseDailyOutput * (1 + (Number(layerSetting.discountPercent || 0) / 100));
-            
+            const currentLayerDailyOutput = Number(layerSetting.dailyOutput || layerSetting.discountPercent) > 0
+                ? Number(layerSetting.dailyOutput || layerSetting.discountPercent)
+                : baseDailyOutput;
+
             if (currentLayerCoverage > 0) {
                 totalBucketsNeeded += squareMeters / currentLayerCoverage;
             }
@@ -513,9 +519,8 @@ export const calculatePaintMetrics = (item, squareMeters, layersToApply, desired
   const costMetrics = calculateExactPaintMetrics(item, squareMeters, layersToApply, roundUpBuckets, roundUpWorkDays);
   const { totalCost, costPerMeter } = costMetrics;
 
-  const profitFactor = 1 + (Number(desiredProfitPercent) || 0) / 100;
-  const sellingPrice = totalCost * profitFactor;
-  const profit = sellingPrice - totalCost;
+  const profit = totalCost * ((Number(desiredProfitPercent) || 0) / 100);
+  const sellingPrice = totalCost + profit;
   const profitPercentage = totalCost > 0 ? (profit / totalCost) * 100 : 0;
 
   return {

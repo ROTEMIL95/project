@@ -58,7 +58,8 @@ export const calculateExactPaintMetrics = (quantity, layers, paintItem, roundBuc
     const otherCosts = (qty * cleaningCostPerMeter) + (qty * preparationCostPerMeter);
     const totalCost = otherCosts + equipmentCost;
     const profitPercent = Number(paintItem.desiredProfitPercent || 0);
-    const totalSellingPrice = totalCost * (1 + (profitPercent / 100));
+    const totalProfit = totalCost * (profitPercent / 100);
+    const totalSellingPrice = totalCost + totalProfit;
 
     return {
         materialCost: 0,
@@ -99,19 +100,19 @@ export const calculateExactPaintMetrics = (quantity, layers, paintItem, roundBuc
   let totalWorkDays = 0;
 
   // Calculate for each layer
-  for (let layer = 1; layer <= numLayers; layer++) {
-    // Coverage for this layer
+  for (let layer = 0; layer < numLayers; layer++) {
+    // Coverage for this layer - FIX: Use absolute values instead of percentage
     let layerCoverage = baseCoverage;
-    if (layer > 1 && layerSettings[layer - 1]) {
-      const coverageAdjustment = layerSettings[layer - 1].coverage || 0;
-      layerCoverage = baseCoverage * (1 + coverageAdjustment / 100);
+    if (layerSettings[layer]) {
+      const coverageValue = Number(layerSettings[layer].coverage || 0);
+      layerCoverage = coverageValue > 0 ? coverageValue : baseCoverage;
     }
 
-    // Daily output for this layer
+    // Daily output for this layer - FIX: Use absolute values instead of percentage
     let layerDailyOutput = baseDailyOutput;
-    if (layer > 1 && layerSettings[layer - 1]) {
-      const outputAdjustment = layerSettings[layer - 1].dailyOutput || 0;
-      layerDailyOutput = baseDailyOutput * (1 + outputAdjustment / 100);
+    if (layerSettings[layer]) {
+      const outputValue = Number(layerSettings[layer].dailyOutput || layerSettings[layer].discountPercent || 0);
+      layerDailyOutput = outputValue > 0 ? outputValue : baseDailyOutput;
     }
 
     // Calculate buckets and work days for this layer
@@ -134,10 +135,10 @@ export const calculateExactPaintMetrics = (quantity, layers, paintItem, roundBuc
   const otherCosts = (qty * cleaningCostPerMeter) + (qty * preparationCostPerMeter) + equipmentCost;
   const totalCost = materialCost + laborCost + otherCosts;
 
-  // Pricing calculation
-  const totalSellingPrice = totalCost * (1 + (profitPercent / 100));
+  // Pricing calculation - FIX: Direct profit calculation
+  const totalProfit = totalCost * (profitPercent / 100);
+  const totalSellingPrice = totalCost + totalProfit;
   const sellingPricePerMeter = qty > 0 ? totalSellingPrice / qty : 0;
-  const totalProfit = totalSellingPrice - totalCost;
   const costPerMeter = qty > 0 ? totalCost / qty : 0;
 
   return {

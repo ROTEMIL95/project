@@ -36,11 +36,12 @@ export const calculateExactPaintMetrics = (squareMeters, selectedLayers, item, r
     let totalWorkDays = 0;
   
     for (let i = 0; i < selectedLayers; i++) {
-        const layerCoverage = get(item, `layerSettings[${i}].coverage`, 0);
-        const layerDiscount = get(item, `layerSettings[${i}].discountPercent`, 0);
-        
-        const effectiveCoverage = i === 0 ? coverage : coverage * (1 + layerCoverage / 100);
-        const effectiveDailyOutput = i === 0 ? dailyOutput : dailyOutput * (1 + layerDiscount / 100);
+        const layerCoverage = Number(get(item, `layerSettings[${i}].coverage`, 0));
+        const layerDailyOutput = Number(get(item, `layerSettings[${i}].dailyOutput`, 0) || get(item, `layerSettings[${i}].discountPercent`, 0));
+
+        // FIX: Use absolute values instead of percentage-based
+        const effectiveCoverage = layerCoverage > 0 ? layerCoverage : coverage;
+        const effectiveDailyOutput = layerDailyOutput > 0 ? layerDailyOutput : dailyOutput;
 
         if(effectiveCoverage > 0) {
             totalBucketsNeeded += squareMeters / effectiveCoverage;
@@ -55,11 +56,12 @@ export const calculateExactPaintMetrics = (squareMeters, selectedLayers, item, r
     const materialCost = bucketsToPurchase * bucketPrice;
 
     const laborCost = totalWorkDays * workerDailyCost;
-  
+
     const totalCost = materialCost + laborCost + equipmentCost;
-  
-    const totalSellingPrice = totalCost * (1 + desiredProfitPercent / 100);
-    const profit = totalSellingPrice - totalCost;
+
+    // FIX: Direct profit calculation
+    const profit = totalCost * (desiredProfitPercent / 100);
+    const totalSellingPrice = totalCost + profit;
     const profitPercentage = totalCost > 0 ? (profit / totalCost) * 100 : 0;
     const costPerSqm = squareMeters > 0 ? totalCost / squareMeters : 0;
     const pricePerSqm = squareMeters > 0 ? totalSellingPrice / squareMeters : 0;
