@@ -624,60 +624,96 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
         });
         console.log('🔧 [handleApplyAdvancedCalc] Current room before update:', room);
 
-        if (isAdvancedCalcOpen.type === 'paint') {
-            if (wallSqM > 0) {
-                setWallPaintQuantity(wallSqM.toString());
+        // ✅ FIX: Create separate room for each detailedRoom instead of one combined room
+        if (detailedRooms && detailedRooms.length > 0) {
+            const isPaint = isAdvancedCalcOpen.type === 'paint';
+
+            const newRooms = detailedRooms.map((detailedRoom, index) => {
+                // Create unique ID for each room
+                const newRoomId = `${room.id}_${index}_${Date.now()}`;
+
+                return {
+                    id: newRoomId,
+                    name: detailedRoom.name,
+                    isPaintSelected: isPaint,
+                    isPlasterSelected: !isPaint,
+                    isDetailedPaint: isPaint,
+                    isDetailedPlaster: !isPaint,
+
+                    // Quantities for this specific room
+                    ...(isPaint ? {
+                        wallPaintQuantity: detailedRoom.wallArea || 0,
+                        ceilingPaintQuantity: detailedRoom.ceilingArea || 0,
+                        wallPaintId: room.wallPaintId || '',
+                        ceilingPaintId: room.ceilingPaintId || '',
+                        wallPaintLayers: room.wallPaintLayers || 0,
+                        ceilingPaintLayers: room.ceilingPaintLayers || 0
+                    } : {
+                        wallPlasterQuantity: detailedRoom.wallArea || 0,
+                        ceilingPlasterQuantity: detailedRoom.ceilingArea || 0,
+                        wallPlasterId: room.wallPlasterId || '',
+                        ceilingPlasterId: room.ceilingPlasterId || '',
+                        wallPlasterLayers: room.wallPlasterLayers || 0,
+                        ceilingPlasterLayers: room.ceilingPlasterLayers || 0
+                    }),
+
+                    // Store only this room's breakdown
+                    roomBreakdown: [detailedRoom],
+                    calculatedWallArea: detailedRoom.wallArea || 0,
+                    calculatedCeilingArea: detailedRoom.ceilingArea || 0,
+
+                    // Copy complexity from original room
+                    paintComplexity: room.paintComplexity,
+                    paintCustomComplexityDescription: room.paintCustomComplexityDescription,
+                    plasterComplexity: room.plasterComplexity,
+                    plasterCustomComplexityDescription: room.plasterCustomComplexityDescription
+                };
+            });
+
+            console.log('🔧 [handleApplyAdvancedCalc] Created new rooms:', newRooms);
+
+            // Signal to handleUpdateRoom to replace this room with multiple new rooms
+            onUpdateRoom(room.id, {
+                __replaceWithMultiple: true,
+                newRooms: newRooms
+            });
+        } else {
+            // Fallback: if no detailedRooms, update as before (single room)
+            if (isAdvancedCalcOpen.type === 'paint') {
+                if (wallSqM > 0) {
+                    setWallPaintQuantity(wallSqM.toString());
+                }
+                if (ceilingSqM > 0) {
+                    setCeilingPaintQuantity(ceilingSqM.toString());
+                }
+                setIsDetailedPaint(true);
+            } else if (isAdvancedCalcOpen.type === 'plaster') {
+                if (wallSqM > 0) {
+                    setWallPlasterQuantity(wallSqM.toString());
+                }
+                if (ceilingSqM > 0) {
+                    setCeilingPlasterQuantity(ceilingSqM.toString());
+                }
+                setIsPlasterDetailed(true);
             }
-            if (ceilingSqM > 0) {
-                setCeilingPaintQuantity(ceilingSqM.toString());
-            }
-            setIsDetailedPaint(true);
-        } else if (isAdvancedCalcOpen.type === 'plaster') {
-            if (wallSqM > 0) {
-                setWallPlasterQuantity(wallSqM.toString());
-            }
-            if (ceilingSqM > 0) {
-                setCeilingPlasterQuantity(ceilingSqM.toString());
-            }
-            setIsPlasterDetailed(true);
+
+            const updatedRoom = {
+                ...room,
+                roomBreakdown: detailedRooms,
+                calculatedWallArea: wallSqM,
+                calculatedCeilingArea: ceilingSqM,
+                ...(isAdvancedCalcOpen.type === 'paint' ? {
+                    wallPaintQuantity: wallSqM > 0 ? wallSqM : room.wallPaintQuantity,
+                    ceilingPaintQuantity: ceilingSqM > 0 ? ceilingSqM : room.ceilingPaintQuantity
+                } : {
+                    wallPlasterQuantity: wallSqM > 0 ? wallSqM : room.wallPlasterQuantity,
+                    ceilingPlasterQuantity: ceilingSqM > 0 ? ceilingSqM : room.ceilingPlasterQuantity
+                })
+            };
+
+            console.log('🔧 [handleApplyAdvancedCalc] Updated single room:', updatedRoom);
+            onUpdateRoom(room.id, updatedRoom);
         }
-
-        // ✅ FIX: Update room name based on the first detailed room's name (if available)
-        const newRoomName = detailedRooms && detailedRooms.length > 0 && detailedRooms[0].name
-            ? detailedRooms[0].name
-            : room.name;
-
-        const updatedRoom = {
-            ...room,
-            name: newRoomName, // ✅ FIX: Update room name
-            roomBreakdown: detailedRooms,
-            calculatedWallArea: wallSqM,
-            calculatedCeilingArea: ceilingSqM,
-            // ✅ FIX: Also update the wall/ceiling quantities in the room object
-            ...(isAdvancedCalcOpen.type === 'paint' ? {
-                wallPaintQuantity: wallSqM > 0 ? wallSqM : room.wallPaintQuantity,
-                ceilingPaintQuantity: ceilingSqM > 0 ? ceilingSqM : room.ceilingPaintQuantity
-            } : {
-                wallPlasterQuantity: wallSqM > 0 ? wallSqM : room.wallPlasterQuantity,
-                ceilingPlasterQuantity: ceilingSqM > 0 ? ceilingSqM : room.ceilingPlasterQuantity
-            })
-        };
-
-        console.log('🔧 [handleApplyAdvancedCalc] Updated room data:', {
-            oldName: room.name,
-            newName: newRoomName,
-            wallSqM,
-            ceilingSqM,
-            type: isAdvancedCalcOpen.type,
-            wallPaintQuantity: updatedRoom.wallPaintQuantity,
-            ceilingPaintQuantity: updatedRoom.ceilingPaintQuantity,
-            updatedRoom,
-            roomBreakdownLength: detailedRooms?.length || 0,
-            detailedRoomsContent: detailedRooms
-        });
-        console.log('🔧 [handleApplyAdvancedCalc] Calling onUpdateRoom with room ID:', room.id);
-
-        onUpdateRoom(room.id, updatedRoom);
 
         setAdvancedCalcOpen(false);
     }, [isAdvancedCalcOpen, setWallPaintQuantity, setCeilingPaintQuantity, setWallPlasterQuantity, setCeilingPlasterQuantity, onUpdateRoom, room]);
@@ -1394,6 +1430,15 @@ const PaintRoomsManager = React.forwardRef(({
 
     const handleUpdateRoom = useCallback((roomId, updates) => {
         setRooms(prevRooms => {
+            // ✅ FIX: Support replacing one room with multiple rooms
+            if (updates.__replaceWithMultiple && updates.newRooms) {
+                console.log('🔧 [handleUpdateRoom] Replacing room', roomId, 'with', updates.newRooms.length, 'new rooms');
+                // Remove the old room and add all new rooms
+                const filteredRooms = prevRooms.filter(room => room.id !== roomId);
+                return [...filteredRooms, ...updates.newRooms];
+            }
+
+            // Normal update: merge updates into existing room
             const newRooms = prevRooms.map(room =>
                 room.id === roomId ? { ...room, ...updates } : room
             );

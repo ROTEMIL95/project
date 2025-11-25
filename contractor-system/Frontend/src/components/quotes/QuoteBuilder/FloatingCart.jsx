@@ -368,13 +368,6 @@ const renderPaintRoomDetail = (item, onRemoveItem, adjustedPricesMap) => {
     // Get adjusted price if available (for proportional distribution)
     const displayPrice = adjustedPricesMap?.get(item.id) ?? item.totalPrice ?? 0;
 
-    console.log('🎨 [renderPaintRoomDetail]', item.id, {
-      hasAdjustedPrice: adjustedPricesMap?.has(item.id),
-      adjustedPrice: adjustedPricesMap?.get(item.id),
-      originalPrice: item.totalPrice,
-      displayPrice
-    });
-
     // Determine if it's paint or plaster from description
     const descLower = (item.description || '').toLowerCase();
     const isPaint = descLower.includes('צבע') || item.paintType;
@@ -406,31 +399,12 @@ const renderPaintRoomDetail = (item, onRemoveItem, adjustedPricesMap) => {
 
     const layers = item.layers || 0;
 
-    console.log('🎨 [renderPaintRoomDetail] Calculated layers:', layers);
-
     // Check if this item has both walls and ceiling
     // Description containing "|" means it has both (e.g., "קירות: X | תקרה: Y")
     const descriptionHasBoth = item.description?.includes('|');
     const hasWalls = item.description?.includes('קירות') || Number(item.wallPaintQuantity || 0) > 0;
     const hasCeiling = item.description?.includes('תקרה') || Number(item.ceilingPaintQuantity || 0) > 0;
     const hasBoth = (hasWalls && hasCeiling) || descriptionHasBoth;
-
-    console.log('🎨 [FloatingCart renderPaintRoomDetail]', item.name, {
-        id: item.id,
-        source: item.source,
-        wallPaintQuantity: item.wallPaintQuantity,
-        ceilingPaintQuantity: item.ceilingPaintQuantity,
-        quantity: item.quantity,
-        itemName: item.itemName,
-        paintName: item.paintName,
-        wallPaintName: item.wallPaintName,
-        ceilingPaintName: item.ceilingPaintName,
-        description: item.description,
-        hasWalls,
-        hasCeiling,
-        hasBoth,
-        displayTypeName
-    });
 
     // Parse walls and ceiling info from description if available
     let wallsText = '';
@@ -449,15 +423,6 @@ const renderPaintRoomDetail = (item, onRemoveItem, adjustedPricesMap) => {
 
         wallsLayers = wallsLayersMatch ? parseInt(wallsLayersMatch[1]) : (item.wallPaintLayers || 0);
         ceilingLayers = ceilingLayersMatch ? parseInt(ceilingLayersMatch[1]) : (item.ceilingPaintLayers || 0);
-
-        console.log('🎨 [renderPaintRoomDetail] Extracted layers:', {
-            wallsText,
-            ceilingText,
-            wallsLayers,
-            ceilingLayers,
-            wallsLayersMatch,
-            ceilingLayersMatch
-        });
 
         // Remove layers info from text (we'll show it separately)
         wallsText = wallsText.replace(/\s*-?\s*\d+\s*שכבות?/, '').trim();
@@ -592,13 +557,6 @@ const renderPaintRoomDetail = (item, onRemoveItem, adjustedPricesMap) => {
 const renderItem = (item, onRemoveItem, adjustedPricesMap) => {
     // Get adjusted price if available (for proportional distribution)
     const displayPrice = adjustedPricesMap?.get(item.id) ?? item.totalPrice ?? 0;
-
-    console.log('📦 [renderItem]', item.id, {
-      hasAdjustedPrice: adjustedPricesMap?.has(item.id),
-      adjustedPrice: adjustedPricesMap?.get(item.id),
-      originalPrice: item.totalPrice,
-      displayPrice
-    });
 
     // בדיקה אם זה פריט הריסה עם רמת קושי
     const hasDifficulty = item.source === 'demolition_calculator' && item.difficultyData;
@@ -933,13 +891,6 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
 export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToSummary, projectComplexities, onUpdateItem }) {
     const [isOpen, setIsOpen] = useState(false);
 
-    // Debug: log items length and trigger on every render
-    useEffect(() => {
-        console.log('[FloatingCart useEffect] Items changed:', items.length, 'Items:', items);
-    }, [items]);
-
-    console.log('[FloatingCart render] Items count:', items.length);
-
     // 🔧 FIX: Count visible items (not summary items) for hasItems check
     const visibleItems = items.filter(item => item.source !== 'paint_plaster_category_summary');
     const hasItems = visibleItems.length > 0;
@@ -1004,10 +955,7 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
 
     // 🔧 FIX: Distribute totalPrice proportionally to ensure items sum matches exactly
     const adjustedPricesMap = useMemo(() => {
-      console.log('🔧 [adjustedPricesMap] Recalculating...');
-
       if (!hasItems) {
-        console.log('🔧 [adjustedPricesMap] No items, returning empty map');
         return new Map();
       }
 
@@ -1017,20 +965,14 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
       // Get paint/plaster items that need adjustment
       const paintPlasterItems = visItems.filter(item => item.categoryId === 'cat_paint_plaster');
 
-      console.log('🔧 [adjustedPricesMap] Found paint/plaster items:', paintPlasterItems.length);
-
       if (paintPlasterItems.length === 0) {
-        console.log('🔧 [adjustedPricesMap] No paint/plaster items, returning empty map');
         return new Map();
       }
 
       // Find the summary item to get the target total (from totalMetrics)
       const summaryItem = items.find(item => item.source === 'paint_plaster_category_summary');
 
-      console.log('🔧 [adjustedPricesMap] Summary item:', summaryItem ? `Found (${summaryItem.totalPrice}₪)` : 'NOT FOUND');
-
       if (!summaryItem) {
-        console.log('🔧 [adjustedPricesMap] No summary item, returning empty map');
         return new Map();
       }
 
@@ -1038,11 +980,6 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
 
       // Distribute proportionally
       const adjustedMap = distributeProportionally(paintPlasterItems, targetTotal);
-
-      console.log('🔧 [adjustedPricesMap] Generated map with', adjustedMap.size, 'entries');
-      adjustedMap.forEach((price, id) => {
-        console.log(`  - ${id}: ${price}₪`);
-      });
 
       return adjustedMap;
     }, [items]);
@@ -1120,13 +1057,6 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                 .filter(it => it.source !== 'paint_plaster_category_summary')
                                                 .reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0);
 
-                                        console.log(`[FloatingCart] Category ${catKey}:`, {
-                                            itemsCount: group.items.length,
-                                            visibleItemsCount: group.items.filter(it => it.source !== 'paint_plaster_category_summary').length,
-                                            hasSummaryItem: !!summaryItem,
-                                            categorySubtotal
-                                        });
-
                                         return (
                                             <div key={catKey} className="space-y-3">
                                                 {/* Category header */}
@@ -1159,22 +1089,15 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                                                       // Check for room calculator items
                                                       const isRoomCalcItem = item.source === 'paint_room_calc' || item.source === 'plaster_room_calc';
 
-                                                      // ✅ FIX: Only treat as summary if explicitly marked OR has detailedBreakdown BUT NOT paint_room_detail
+                                                      // ✅ FIX: Only treat as summary if explicitly marked (not based on detailedBreakdown)
                                                       const isPaintSummary = item.categoryId === 'cat_paint_plaster' &&
                                                         !isPaintRoomDetail &&  // Prevent paint_room_detail from being treated as summary
-                                                        (item.source === 'paint_plaster_category_summary' || Array.isArray(item?.detailedBreakdown));
+                                                        item.source === 'paint_plaster_category_summary';
 
                                                       // Manual calc items - render with simple styling matching paint room detail
                                                       if (isManualItem) {
                                                           // Get adjusted price if available (for proportional distribution)
                                                           const displayPrice = adjustedPricesMap?.get(item.id) ?? item.totalPrice ?? 0;
-
-                                                          console.log('🖐️ [renderManualItem]', item.id, {
-                                                            hasAdjustedPrice: adjustedPricesMap?.has(item.id),
-                                                            adjustedPrice: adjustedPricesMap?.get(item.id),
-                                                            originalPrice: item.totalPrice,
-                                                            displayPrice
-                                                          });
 
                                                           // Extract clean item name - remove extra details that are shown in ManualCartDetails
                                                           const itemName = item.description || item.name || 'עבודה ידנית';

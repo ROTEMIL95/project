@@ -136,6 +136,14 @@ export const useUserStore = create((set, get) => ({
             plumbingSubcontractorItems: profileData?.plumbing_subcontractor_items || [],
             demolitionItems: profileData?.demolition_items || [],
             demolitionDefaults: profileData?.demolition_defaults || {},
+            // ✅ ADD: Missing commitment and company data for quotes
+            contractorCommitments: profileData?.contractor_commitments || '',
+            clientCommitments: profileData?.client_commitments || '',
+            companyInfo: profileData?.company_info || {},
+            categoryCommitments: profileData?.category_commitments || {},
+            categoryActiveMap: profileData?.category_active_map || {},
+            tilingWorkTypes: profileData?.tiling_work_types || [],
+            defaultPaymentTerms: profileData?.default_payment_terms || []
           }
         } : null;
 

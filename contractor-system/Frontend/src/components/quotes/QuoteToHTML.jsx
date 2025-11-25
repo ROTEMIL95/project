@@ -106,8 +106,6 @@ export default function QuoteToHTML({ quote }) {
         totalWorkDays: Number(summaryItem.workDuration) || 0,
         itemCount
       };
-
-      console.log('[QuoteToHTML] Using summary item for category', categoryId, categorySummaries[categoryId]);
     } else {
       // Fallback: calculate from items
       const totalPrice = items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
@@ -128,8 +126,6 @@ export default function QuoteToHTML({ quote }) {
         totalWorkDays,
         itemCount
       };
-
-      console.log('[QuoteToHTML] Calculating summary from items for category', categoryId, categorySummaries[categoryId]);
     }
   });
 
@@ -939,7 +935,8 @@ export default function QuoteToHTML({ quote }) {
               const items = itemsByCategory[categoryId];
               const style = CATEGORY_STYLES[categoryId] || CATEGORY_STYLES['cat_construction'];
               const summary = categorySummaries[categoryId];
-              const commitment = quote.categoryCommitments?.[categoryId] || '';
+              // ✅ FIX: Use general contractor commitment instead of category-specific
+              const commitment = quote.companyInfo?.contractorCommitments || '';
               const timings = quote.categoryTimings?.[categoryId] || {};
               
               return `
@@ -975,16 +972,6 @@ export default function QuoteToHTML({ quote }) {
                       </thead>
                       <tbody>
                         ${items.map(item => {
-                          // Debug log
-                          if (categoryId === 'cat_paint_plaster') {
-                            console.log('🔍 [QuoteToHTML] Paint item:', {
-                              name: item.name,
-                              complexity: item.complexity,
-                              customComplexityDescription: item.customComplexityDescription,
-                              allFields: Object.keys(item)
-                            });
-                          }
-
                           // Helper function to get complexity display text
                           const getComplexityText = (item) => {
                             if (!item.complexity || item.complexity === 'none') return '';
