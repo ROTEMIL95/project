@@ -1534,6 +1534,14 @@ export default React.forwardRef(function TilingCategoryEditor({
         </div>
       </div>
 
+      {/* Category Summary Card */}
+      <TilingSummaryCard
+        metrics={currentCategorySummaryMetrics}
+        preciseWorkDays={preciseWorkDays}
+        setPreciseWorkDays={setPreciseWorkDays}
+        formatPrice={formatPrice}
+      />
+
       {/* TilingManualItemDialog - תיקון: העברת userDefaults */}
       <TilingManualItemDialog
         open={showManualDialog}
