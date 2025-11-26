@@ -409,6 +409,12 @@ export default function QuoteCreate() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [savedQuoteId, setSavedQuoteId] = useState(null);
 
+  // Debug: Track showShareDialog changes
+  useEffect(() => {
+    console.log('🔴 [QuoteCreate] showShareDialog state changed to:', showShareDialog);
+    console.log('🔴 [QuoteCreate] savedQuoteId:', savedQuoteId);
+  }, [showShareDialog, savedQuoteId]);
+
   const { toast } = useToast();
   
   // ✅ ADD THIS LINE - Initialize the profit guard hook
@@ -1564,20 +1570,13 @@ export default function QuoteCreate() {
 
       // Navigate to SentQuotes after save
       if (!isDraft) {
-        if (existingQuoteId) {
-          // For existing quotes, navigate immediately after update
-          setTimeout(() => {
-            navigate(createPageUrl('SentQuotes'));
-          }, 500);
-        } else {
-          // For new quotes, show share dialog and then navigate
-          setSavedQuoteId(savedQuote?.id || existingQuoteId);
-          setShowShareDialog(true);
-          // Navigate after a delay to allow user to see the share dialog
-          setTimeout(() => {
-            navigate(createPageUrl('SentQuotes'));
-          }, 1500);
-        }
+        // For all sent quotes (new or existing), show share dialog - navigation happens when user closes the dialog
+        const quoteIdToShare = savedQuote?.id || existingQuoteId;
+        console.log('🔵 [DEBUG] Opening share dialog for quote:', quoteIdToShare);
+        console.log('🔵 [DEBUG] isDraft:', isDraft);
+        setSavedQuoteId(quoteIdToShare);
+        setShowShareDialog(true);
+        console.log('🔵 [DEBUG] After setting showShareDialog to true');
       } else {
         // For drafts, navigate immediately
         setTimeout(() => {
@@ -2761,9 +2760,11 @@ export default function QuoteCreate() {
       <ShareQuoteDialog
         open={showShareDialog}
         onOpenChange={(open) => {
+          console.log('🟡 [QuoteCreate] ShareQuoteDialog onOpenChange called with:', open);
           setShowShareDialog(open);
           // Navigate to SentQuotes when dialog closes
           if (!open) {
+            console.log('🟡 [QuoteCreate] Navigating to SentQuotes because dialog closed');
             navigate(createPageUrl('SentQuotes'));
           }
         }}
