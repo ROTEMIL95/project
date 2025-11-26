@@ -82,6 +82,29 @@ const cleanItemName = (name) => {
     return cleaned.trim();
 };
 
+// Helper: get room size category from room name
+const getRoomSizeCategory = (roomName) => {
+    if (!roomName) return 'medium';
+    const lowerName = roomName.toLowerCase();
+    if (lowerName.includes('קטן')) return 'small';
+    if (lowerName.includes('גדול')) return 'large';
+    if (lowerName.includes('בינוני')) return 'medium';
+    return 'medium';
+};
+
+// Helper: get color styles for room size
+const getRoomSizeBorderColor = (size) => {
+    switch (size) {
+        case 'small':
+            return 'border-green-300';
+        case 'large':
+            return 'border-purple-300';
+        case 'medium':
+        default:
+            return 'border-blue-300';
+    }
+};
+
 // Helper: extract walls/ceiling data from snapshot (support nested keys)
 const extractManualParts = (item) => {
   const snap = item?.manualFormSnapshot || item?.manualMeta || {};
@@ -847,8 +870,20 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
 
                         const roomPrice = room.metricPrice > 0 ? room.metricPrice : proportionalPrice;
 
+                        // Calculate walls and ceiling prices separately
+                        const wallsPrice = room.wallsArea > 0 && roomEffectiveArea > 0
+                            ? Math.round(roomPrice * (room.wallsArea / roomEffectiveArea))
+                            : 0;
+                        const ceilingPrice = room.includeCeiling && room.ceilingArea > 0 && roomEffectiveArea > 0
+                            ? Math.round(roomPrice * (room.ceilingArea / roomEffectiveArea))
+                            : 0;
+
+                        // Get room size and corresponding border color
+                        const roomSize = getRoomSizeCategory(room.name);
+                        const borderColor = getRoomSizeBorderColor(roomSize);
+
                         return (
-                            <div key={`${room.name}-${index}`} className="rounded-md bg-gray-50 px-3 py-2 mb-2">
+                            <div key={`${room.name}-${index}`} className={`rounded-md bg-gray-50 px-3 py-2 mb-2 border-r-4 ${borderColor}`}>
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="font-semibold text-gray-800 text-sm">{room.name}</span>
                                     <span className="font-bold text-gray-900">{formatPrice(roomPrice)} ₪</span>
@@ -856,9 +891,12 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
 
                                 {/* Paint details - use room-specific data */}
                                 {room.wallsArea > 0 && (
-                                    <div className="text-xs text-gray-600 mt-1">
-                                        <div className="font-medium text-gray-700">צבע</div>
-                                        <div>
+                                    <div className="text-xs text-gray-600 mt-1 bg-white rounded p-2 border border-blue-100">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <div className="font-medium text-gray-700">צבע (קירות)</div>
+                                            {wallsPrice > 0 && <span className="font-semibold text-blue-700">{formatPrice(wallsPrice)} ₪</span>}
+                                        </div>
+                                        <div className="text-gray-600">
                                             {room.paintItemName && <span>סוג: {cleanItemName(room.paintItemName)}</span>}
                                             {!room.paintItemName && globalWallPaintName && <span>סוג: {globalWallPaintName}</span>}
                                             {room.paintLayers > 0 && <span> • שכבות: {room.paintLayers}</span>}
@@ -870,9 +908,12 @@ const renderPaintSummary = (item, onRemoveItem, fallbackRooms, onUpdateItem) => 
 
                                 {/* Ceiling section - if enabled */}
                                 {room.includeCeiling && room.ceilingArea > 0 && (
-                                    <div className="text-xs text-gray-600 mt-1">
-                                        <div className="font-medium text-gray-700">תקרה</div>
-                                        <div>
+                                    <div className="text-xs text-gray-600 mt-1 bg-white rounded p-2 border border-purple-100">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <div className="font-medium text-gray-700">צבע (תקרה)</div>
+                                            {ceilingPrice > 0 && <span className="font-semibold text-purple-700">{formatPrice(ceilingPrice)} ₪</span>}
+                                        </div>
+                                        <div className="text-gray-600">
                                             {globalCeilingPaintName && <span>סוג: {globalCeilingPaintName}</span>}
                                             {globalCeilingLayers > 0 && <span> • שכבות: {safeToFixed(globalCeilingLayers, 0)}</span>}
                                             <span> • כמות: {safeToFixed(room.ceilingArea)} מ"ר</span>

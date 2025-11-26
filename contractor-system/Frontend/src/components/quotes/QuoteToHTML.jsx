@@ -4,61 +4,61 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { formatPrice } from '@/lib/utils';
 
-// מפת סגנון מונוכרומי לקטגוריות - עיצוב עסקי
+// מפת צבעים לקטגוריות - צבעים עדינים ורכים
 const CATEGORY_STYLES = {
   'cat_paint_plaster': {
     name: 'צבע ושפכטל',
     icon: '🎨',
-    bgColor: '#ffffff',
-    borderColor: '#d1d5db',
-    textColor: '#111827',
-    accentColor: '#6b7280',
-    lightBg: '#f9fafb'
+    bgColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    textColor: '#1E40AF',
+    accentColor: '#60A5FA',
+    lightBg: '#F0F9FF'
   },
   'cat_tiling': {
     name: 'ריצוף וחיפוי',
     icon: '📦',
-    bgColor: '#ffffff',
-    borderColor: '#d1d5db',
-    textColor: '#111827',
-    accentColor: '#6b7280',
-    lightBg: '#f9fafb'
+    bgColor: '#FFF7ED',
+    borderColor: '#FED7AA',
+    textColor: '#C2410C',
+    accentColor: '#FB923C',
+    lightBg: '#FFF7ED'
   },
   'cat_demolition': {
     name: 'הריסה ופינוי',
     icon: '🔨',
-    bgColor: '#ffffff',
-    borderColor: '#d1d5db',
-    textColor: '#111827',
-    accentColor: '#6b7280',
-    lightBg: '#f9fafb'
+    bgColor: '#FFF1F2',
+    borderColor: '#FECACA',
+    textColor: '#BE123C',
+    accentColor: '#FB7185',
+    lightBg: '#FFF1F2'
   },
   'cat_electricity': {
     name: 'חשמל',
     icon: '💡',
-    bgColor: '#ffffff',
-    borderColor: '#d1d5db',
-    textColor: '#111827',
-    accentColor: '#6b7280',
-    lightBg: '#f9fafb'
+    bgColor: '#FEFCE8',
+    borderColor: '#FEF08A',
+    textColor: '#A16207',
+    accentColor: '#FDE047',
+    lightBg: '#FEFCE8'
   },
   'cat_plumbing': {
     name: 'אינסטלציה',
     icon: '🔧',
-    bgColor: '#ffffff',
-    borderColor: '#d1d5db',
-    textColor: '#111827',
-    accentColor: '#6b7280',
-    lightBg: '#f9fafb'
+    bgColor: '#F0FDFA',
+    borderColor: '#99F6E4',
+    textColor: '#0F766E',
+    accentColor: '#5EEAD4',
+    lightBg: '#F0FDFA'
   },
   'cat_construction': {
     name: 'בינוי (כללי)',
     icon: '🏗️',
-    bgColor: '#ffffff',
-    borderColor: '#d1d5db',
-    textColor: '#111827',
-    accentColor: '#6b7280',
-    lightBg: '#f9fafb'
+    bgColor: '#FAF5FF',
+    borderColor: '#E9D5FF',
+    textColor: '#7C3AED',
+    accentColor: '#C084FC',
+    lightBg: '#FAF5FF'
   }
 };
 
@@ -158,11 +158,10 @@ export default function QuoteToHTML({ quote }) {
       }
       
       .quote-header {
-        background: #111827;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
         color: white;
         padding: 48px 40px;
         text-align: center;
-        border-bottom: 4px solid #1f2937;
       }
       
       .quote-header h1 {
@@ -363,7 +362,23 @@ export default function QuoteToHTML({ quote }) {
       .items-table tbody tr:hover {
         background: #fafafa;
       }
-      
+
+      /* תיחום צבעוני לפריטים לפי גודל חדר */
+      .room-small {
+        border-right: 4px solid #10b981 !important;
+        background: linear-gradient(to left, #ecfdf5, #ffffff) !important;
+      }
+
+      .room-medium {
+        border-right: 4px solid #3b82f6 !important;
+        background: linear-gradient(to left, #eff6ff, #ffffff) !important;
+      }
+
+      .room-large {
+        border-right: 4px solid #a855f7 !important;
+        background: linear-gradient(to left, #faf5ff, #ffffff) !important;
+      }
+
       /* סיכום קטגוריה - עיצוב עדין */
       .category-summary {
         background: #fafafa;
@@ -935,8 +950,8 @@ export default function QuoteToHTML({ quote }) {
               const items = itemsByCategory[categoryId];
               const style = CATEGORY_STYLES[categoryId] || CATEGORY_STYLES['cat_construction'];
               const summary = categorySummaries[categoryId];
-              // ✅ FIX: Use general contractor commitment instead of category-specific
-              const commitment = quote.companyInfo?.contractorCommitments || '';
+              // Use category-specific commitment from database, fallback to general commitment
+              const commitment = quote.categoryCommitments?.[categoryId] || quote.companyInfo?.contractorCommitments || '';
               const timings = quote.categoryTimings?.[categoryId] || {};
               
               return `
@@ -1004,6 +1019,15 @@ export default function QuoteToHTML({ quote }) {
                             return ` (${complexityData.name})`;
                           };
 
+                          // Helper function to detect room size from item name
+                          const getRoomSizeClass = (item) => {
+                            const name = (item.name || item.description || '').toLowerCase();
+                            if (name.includes('קטן')) return 'room-small';
+                            if (name.includes('גדול')) return 'room-large';
+                            if (name.includes('בינוני')) return 'room-medium';
+                            return '';
+                          };
+
                           // Helper function to get paint type name
                           const getPaintTypeName = (item, subType) => {
                             const type = subType || item.paintType || item.plasterType;
@@ -1031,7 +1055,9 @@ export default function QuoteToHTML({ quote }) {
                               'effects': 'אפקטים',
                               'tambourflex': 'טמבורפלקס',
                               'gypsum': 'גבס',
-                              'plaster': 'טיח'
+                              'plaster': 'טיח',
+                              'poksi': 'פוקסי',
+                              'foxy': 'פוקסי'
                             };
 
                             // If it's an English ID, convert to Hebrew
@@ -1055,15 +1081,22 @@ export default function QuoteToHTML({ quote }) {
                             const totalQuantity = (item.wallPaintQuantity || 0) + (item.ceilingPaintQuantity || 0);
                             const safeQuantity = totalQuantity > 0 ? totalQuantity : (item.quantity || 1);
 
+                            // Get room size class once for both walls and ceiling
+                            const roomSizeClass = getRoomSizeClass(item);
+
                             if (item.wallPaintQuantity > 0) {
                               const wallPricePerSqm = item.wallPaintQuantity > 0 && safeQuantity > 0 ? Math.round((item.totalPrice * (item.wallPaintQuantity / safeQuantity)) / item.wallPaintQuantity) : 0;
                               const wallTotalPrice = safeQuantity > 0 ? Math.round(item.totalPrice * (item.wallPaintQuantity / safeQuantity)) : Math.round(item.totalPrice / 2);
 
+                              // Get paint type - prefer wallPaintName or paintType
+                              const wallPaintType = getPaintTypeName(item, item.wallPaintName || item.paintType);
+                              const wallLayers = item.wallPaintLayers || item.layers || 1;
+
                               rows += `
-                              <tr>
+                              <tr class="${roomSizeClass}">
                                 <td><strong>${item.name || item.description || ''} - קירות${getComplexityText(item)}</strong></td>
-                                <td>${getPaintTypeName(item, item.wallPaintName)}</td>
-                                <td>${item.wallPaintLayers || item.layers || 1}</td>
+                                <td>${wallPaintType}</td>
+                                <td>${wallLayers}</td>
                                 <td>${formatPrice(item.wallPaintQuantity || 0)} מ"ר</td>
                                 <td>₪${formatPrice(wallPricePerSqm)}</td>
                                 <td><strong>₪${formatPrice(wallTotalPrice)}</strong></td>
@@ -1074,11 +1107,15 @@ export default function QuoteToHTML({ quote }) {
                               const ceilingPricePerSqm = item.ceilingPaintQuantity > 0 && safeQuantity > 0 ? Math.round((item.totalPrice * (item.ceilingPaintQuantity / safeQuantity)) / item.ceilingPaintQuantity) : 0;
                               const ceilingTotalPrice = safeQuantity > 0 ? Math.round(item.totalPrice * (item.ceilingPaintQuantity / safeQuantity)) : Math.round(item.totalPrice / 2);
 
+                              // Get ceiling paint type - prefer ceilingPaintName
+                              const ceilingPaintType = getPaintTypeName(item, item.ceilingPaintName || item.paintType);
+                              const ceilingLayers = item.ceilingPaintLayers || item.layers || 1;
+
                               rows += `
-                              <tr>
+                              <tr class="${roomSizeClass}">
                                 <td><strong>${item.name || item.description || ''} - תקרה${getComplexityText(item)}</strong></td>
-                                <td>${getPaintTypeName(item, item.ceilingPaintName)}</td>
-                                <td>${item.ceilingPaintLayers || item.layers || 1}</td>
+                                <td>${ceilingPaintType}</td>
+                                <td>${ceilingLayers}</td>
                                 <td>${formatPrice(item.ceilingPaintQuantity || 0)} מ"ר</td>
                                 <td>₪${formatPrice(ceilingPricePerSqm)}</td>
                                 <td><strong>₪${formatPrice(ceilingTotalPrice)}</strong></td>
@@ -1089,9 +1126,10 @@ export default function QuoteToHTML({ quote }) {
                           } else {
                             // Regular single-row display
                             const pricePerSqm = item.quantity > 0 ? Math.round(item.totalPrice / item.quantity) : 0;
+                            const roomSizeClass = getRoomSizeClass(item);
 
                               return `
-                              <tr>
+                              <tr class="${roomSizeClass}">
                                 <td><strong>${item.name || item.description || ''}${getComplexityText(item)}</strong></td>
                                 ${categoryId === 'cat_tiling' && item.workType ? `
                                 <td>${item.workType || '-'}</td>

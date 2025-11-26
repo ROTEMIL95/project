@@ -72,7 +72,7 @@ const COMPLEXITY_OPTIONS = [
 // פונקציה לקביעת האייקון המתאים לכל סוג חלל
 const getRoomIcon = (roomType) => {
   const lowerRoomType = roomType.toLowerCase();
-  
+
   if (lowerRoomType.includes('שינה')) {
     return <Bed className="h-4 w-4 text-purple-500" />;
   }
@@ -87,6 +87,66 @@ const getRoomIcon = (roomType) => {
   }
   // ברירת מחדל לחללים אחרים
   return <Building className="h-4 w-4 text-gray-500" />;
+};
+
+// פונקציה לזיהוי גודל החדר מתוך שם החדר
+const getRoomSizeCategory = (roomType) => {
+  const lowerRoomType = roomType.toLowerCase();
+
+  if (lowerRoomType.includes('קטן')) {
+    return 'small';
+  }
+  if (lowerRoomType.includes('בינוני')) {
+    return 'medium';
+  }
+  if (lowerRoomType.includes('גדול')) {
+    return 'large';
+  }
+  // ברירת מחדל לחדרים ללא סיווג גודל
+  return 'medium';
+};
+
+// פונקציה להחזרת הצבעים לפי גודל החדר
+const getRoomSizeStyles = (size) => {
+  switch (size) {
+    case 'small':
+      return {
+        border: 'border-green-500',
+        borderHover: 'hover:border-green-400',
+        bg: 'from-green-50 via-green-50/70 to-white',
+        ring: 'ring-green-200',
+        badge: 'bg-green-500',
+        text: 'text-green-700',
+        icon: 'text-green-600',
+        label: 'קטן',
+        badgeLabel: 'S'
+      };
+    case 'large':
+      return {
+        border: 'border-purple-500',
+        borderHover: 'hover:border-purple-400',
+        bg: 'from-purple-50 via-purple-50/70 to-white',
+        ring: 'ring-purple-200',
+        badge: 'bg-purple-500',
+        text: 'text-purple-700',
+        icon: 'text-purple-600',
+        label: 'גדול',
+        badgeLabel: 'L'
+      };
+    case 'medium':
+    default:
+      return {
+        border: 'border-blue-500',
+        borderHover: 'hover:border-blue-400',
+        bg: 'from-blue-50 via-blue-50/70 to-white',
+        ring: 'ring-blue-200',
+        badge: 'bg-blue-500',
+        text: 'text-blue-700',
+        icon: 'text-blue-600',
+        label: 'בינוני',
+        badgeLabel: 'M'
+      };
+  }
 };
 
 export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, workType = '', initialRoomData, paintItemData, plasterItemData, userDefaults }) {
@@ -421,7 +481,8 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
 
             return {
               id: selectedRoom.id, // Include room ID for restoration
-              name: roomData.roomType,
+              name: roomData.roomType, // Always use the actual room type name from roomData
+              roomName: roomData.roomType, // Keep the original room type for reference
               quantity: quantity,
               includeCeiling: selectedRoom.includeCeiling || false,
               difficultyData: selectedRoom.difficultyData, // Include complexity data
@@ -614,13 +675,17 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
 
                     const currentComplexity = selectedRoom?.difficultyData?.id || COMPLEXITY_OPTIONS[0].id;
 
+                    // Get room size category and corresponding styles
+                    const roomSize = getRoomSizeCategory(room.roomType);
+                    const sizeStyles = getRoomSizeStyles(roomSize);
+
                     return (
                   <Card
                     key={room.id}
                     className={`transition-all duration-200 ${
                       isSelected
-                        ? 'border-2 border-indigo-500 bg-gradient-to-br from-indigo-50 via-indigo-50/70 to-white shadow-lg ring-2 ring-indigo-200 ring-offset-1'
-                        : 'border border-gray-200 hover:border-indigo-300 hover:shadow-md'
+                        ? `border-2 ${sizeStyles.border} bg-gradient-to-br ${sizeStyles.bg} shadow-lg ring-2 ${sizeStyles.ring} ring-offset-1`
+                        : `border border-gray-200 ${sizeStyles.borderHover} hover:shadow-md`
                     }`}
                   >
                     <CardHeader className="pb-3">
