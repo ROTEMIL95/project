@@ -415,6 +415,15 @@ export default function QuoteCreate() {
     console.log('🔴 [QuoteCreate] savedQuoteId:', savedQuoteId);
   }, [showShareDialog, savedQuoteId]);
 
+  // Debug: Log user data on mount
+  useEffect(() => {
+    if (user) {
+      console.log('👤 [QuoteCreate] User loaded:', user);
+      console.log('👤 [QuoteCreate] companyInfo:', user?.user_metadata?.companyInfo);
+      console.log('👤 [QuoteCreate] categoryCommitments:', user?.user_metadata?.categoryCommitments);
+    }
+  }, [user]);
+
   const { toast } = useToast();
   
   // ✅ ADD THIS LINE - Initialize the profit guard hook
@@ -1549,6 +1558,11 @@ export default function QuoteCreate() {
       };
 
       console.log('[QuoteCreate] 💾 Saving quote with categoryTimings:', categoryTimings);
+      console.log('[QuoteCreate] 💾 user:', user);
+      console.log('[QuoteCreate] 💾 user.user_metadata:', user?.user_metadata);
+      console.log('[QuoteCreate] 💾 companyInfo:', user?.user_metadata?.companyInfo);
+      console.log('[QuoteCreate] 💾 categoryCommitments:', user?.user_metadata?.categoryCommitments);
+      console.log('[QuoteCreate] 💾 projectInfo:', projectInfo);
       console.log('[QuoteCreate] 💾 Full quoteDataToSave:', quoteDataToSave);
 
       let savedQuote;
