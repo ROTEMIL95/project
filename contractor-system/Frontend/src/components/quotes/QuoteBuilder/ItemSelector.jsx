@@ -2041,12 +2041,14 @@ const PaintRoomsManager = React.forwardRef(({
 
             const returnData = {
                 quoteItems: quoteItems,
-                rawRooms: rooms // Return the full internal rooms state for parent to store in categoryDataMap
+                rawRooms: rooms, // Return the full internal rooms state for parent to store in categoryDataMap
+                stagedManualItems: manualItems // ✅ FIX: Return manual items explicitly so they're preserved during navigation
             };
 
             console.log('💾 [PaintRoomsManager saveData] Returning data:', {
                 quoteItemsCount: quoteItems.length,
                 rawRoomsCount: rooms.length,
+                stagedManualItemsCount: manualItems.length,
                 roomsWithBreakdown: rooms.filter(r => r.roomBreakdown?.length > 0).map(r => ({
                     id: r.id,
                     name: r.name,
@@ -3703,16 +3705,22 @@ const ItemSelector = React.forwardRef(({
         }
     } else if (categoryIdToSave === 'cat_paint_plaster') {
         if (paintRoomsRef.current && typeof paintRoomsRef.current.saveData === 'function') {
-            const savedPaintData = paintRoomsRef.current.saveData(); // Returns { quoteItems, rawRooms }
+            const savedPaintData = paintRoomsRef.current.saveData(); // Returns { quoteItems, rawRooms, stagedManualItems }
             itemsFromCurrentCategoryComponent = savedPaintData?.quoteItems || [];
+
+            // ✅ FIX: Extract stagedManualItems from the saved data instead of global state
+            const manualItemsFromSaveData = savedPaintData?.stagedManualItems || [];
+
             categorySpecificDataForMap = {
                 rooms: savedPaintData?.rawRooms || [],
-                items: savedPaintData?.quoteItems || []
+                items: savedPaintData?.quoteItems || [],
+                stagedManualItems: manualItemsFromSaveData // ✅ Store manual items in categoryDataMap
             };
 
             console.log('🎨 [ItemSelector] Saved paint data:', {
                 quoteItemsCount: itemsFromCurrentCategoryComponent.length,
                 roomsCount: categorySpecificDataForMap.rooms.length,
+                stagedManualItemsCount: manualItemsFromSaveData.length,
                 items: itemsFromCurrentCategoryComponent
             });
         } else {
@@ -3730,10 +3738,12 @@ const ItemSelector = React.forwardRef(({
         }
     }
 
-    // 🆕 Extract staged manual items for this category BEFORE updating selectedItems
-    const stagedItemsForCategory = (stagedManualItems || []).filter(item =>
-        item.categoryId === categoryIdToSave
-    );
+    // ✅ FIX: Extract staged manual items for this category
+    // For paint category, use items from saveData return value (already stored in categorySpecificDataForMap)
+    // For other categories, extract from global stagedManualItems state
+    const stagedItemsForCategory = categoryIdToSave === 'cat_paint_plaster'
+        ? (categorySpecificDataForMap.stagedManualItems || [])
+        : (stagedManualItems || []).filter(item => item.categoryId === categoryIdToSave);
 
     console.log('[ItemSelector] Saving category data:', {
         categoryId: categoryIdToSave,
@@ -3744,7 +3754,7 @@ const ItemSelector = React.forwardRef(({
 
     // ✅ ONLY save to categoryDataMap, DON'T add to selectedItems yet
     // Items will be added to selectedItems only when user clicks "Save" or proceeds to next step
-    
+
     // Update categoryDataMap
     setCategoryDataMap(prev => ({
         ...prev,
@@ -3766,7 +3776,7 @@ const ItemSelector = React.forwardRef(({
             return prev;
         });
     }
-    
+
     // 🔧 FIX: Return the saved data so it can be used immediately
     return {
         quoteItems: itemsFromCurrentCategoryComponent,
