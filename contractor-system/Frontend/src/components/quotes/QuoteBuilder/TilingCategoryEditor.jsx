@@ -797,8 +797,8 @@ export default React.forwardRef(function TilingCategoryEditor({
           }
           // Handle selectedSize when subCategory changes
           if (selectedCatalogItem && selectedCatalogItem.availableSizes && selectedCatalogItem.availableSizes.length > 0) {
-            // If the current selected size is not valid for the new item, reset it
-            if (!selectedCatalogItem.availableSizes.includes(updatedItem.selectedSize)) {
+            // ✅ FIX: Always set to first available size if current size is invalid OR if no size was selected
+            if (!updatedItem.selectedSize || !selectedCatalogItem.availableSizes.includes(updatedItem.selectedSize)) {
               updatedItem.selectedSize = selectedCatalogItem.availableSizes[0]; // Default to first available size
             }
           } else {
@@ -1102,7 +1102,7 @@ export default React.forwardRef(function TilingCategoryEditor({
           addedAt: new Date().toISOString(),
           manualPriceOverride: item.manualPriceOverride || false,
           manualCustomerPrice: item.manualCustomerPrice || null,
-          selectedSize: item.selectedSize || null,
+          selectedSize: item.selectedSize || item.selectedItemData?.availableSizes?.[0] || item.selectedItemData?.selectedSizes?.[0] || item.selectedItemData?.size || null, // ✅ FIX: Try multiple fields
           workType: item.workType || '',
         };
         processedItemsForQuote.push(tilingItem);
@@ -1143,7 +1143,7 @@ export default React.forwardRef(function TilingCategoryEditor({
           addedAt: new Date().toISOString(),
           manualPriceOverride: false, // Panel is auto-calculated
           manualCustomerPrice: null,
-          selectedSize: item.selectedSize || null,
+          selectedSize: item.selectedSize || item.selectedItemData?.availableSizes?.[0] || item.selectedItemData?.selectedSizes?.[0] || item.selectedItemData?.size || null, // ✅ FIX: Try multiple fields
           workType: item.workType || '',
         };
         processedItemsForQuote.push(panelItem);

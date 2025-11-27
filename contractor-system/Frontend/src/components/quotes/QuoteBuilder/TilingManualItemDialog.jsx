@@ -30,6 +30,9 @@ export default function TilingManualItemDialog({
   // יחידת מידה
   const [unit, setUnit] = useState('מ״ר');
 
+  // ✅ ADD: Tile size field
+  const [selectedSize, setSelectedSize] = useState('');
+
   const prevOpenRef = useRef(open);
 
   useEffect(() => {
@@ -48,6 +51,7 @@ export default function TilingManualItemDialog({
         });
         setTimeUnit('days');
         setUnit(editingItem.unit || 'מ״ר');
+        setSelectedSize(editingItem.selectedSize || ''); // ✅ ADD: Load selectedSize
       } else {
         // Reset form for new item
         setFormData({
@@ -59,6 +63,7 @@ export default function TilingManualItemDialog({
         });
         setTimeUnit('days');
         setUnit('מ״ר');
+        setSelectedSize(''); // ✅ ADD: Reset selectedSize
       }
     }
     prevOpenRef.current = open;
@@ -131,7 +136,8 @@ export default function TilingManualItemDialog({
       profit: profit,
       profitPercent: profitPercent,
       workDuration: workDurationInDays, // Always store as days
-      workType: workTypes?.[0]?.id || 'floor_tiling',
+      workType: workTypes?.[0]?.id || 'ריצוף', // ✅ FIX: Changed default from 'floor_tiling' to Hebrew 'ריצוף'
+      selectedSize: selectedSize || null, // ✅ ADD: Include selectedSize
     };
 
     if (onAdd) {
@@ -182,7 +188,7 @@ export default function TilingManualItemDialog({
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="quantity" className="text-sm">
                 כמות <span className="text-red-500">*</span>
@@ -199,6 +205,21 @@ export default function TilingManualItemDialog({
               />
             </div>
 
+            <div>
+              <Label htmlFor="selectedSize" className="text-sm">
+                גודל אריח
+              </Label>
+              <Input
+                id="selectedSize"
+                value={selectedSize}
+                onChange={(e) => setSelectedSize(e.target.value)}
+                placeholder="60x60"
+                className="mt-1 h-9"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="unit" className="text-sm">
                 יחידת מידה

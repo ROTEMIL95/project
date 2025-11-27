@@ -1028,6 +1028,44 @@ export default function QuoteToHTML({ quote }) {
                             return '';
                           };
 
+                          // Helper function to get work type name (translate English to Hebrew)
+                          const getWorkTypeName = (workType) => {
+                            if (!workType) return '-';
+
+                            // If workType is an array, take the first element
+                            const workTypeValue = Array.isArray(workType) ? workType[0] : workType;
+                            if (!workTypeValue) return '-';
+
+                            const workTypeMap = {
+                              'floor_tiling': 'ריצוף',
+                              'wall_tiling': 'חיפוי קירות',
+                              'bathroom_tiling': 'חיפוי חדר אמבטיה',
+                              'kitchen_tiling': 'חיפוי מטבח',
+                              'tiling': 'ריצוף',
+                              'wall_covering': 'חיפוי',
+                              'ריצוף רצפה': 'ריצוף רצפה' // Pass through Hebrew values
+                            };
+
+                            return workTypeMap[workTypeValue] || workTypeValue;
+                          };
+
+                          // Helper function to get selected size (handle both selectedSize, selectedSizes array, and size)
+                          const getSelectedSize = (item) => {
+                            // Try selectedSize first (singular)
+                            if (item.selectedSize) return item.selectedSize;
+
+                            // Try selectedSizes array
+                            if (item.selectedSizes && Array.isArray(item.selectedSizes) && item.selectedSizes.length > 0) {
+                              return item.selectedSizes.join(', ');
+                            }
+
+                            // Try size field
+                            if (item.size) return item.size;
+
+                            // If nothing found, return '-'
+                            return '-';
+                          };
+
                           // Helper function to get paint type name
                           const getPaintTypeName = (item, subType) => {
                             const type = subType || item.paintType || item.plasterType;
@@ -1131,12 +1169,9 @@ export default function QuoteToHTML({ quote }) {
                               return `
                               <tr class="${roomSizeClass}">
                                 <td><strong>${item.name || item.description || ''}${getComplexityText(item)}</strong></td>
-                                ${categoryId === 'cat_tiling' && item.workType ? `
-                                <td>${item.workType || '-'}</td>
-                                <td>${item.selectedSize || '-'}</td>
-                                ` : categoryId === 'cat_tiling' ? `
-                                <td>-</td>
-                                <td>-</td>
+                                ${categoryId === 'cat_tiling' ? `
+                                <td>${getWorkTypeName(item.workType)}</td>
+                                <td>${getSelectedSize(item)}</td>
                                 ` : categoryId === 'cat_paint_plaster' ? `
                                 <td>${getPaintTypeName(item)}</td>
                                 <td>${item.layers || 1}</td>
