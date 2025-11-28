@@ -121,7 +121,7 @@ const calculateTilingMetrics = (item, tilingItemData, userDefaults) => {
   const wastageMultiplier = 1 + wastagePercent / 100;
 
   const costOfTilesWithWastage = materialCostPerMeter * quantity * wastageMultiplier;
-  const costOfBlackMaterial = additionalMaterialCostPerMeter * quantity; // Wastage is NOT applied here
+  const costOfBlackMaterial = additionalMaterialCostPerMeter * (quantity + panelQuantity); // ✅ FIX: Include panelQuantity - black material needed for both tiling and parquet
   const totalMaterialCost = Math.round(costOfTilesWithWastage + costOfBlackMaterial);
 
 
@@ -494,8 +494,14 @@ export default React.forwardRef(function TilingCategoryEditor({
 
   // ✅ NEW: Sync deletions from cart back to localItems
   useEffect(() => {
+    console.log('🔵 [DEBUG useEffect sync deletions] ========== START ==========');
+    console.log('🔵 [DEBUG] hasInitializedFromSelectedItems.current:', hasInitializedFromSelectedItems.current);
+    console.log('🔵 [DEBUG] selectedItems:', selectedItems);
+
     // Only run after initial setup is complete
     if (!hasInitializedFromSelectedItems.current || !Array.isArray(selectedItems)) {
+      console.log('🔵 [DEBUG] Skipping sync - not initialized or selectedItems not array');
+      console.log('🔵 [DEBUG useEffect sync deletions] ========== END (SKIPPED) ==========');
       return;
     }
 
@@ -512,13 +518,23 @@ export default React.forwardRef(function TilingCategoryEditor({
 
     const uniqueCartIds = new Set(tilingItemsInCart);
 
+    console.log('🔵 [DEBUG] Tiling items in cart (base IDs):', Array.from(uniqueCartIds));
+    console.log('🔵 [DEBUG] Total unique cart IDs:', uniqueCartIds.size);
+
     // Check if any localItems need to be removed (they're not in cart anymore)
     setLocalItems(prevItems => {
+      console.log('🔵 [DEBUG] prevItems in setLocalItems:', prevItems);
+      console.log('🔵 [DEBUG] prevItems count:', prevItems.length);
+
       // Only update if there's an actual difference
       const itemsToRemove = prevItems.filter(localItem => !uniqueCartIds.has(localItem.id));
 
+      console.log('🔵 [DEBUG] Items to remove:', itemsToRemove.map(i => ({ id: i.id, name: i.name, isManualItem: i.isManualItem })));
+
       // If no items need to be removed, don't update state
       if (itemsToRemove.length === 0) {
+        console.log('🔵 [DEBUG] No items to remove - returning prevItems unchanged');
+        console.log('🔵 [DEBUG useEffect sync deletions] ========== END (NO CHANGES) ==========');
         return prevItems;
       }
 
@@ -526,9 +542,13 @@ export default React.forwardRef(function TilingCategoryEditor({
 
       const itemsToKeep = prevItems.filter(localItem => uniqueCartIds.has(localItem.id));
 
+      console.log('🔵 [DEBUG] Items to keep:', itemsToKeep.map(i => ({ id: i.id, name: i.name, isManualItem: i.isManualItem })));
+      console.log('🔵 [DEBUG] Items to keep count:', itemsToKeep.length);
+
       // If all items were removed and none remain, reset to default blank item
       if (itemsToKeep.length === 0) {
         console.log('[TilingCategoryEditor] All items removed, resetting to blank item');
+        console.log('🔵 [DEBUG useEffect sync deletions] ========== END (RESET TO BLANK) ==========');
         return [{
           id: `new_item_${Date.now()}`,
           name: `אזור 1`,
@@ -543,6 +563,7 @@ export default React.forwardRef(function TilingCategoryEditor({
         }];
       }
 
+      console.log('🔵 [DEBUG useEffect sync deletions] ========== END (ITEMS REMOVED) ==========');
       return itemsToKeep;
     });
   }, [selectedItems, categoryId]);
@@ -745,35 +766,46 @@ export default React.forwardRef(function TilingCategoryEditor({
   }, []);
 
   const handleAddManualItem = useCallback((manualItemValues) => {
-    // Construct an item object from manual inputs
-    const newManualItem = {
-      id: `manual_item_${Date.now()}`,
+    console.log('🟣 [DEBUG handleAddManualItem] ========== START ==========');
+    console.log('🟣 [DEBUG] Manual item values received:', manualItemValues);
+    console.log('🟣 [DEBUG] Current localItems BEFORE adding manual item:', localItems);
+
+    // Create a manual item entry for local items (so it doesn't get lost during saveData)
+    // This is a special item that will be passed through to the cart as-is
+    const manualItemForLocal = {
+      id: `tiling_manual_${Date.now()}`,
       name: manualItemValues.name || 'פריט ידני',
-      subCategory: 'פריט מותאם אישית', // Descriptive text for manual items
-      selectedItemData: { // Minimal catalog data for manual items to allow calculations
-        id: `manual_catalog_${Date.now()}`,
+      subCategory: 'פריט מותאם אישית',
+      isManualItem: true, // ✅ Mark as manual item
+      // Store the complete cart data in selectedItemData
+      selectedItemData: {
+        id: null,
         name: manualItemValues.name || 'פריט מותאם אישית',
-        tileName: manualItemValues.name || 'פריט מותאם אישית',
-        materialCost: manualItemValues.materialCost || 0, // Manual material cost
-        additionalCost: manualItemValues.additionalCost || 0, // Manual additional material cost
-        laborCostPerDay: manualItemValues.laborCostPerDay || 0, // Manual labor cost
-        dailyOutput: manualItemValues.dailyOutput || 1, // Manual daily output
-        wastagePercent: manualItemValues.wastagePercent || 0,
-        desiredProfitPercent: manualItemValues.desiredProfitPercent || 0,
-        fixedProjectCost: manualItemValues.fixedProjectCost || 0,
+        // Store all the manual item values
+        manualData: manualItemValues
       },
       quantity: Number(manualItemValues.quantity) || 0,
-      panelQuantity: Number(manualItemValues.panelQuantity) || 0, // Assuming manual items can have panel quantity
-      manualPriceOverride: false, // Manual items are inherently 'manual' in their inputs
+      panelQuantity: 0,
+      manualPriceOverride: false,
       manualCustomerPrice: null,
-      complexity: { level: 'none', description: '', multiplier: 0 }, // Default complexity for manual items
+      complexity: { level: 'none', description: '', multiplier: 0 },
       selectedSize: manualItemValues.selectedSize || null,
       workType: manualItemValues.workType || '',
     };
 
-    handleAddItemToLocalItems(newManualItem);
+    console.log('🟣 [DEBUG] Manual item object created:', manualItemForLocal);
+
+    // Add to localItems so it persists through saveData
+    setLocalItems((prev) => {
+      const newLocalItems = [...prev, manualItemForLocal];
+      console.log('🟣 [DEBUG] localItems AFTER adding manual item:', newLocalItems);
+      console.log('🟣 [DEBUG] Total items in localItems:', newLocalItems.length);
+      console.log('🟣 [DEBUG handleAddManualItem] ========== END ==========');
+      return newLocalItems;
+    });
+
     setShowManualDialog(false);
-  }, [handleAddItemToLocalItems]);
+  }, [categoryId, localItems]);
 
   const handleItemUpdate = useCallback((itemId, field, value) => {
     setLocalItems((prevItems) => prevItems.map((item) => {
@@ -876,6 +908,34 @@ export default React.forwardRef(function TilingCategoryEditor({
     const safeUserDefaults = userTilingDefaults;
 
     return localItems.map((item) => {
+      // ✅ NEW: Handle manual items differently - return metrics from manualData
+      if (item.isManualItem && item.selectedItemData?.manualData) {
+        const manualData = item.selectedItemData.manualData;
+        return {
+          finalMetrics: {
+            totalPrice: manualData.totalPrice || 0,
+            totalContractorCost: manualData.totalCost || 0,
+            totalLaborCost: manualData.laborCost || 0,
+            workDays: manualData.workDuration || 0,
+            profit: manualData.profit || 0,
+            totalArea: manualData.quantity || 0,
+            totalMaterialCost: manualData.materialCost || 0,
+            totalFixedCost: 0,
+            costOfBlackMaterial: 0,
+            quantityWorkDays: manualData.workDuration || 0,
+            panelWorkDays: 0,
+            quantityLaborCost: manualData.laborCost || 0,
+            panelLaborCost: 0,
+            panelArea: 0
+          },
+          complexity: {
+            laborCostIncrease: 0,
+            workDaysIncrease: 0,
+            description: ''
+          }
+        };
+      }
+
       const selectedCatalogItem = item.selectedItemData;
       const quantity = parseFloat(item.quantity) || 0;
       const panelQuantity = parseFloat(item.panelQuantity || 0);
@@ -1009,15 +1069,49 @@ export default React.forwardRef(function TilingCategoryEditor({
 
   // שלב 1: פונקציה חדשה לאיסוף נתונים מפורטים עם לוגים
   const saveData = useCallback(() => {
-    console.log("🔥 TilingCategoryEditor: Entering saveData function.");
-    console.log("📊 TilingCategoryEditor: localItems (raw data from form):", localItems);
-    console.log("📈 TilingCategoryEditor: currentCategorySummaryMetrics (aggregated totals):", currentCategorySummaryMetrics);
+    console.log("🟠 [DEBUG saveData] ========== START ==========");
+    console.log("🟠 [DEBUG] localItems (raw data from form):", localItems);
+    console.log("🟠 [DEBUG] localItems count:", localItems.length);
+    console.log("🟠 [DEBUG] Manual items in localItems:", localItems.filter(i => i.isManualItem).map(i => ({ id: i.id, name: i.name })));
+    console.log("🟠 [DEBUG] Area items in localItems:", localItems.filter(i => !i.isManualItem).map(i => ({ id: i.id, name: i.name })));
+    console.log("🟠 [DEBUG] currentCategorySummaryMetrics (aggregated totals):", currentCategorySummaryMetrics);
 
     // הכנת נתונים למשלוח - נמיר כל פריט ב-localItems למבנה המתאים ל-selectedItems
     // ✅ NEW: When an item has both quantity AND panelQuantity, split it into 2 separate quote items
     const processedItemsForQuote = [];
 
     localItems.forEach((item, index) => {
+      // ✅ NEW: Handle manual items differently - construct cart item directly from manualData
+      if (item.isManualItem && item.selectedItemData?.manualData) {
+        const manualData = item.selectedItemData.manualData;
+        const manualItemForCart = {
+          id: item.id,
+          catalogItemId: null,
+          categoryId: categoryId,
+          categoryName: 'ריצוף וחיפוי',
+          name: manualData.name || 'פריט ידני',
+          description: manualData.description || 'פריט מותאם אישית',
+          quantity: Number(manualData.quantity) || 0,
+          unit: manualData.unit || 'מ"ר',
+          unitPrice: (Number(manualData.quantity) > 0) ? (manualData.totalPrice / Number(manualData.quantity)) : 0,
+          totalPrice: manualData.totalPrice || 0,
+          totalCost: manualData.totalCost || 0,
+          profit: manualData.profit || 0,
+          profitPercent: manualData.profitPercent || 0,
+          workDuration: manualData.workDuration || 0,
+          materialCost: manualData.materialCost || 0,
+          laborCost: manualData.laborCost || 0,
+          itemType: 'tiling',
+          source: 'tiling_manual',
+          isFromSimulator: false,
+          addedAt: new Date().toISOString(),
+          selectedSize: manualData.selectedSize || null,
+          workType: manualData.workType || '',
+        };
+        processedItemsForQuote.push(manualItemForCart);
+        return; // Skip normal processing for manual items
+      }
+
       const itemMetrics = calculatedItemsMetrics[index]?.finalMetrics;
       const complexityData = calculatedItemsMetrics[index]?.complexity;
 
@@ -1159,8 +1253,11 @@ export default React.forwardRef(function TilingCategoryEditor({
       });
     });
 
-    console.log("✅ TilingCategoryEditor: Processed items ready for selectedItems:", processedItemsForQuote);
-    console.log("📝 TilingCategoryEditor: Total items processed:", processedItemsForQuote.length);
+    console.log("🟠 [DEBUG] Processed items ready for selectedItems:", processedItemsForQuote);
+    console.log("🟠 [DEBUG] Total items processed:", processedItemsForQuote.length);
+    console.log("🟠 [DEBUG] Manual items in processedItemsForQuote:", processedItemsForQuote.filter(i => i.source === 'tiling_manual').map(i => ({ id: i.id, name: i.name })));
+    console.log("🟠 [DEBUG] Area items in processedItemsForQuote:", processedItemsForQuote.filter(i => i.source === 'tiling_area_detail').map(i => ({ id: i.id, name: i.name })));
+    console.log("🟠 [DEBUG saveData] ========== END ==========");
 
     // ✅ Return object with both quoteItems and rawRooms for restoration
     return {
@@ -1171,14 +1268,25 @@ export default React.forwardRef(function TilingCategoryEditor({
 
   // ✅ NEW: Live update parent's categoryDataMap whenever localItems or metrics change
   useEffect(() => {
+    console.log('🟢 [DEBUG useEffect live update parent] ========== START ==========');
+    console.log('🟢 [DEBUG] onUpdateCategoryData exists:', !!onUpdateCategoryData);
+    console.log('🟢 [DEBUG] localItems count:', localItems.length);
+
     if (onUpdateCategoryData && typeof onUpdateCategoryData === 'function') {
       const data = saveData();
+      console.log('🟢 [DEBUG] Calling onUpdateCategoryData with data:', {
+        categoryId: categoryId,
+        quoteItemsCount: data.quoteItems.length,
+        roomsCount: data.rawRooms.length
+      });
       onUpdateCategoryData({
         categoryId: categoryId,
         quoteItems: data.quoteItems,
         rooms: data.rawRooms
       });
+      console.log('🟢 [DEBUG] onUpdateCategoryData called successfully');
     }
+    console.log('🟢 [DEBUG useEffect live update parent] ========== END ==========');
   }, [localItems, calculatedItemsMetrics, onUpdateCategoryData, saveData, categoryId]);
 
   // For proper ref exposure, this component needs to be wrapped with React.forwardRef.
@@ -1279,6 +1387,43 @@ export default React.forwardRef(function TilingCategoryEditor({
               const complexityLaborCostIncrease = fullCalculatedItemMetrics?.complexity?.laborCostIncrease || 0;
               const complexityWorkDaysIncrease = fullCalculatedItemMetrics?.complexity?.workDaysIncrease || 0;
 
+              // ✅ NEW: Special rendering for manual items
+              if (item.isManualItem) {
+                return (
+                  <Card key={item.id} className="p-4 border-2 border-purple-200 bg-purple-50/30">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                          פריט ידני
+                        </Badge>
+                        <span className="font-semibold">{item.name}</span>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+
+                    {/* Display manual item summary */}
+                    {itemMetrics && (
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="p-3 bg-blue-50 rounded-lg text-center shadow-sm border border-blue-200">
+                          <Label className="text-xs text-blue-800">מחיר ללקוח</Label>
+                          <p className="font-bold text-blue-600 text-lg">₪{formatPrice(itemMetrics.totalPrice)}</p>
+                        </div>
+                        <div className="p-3 bg-red-50 rounded-lg text-center shadow-sm border border-red-200">
+                          <Label className="text-xs text-red-800">עלות לקבלן</Label>
+                          <p className="font-bold text-red-600 text-lg">₪{formatPrice(itemMetrics.totalContractorCost)}</p>
+                        </div>
+                        <div className="p-3 bg-green-50 rounded-lg text-center shadow-sm border border-green-200">
+                          <Label className="text-xs text-green-800">רווח</Label>
+                          <p className="font-bold text-green-600 text-lg">₪{formatPrice(itemMetrics.profit)}</p>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                );
+              }
+
               // Filter subcategories based on selected workType for THIS item
               const filteredSubCategories = allSubCategories.filter(sub => {
                 if (!item.workType || item.workType === '') return true; // If no work type selected for this item, show all
@@ -1288,6 +1433,7 @@ export default React.forwardRef(function TilingCategoryEditor({
                 return sub.workType === item.workType;
               });
 
+              // Regular area item rendering
               return (
                 <Card key={item.id} className="p-4 border-2 border-orange-200 bg-orange-50/30">
                   <div className="flex justify-between items-center mb-4">
@@ -1534,13 +1680,6 @@ export default React.forwardRef(function TilingCategoryEditor({
         </div>
       </div>
 
-      {/* Category Summary Card */}
-      <TilingSummaryCard
-        metrics={currentCategorySummaryMetrics}
-        preciseWorkDays={preciseWorkDays}
-        setPreciseWorkDays={setPreciseWorkDays}
-        formatPrice={formatPrice}
-      />
 
       {/* TilingManualItemDialog - תיקון: העברת userDefaults */}
       <TilingManualItemDialog

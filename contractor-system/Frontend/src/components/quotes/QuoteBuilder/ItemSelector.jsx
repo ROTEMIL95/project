@@ -3380,6 +3380,7 @@ const ItemSelector = React.forwardRef(({
   // State for tiling summary collapsible
   const [isTilingSummaryOpen, setIsTilingSummaryOpen] = useState(true);
   const [isTilingManualItemsOpen, setIsTilingManualItemsOpen] = useState(true);
+  const [tilingPreciseWorkDays, setTilingPreciseWorkDays] = useState(false);
 
   // CHANGED: State for showing/hiding dates section - default to FALSE (closed)
   const [showDates, setShowDates] = React.useState(false);
@@ -3570,19 +3571,32 @@ const ItemSelector = React.forwardRef(({
 
   // חישוב סיכום כולל לריצוף - כולל פריטים ידניים
   const tilingCategorySummary = useMemo(() => {
+    console.log('🟡 [DEBUG tilingCategorySummary] ========== START ==========');
+    console.log('🟡 [DEBUG] selectedItems:', selectedItems);
+    console.log('🟡 [DEBUG] categoryDataMap:', categoryDataMap);
+
     // ✅ Only include manual items from selectedItems (items added via dialog)
     const manualTilingItems = selectedItems.filter(item =>
       item.categoryId === 'cat_tiling' && item.source === 'tiling_manual'
     );
 
+    console.log('🟡 [DEBUG] Manual tiling items from selectedItems:', manualTilingItems.map(i => ({ id: i.id, name: i.name, source: i.source })));
+
     // 🆕 Include items from TilingCategoryEditor (from categoryDataMap) - these are area-based items
     const tilingCategoryData = categoryDataMap['cat_tiling'];
     const localTilingItems = tilingCategoryData?.quoteItems || [];
 
+    console.log('🟡 [DEBUG] Local tiling items from categoryDataMap:', localTilingItems.map(i => ({ id: i.id, name: i.name, source: i.source })));
+
     // Combine: manual items (from dialog) + area items (from TilingCategoryEditor)
     const allItems = [...manualTilingItems, ...localTilingItems];
 
+    console.log('🟡 [DEBUG] All items (combined):', allItems.map(i => ({ id: i.id, name: i.name, source: i.source })));
+    console.log('🟡 [DEBUG] Total items:', allItems.length);
+
     if (allItems.length === 0) {
+      console.log('🟡 [DEBUG] No items found - returning zero summary');
+      console.log('🟡 [DEBUG tilingCategorySummary] ========== END (EMPTY) ==========');
       return {
         totalArea: 0,
         totalMaterialCost: 0,
@@ -3596,7 +3610,7 @@ const ItemSelector = React.forwardRef(({
     }
 
     // Calculate totals from all items
-    return allItems.reduce((acc, item) => {
+    const summary = allItems.reduce((acc, item) => {
       return {
         totalArea: acc.totalArea + (Number(item.quantity) || 0),
         totalMaterialCost: acc.totalMaterialCost + (Number(item.materialCost) || 0),
@@ -3617,6 +3631,11 @@ const ItemSelector = React.forwardRef(({
       totalWorkDays: 0,
       itemCount: 0
     });
+
+    console.log('🟡 [DEBUG] Summary calculated:', summary);
+    console.log('🟡 [DEBUG tilingCategorySummary] ========== END ==========');
+
+    return summary;
   }, [selectedItems, stagedManualItems, categoryDataMap]);
 
 
@@ -3650,11 +3669,24 @@ const ItemSelector = React.forwardRef(({
   const electricalManagerRef = useRef(null);
 
   const handleUpdateItems = useCallback((data) => {
+      console.log('🔴 [DEBUG handleUpdateItems] ========== START ==========');
+      console.log('🔴 [DEBUG] Data received:', {
+        categoryId: data.categoryId,
+        quoteItemsCount: data.quoteItems?.length,
+        roomsCount: data.rooms?.length
+      });
+      console.log('🔴 [DEBUG] Full data:', data);
+
       setCategoryDataMap(prev => {
+          console.log('🔴 [DEBUG] Previous categoryDataMap:', prev);
+
           const newCategoryDataMap = {
               ...prev,
               [data.categoryId]: data
           };
+
+          console.log('🔴 [DEBUG] New categoryDataMap:', newCategoryDataMap);
+          console.log('🔴 [DEBUG handleUpdateItems] ========== END ==========');
 
           if (data.categoryId === 'cat_paint_plaster' && data.rooms && data.rooms.length > 0) {
               const allIndividualRoomBreakdowns = data.rooms.flatMap(room => room.roomBreakdown || []);
@@ -4455,11 +4487,27 @@ const ItemSelector = React.forwardRef(({
                           </div>
                           <div className="bg-gray-100 p-2 rounded-lg">
                             <div className="text-base font-bold text-gray-800">
-                              {(tilingCategorySummary.totalWorkDays || 0).toFixed(1)}
+                              {tilingPreciseWorkDays
+                                ? (tilingCategorySummary.totalWorkDays || 0).toFixed(1)
+                                : Math.ceil(tilingCategorySummary.totalWorkDays || 0).toFixed(0)
+                              }
                             </div>
                             <div className="text-xs text-gray-500">ימי עבודה</div>
                           </div>
                         </div>
+                      </div>
+
+                      {/* Work Days Precision Toggle */}
+                      <div className="flex justify-center pt-4 border-t border-gray-200">
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={tilingPreciseWorkDays}
+                            onChange={(e) => setTilingPreciseWorkDays(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">ימי עבודה מדויקים</span>
+                        </label>
                       </div>
 
                       {/* פריטים ידניים לריצוף - בתוך הסיכום */}

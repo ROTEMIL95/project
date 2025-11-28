@@ -1164,6 +1164,7 @@ export default function QuoteToHTML({ quote }) {
                           } else {
                             // Regular single-row display
                             const pricePerSqm = item.quantity > 0 ? Math.round(item.totalPrice / item.quantity) : 0;
+                            const pricePerUnit = item.quantity > 0 ? Math.round(item.totalPrice / item.quantity) : (item.unitPrice || 0);
                             const roomSizeClass = getRoomSizeClass(item);
 
                               return `
@@ -1181,7 +1182,7 @@ export default function QuoteToHTML({ quote }) {
                                 <td>₪${formatPrice(pricePerSqm)}</td>
                                 ` : `
                                 <td>${item.unit || 'יח\''}</td>
-                                <td>₪${formatPrice(item.unitPrice || 0)}</td>
+                                <td>₪${formatPrice(pricePerUnit)}</td>
                                 `}
                                 <td><strong>₪${formatPrice(item.totalPrice || 0)}</strong></td>
                               </tr>

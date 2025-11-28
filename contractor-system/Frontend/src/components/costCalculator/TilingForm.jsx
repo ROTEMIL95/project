@@ -1065,10 +1065,9 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
                                                 className="bg-white border-amber-200 focus:border-amber-400 h-12 text-base md:text-lg"
                                             />
                                         </div>
-                                        {Number(formData.materialCost) > 0 && (
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Label htmlFor="panelUtilizationPercent">כמות תפוקה לפאנל באחוזים (%)</Label>
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Label htmlFor="panelUtilizationPercent">כמות תפוקה לפאנל באחוזים (%)</Label>
                                                      <Tooltip>
                                                         <TooltipTrigger asChild>
                                                           <span className="w-4 h-4 rounded-full bg-gray-400 text-white text-xs flex items-center justify-center cursor-help">
@@ -1091,7 +1090,6 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
                                                     className="bg-white border-amber-200 focus:border-amber-400 h-12 text-base md:text-lg"
                                                 />
                                             </div>
-                                        )}
                                     </div>
                                     <p className="text-xs text-amber-700">
                                         💡 הערכים למעלה נלקחים מברירות המחדל שהגדרת ב"ניהול מתקדם", אך ניתן לשנות אותם עבור פריט זה בלבד. הכמות הפועלית של הפאנל תיבחר בהצעת המחיר.
