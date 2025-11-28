@@ -1103,7 +1103,8 @@ export default function QuoteToHTML({ quote }) {
 
                           // Helper function to get paint type name
                           const getPaintTypeName = (item, subType) => {
-                            const type = subType || item.paintType || item.plasterType;
+                            // Try to get type from subType parameter, then item.paintType/plasterType, then from selectedItemData
+                            const type = subType || item.paintType || item.plasterType || item.selectedItemData?.itemName || item.selectedItemData?.tileName || item.selectedItemData?.name;
                             if (!type) return '-';
 
                             let typeStr = String(type);
