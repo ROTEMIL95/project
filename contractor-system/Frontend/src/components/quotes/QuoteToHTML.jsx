@@ -967,27 +967,30 @@ export default function QuoteToHTML({ quote }) {
                     <table class="items-table">
                       <thead>
                         <tr>
-                          <th style="width: 30%;">תיאור</th>
+                          <th style="width: 25%;">תיאור</th>
                           ${categoryId === 'cat_tiling' ? `
-                          <th style="width: 12%;">סוג עבודה</th>
+                          <th style="width: 10%;">סוג עבודה</th>
                           <th style="width: 10%;">גודל אריח</th>
                           ` : categoryId === 'cat_paint_plaster' ? `
-                          <th style="width: 12%;">סוג צבע</th>
+                          <th style="width: 10%;">סוג צבע</th>
                           <th style="width: 8%;">שכבות</th>
                           ` : ''}
                           <th style="width: 10%;">כמות</th>
                           ${categoryId === 'cat_paint_plaster' ? `
-                          <th style="width: 13%;">מחיר למ"ר</th>
+                          <th style="width: 12%;">מחיר למ"ר</th>
+                          <th style="width: 10%;">מורכבות</th>
+                          <th style="width: 15%;">סה"כ</th>
                           ` : `
                           <th style="width: 8%;">יחידה</th>
-                          <th style="width: 15%;">מחיר ליחידה</th>
-                          `}
+                          <th style="width: 12%;">מחיר ליחידה</th>
+                          <th style="width: 10%;">מורכבות</th>
                           <th style="width: 15%;">סה"כ</th>
+                          `}
                         </tr>
                       </thead>
                       <tbody>
                         ${items.map(item => {
-                          // Helper function to get complexity display text
+                          // Helper function to get complexity display text (for inline in description)
                           const getComplexityText = (item) => {
                             if (!item.complexity || item.complexity === 'none') return '';
 
@@ -1017,6 +1020,38 @@ export default function QuoteToHTML({ quote }) {
                             }
 
                             return ` (${complexityData.name})`;
+                          };
+
+                          // Helper function to get complexity column value (for separate column)
+                          const getComplexityColumn = (item) => {
+                            if (!item.complexity || item.complexity === 'none') return '-';
+
+                            const complexityMap = {
+                              'low': { name: 'פשוט', percent: 5 },
+                              'simple': { name: 'פשוט', percent: 5 },
+                              'moderate': { name: 'בינוני', percent: 15 },
+                              'medium': { name: 'בינוני', percent: 15 },
+                              'high': { name: 'מורכב', percent: 25 },
+                              'complex': { name: 'מורכב', percent: 25 },
+                              'very_complex': { name: 'מאוד מורכב', percent: 35 },
+                              'very_high': { name: 'מאוד מורכב', percent: 35 },
+                              'custom': { name: item.customComplexityDescription || 'מותאם אישית', percent: null }
+                            };
+
+                            const complexityData = complexityMap[item.complexity];
+                            if (!complexityData) return '-';
+
+                            // Try to get percentage from quote.projectComplexities first, then fallback to default
+                            let complexityPercent = quote.projectComplexities?.complexities?.[item.complexity]?.percentage;
+                            if (complexityPercent === undefined || complexityPercent === null) {
+                              complexityPercent = complexityData.percent;
+                            }
+
+                            if (complexityPercent && complexityPercent > 0) {
+                              return `${complexityData.name}<br/>(+${complexityPercent}%)`;
+                            }
+
+                            return complexityData.name;
                           };
 
                           // Helper function to detect room size from item name
@@ -1132,11 +1167,12 @@ export default function QuoteToHTML({ quote }) {
 
                               rows += `
                               <tr class="${roomSizeClass}">
-                                <td><strong>${item.name || item.description || ''} - קירות${getComplexityText(item)}</strong></td>
+                                <td><strong>${item.name || item.description || ''} - קירות</strong></td>
                                 <td>${wallPaintType}</td>
                                 <td>${wallLayers}</td>
                                 <td>${formatPrice(item.wallPaintQuantity || 0)} מ"ר</td>
                                 <td>₪${formatPrice(wallPricePerSqm)}</td>
+                                <td>${getComplexityColumn(item)}</td>
                                 <td><strong>₪${formatPrice(wallTotalPrice)}</strong></td>
                               </tr>`;
                             }
@@ -1151,11 +1187,12 @@ export default function QuoteToHTML({ quote }) {
 
                               rows += `
                               <tr class="${roomSizeClass}">
-                                <td><strong>${item.name || item.description || ''} - תקרה${getComplexityText(item)}</strong></td>
+                                <td><strong>${item.name || item.description || ''} - תקרה</strong></td>
                                 <td>${ceilingPaintType}</td>
                                 <td>${ceilingLayers}</td>
                                 <td>${formatPrice(item.ceilingPaintQuantity || 0)} מ"ר</td>
                                 <td>₪${formatPrice(ceilingPricePerSqm)}</td>
+                                <td>${getComplexityColumn(item)}</td>
                                 <td><strong>₪${formatPrice(ceilingTotalPrice)}</strong></td>
                               </tr>`;
                             }
@@ -1169,7 +1206,7 @@ export default function QuoteToHTML({ quote }) {
 
                               return `
                               <tr class="${roomSizeClass}">
-                                <td><strong>${item.name || item.description || ''}${getComplexityText(item)}</strong></td>
+                                <td><strong>${item.name || item.description || ''}</strong></td>
                                 ${categoryId === 'cat_tiling' ? `
                                 <td>${getWorkTypeName(item.workType)}</td>
                                 <td>${getSelectedSize(item)}</td>
@@ -1180,11 +1217,14 @@ export default function QuoteToHTML({ quote }) {
                                 <td>${formatPrice(item.quantity || 0)}${categoryId === 'cat_paint_plaster' ? ' מ"ר' : ''}</td>
                                 ${categoryId === 'cat_paint_plaster' ? `
                                 <td>₪${formatPrice(pricePerSqm)}</td>
+                                <td>${getComplexityColumn(item)}</td>
+                                <td><strong>₪${formatPrice(item.totalPrice || 0)}</strong></td>
                                 ` : `
                                 <td>${item.unit || 'יח\''}</td>
                                 <td>₪${formatPrice(pricePerUnit)}</td>
-                                `}
+                                <td>${getComplexityColumn(item)}</td>
                                 <td><strong>₪${formatPrice(item.totalPrice || 0)}</strong></td>
+                                `}
                               </tr>
                             `;
                           }

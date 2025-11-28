@@ -1267,8 +1267,8 @@ export default function QuoteCreate() {
 
         if (existingQuote.paymentTerms && Array.isArray(existingQuote.paymentTerms)) {
           setPaymentTerms(existingQuote.paymentTerms);
-        } else if (userLoadedData && Array.isArray(userLoadedData.defaultPaymentTerms)) { // Using userLoadedData
-          setPaymentTerms(userLoadedData.defaultPaymentTerms);
+        } else if (userLoadedData?.user_metadata?.defaultPaymentTerms && Array.isArray(userLoadedData.user_metadata.defaultPaymentTerms)) { // Using userLoadedData
+          setPaymentTerms(userLoadedData.user_metadata.defaultPaymentTerms);
         }
 
         if (existingQuote.projectComplexities) {
@@ -1369,8 +1369,8 @@ export default function QuoteCreate() {
           await loadExistingQuote(quoteIdParam, userData);
         } else {
           resetQuoteData();
-          if (userData && Array.isArray(userData.defaultPaymentTerms)) {
-            setPaymentTerms(userData.defaultPaymentTerms);
+          if (userData?.user_metadata?.defaultPaymentTerms && Array.isArray(userData.user_metadata.defaultPaymentTerms)) {
+            setPaymentTerms(userData.user_metadata.defaultPaymentTerms);
           }
         }
       } catch (error) {
