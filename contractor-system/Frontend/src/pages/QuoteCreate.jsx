@@ -1142,7 +1142,7 @@ export default function QuoteCreate() {
 
 
   // פונקציה לאיפוס נתוני ההצעה
-  const resetQuoteData = useCallback(() => {
+  const resetQuoteData = useCallback((defaultPaymentTerms = []) => {
     setProjectInfo({
       projectName: '',
       clientName: '',
@@ -1165,7 +1165,7 @@ export default function QuoteCreate() {
     setDiscountPercent(0); // Renamed from setDiscount
     setPriceIncrease(0);
     setCategoryTimings({});
-    setPaymentTerms([]); // Will be reset to user default by useEffect below
+    setPaymentTerms(defaultPaymentTerms); // Use provided defaultPaymentTerms
     setProjectComplexities({
       floor: 1,
       hasElevator: true,
@@ -1368,10 +1368,11 @@ export default function QuoteCreate() {
         if (quoteIdParam) {
           await loadExistingQuote(quoteIdParam, userData);
         } else {
-          resetQuoteData();
-          if (userData?.user_metadata?.defaultPaymentTerms && Array.isArray(userData.user_metadata.defaultPaymentTerms)) {
-            setPaymentTerms(userData.user_metadata.defaultPaymentTerms);
-          }
+          // Get default payment terms from user metadata
+          const defaultTerms = (userData?.user_metadata?.defaultPaymentTerms && Array.isArray(userData.user_metadata.defaultPaymentTerms))
+            ? userData.user_metadata.defaultPaymentTerms
+            : [];
+          resetQuoteData(defaultTerms);
         }
       } catch (error) {
         console.error("Error fetching user:", error);
