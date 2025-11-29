@@ -399,6 +399,25 @@ const PaintRoomItem = ({ roomIndex, room, onUpdateRoom, onUpdateRoomMetrics, onR
 
     const [isComplexityOpen, setIsComplexityOpen] = useState(room.isComplexityOpen || false);
 
+    // ✅ FIX: Sync state with room prop when it changes (e.g., when returning to category after clicking "Next")
+    useEffect(() => {
+        setWallPaintId(room.wallPaintId || '');
+        setWallPaintQuantity(room.wallPaintQuantity || '');
+        setWallPaintLayers(room.wallPaintLayers || 0);
+        setCeilingPaintId(room.ceilingPaintId || '');
+        setCeilingPaintQuantity(room.ceilingPaintQuantity || '');
+        setCeilingPaintLayers(room.ceilingPaintLayers || 0);
+        setSelectedPlasterId(room.plasterItemId || '');
+        setPlasterQuantity(room.plasterQuantity || '');
+        setPlasterLayers(room.plasterLayers || 0);
+        setWallPlasterId(room.wallPlasterId || '');
+        setWallPlasterQuantity(room.wallPlasterQuantity || '');
+        setWallPlasterLayers(room.wallPlasterLayers || 0);
+        setCeilingPlasterId(room.ceilingPlasterId || '');
+        setCeilingPlasterQuantity(room.ceilingPlasterQuantity || '');
+        setCeilingPlasterLayers(room.ceilingPlasterLayers || 0);
+    }, [room.id, room.wallPaintId, room.wallPaintQuantity, room.wallPaintLayers, room.ceilingPaintId, room.ceilingPaintQuantity, room.ceilingPaintLayers, room.plasterItemId, room.plasterQuantity, room.plasterLayers, room.wallPlasterId, room.wallPlasterQuantity, room.wallPlasterLayers, room.ceilingPlasterId, room.ceilingPlasterQuantity, room.ceilingPlasterLayers]);
+
     const complexityOptions = useMemo(() => [
         { value: 'none', label: 'ללא מורכבות', percentage: 0, description: 'עבודה רגילה ללא תוספות מחיר' },
         { value: 'light', label: 'מורכבות קלה', percentage: 10, description: 'גישה מוגבלת, פינות קשות, עבודה בגובה נמוך' },

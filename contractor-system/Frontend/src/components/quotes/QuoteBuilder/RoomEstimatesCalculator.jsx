@@ -170,8 +170,7 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
     ceilingAreaSqM: 0
   });
   
-  // Track which room cards are expanded (not auto-open)
-  const [expandedRoomIds, setExpandedRoomIds] = useState([]);
+  // All room cards are always expanded (no collapse functionality)
 
   // Helper function to transform difficulty data from different formats to standard format
   const transformDifficultyData = useCallback((data) => {
@@ -334,12 +333,9 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
     setSelectedRooms(prev => {
       const isSelected = prev.find(r => r.id === roomId);
       if (isSelected) {
-        // Remove from expanded list when deselecting
-        setExpandedRoomIds(expanded => expanded.filter(id => id !== roomId));
         return prev.filter(r => r.id !== roomId);
       } else {
         const roomData = roomEstimatesData.find(room => room.id === roomId);
-        // Don't auto-expand - user can click to expand manually
         return [...prev, {
           id: roomId,
           quantity: 1,
@@ -349,14 +345,6 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
         }];
       }
     });
-  };
-  
-  const toggleRoomExpanded = (roomId) => {
-    setExpandedRoomIds(prev => 
-      prev.includes(roomId) 
-        ? prev.filter(id => id !== roomId)
-        : [...prev, roomId]
-    );
   };
 
   const updateRoomQuantity = (roomId, quantity) => {
@@ -764,37 +752,13 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
                             <div className={`text-xs ${isSelected ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}>
                               קירות: {room.wallAreaSqM} מ"ר • תקרה: {room.ceilingAreaSqM} מ"ר
                             </div>
-                            {isSelected && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleRoomExpanded(room.id);
-                                }}
-                                className="h-6 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                              >
-                                {expandedRoomIds.includes(room.id) ? (
-                                  <>
-                                    <ChevronUp className="h-3 w-3 ml-1" />
-                                    סגור
-                                  </>
-                                ) : (
-                                  <>
-                                    <ChevronDown className="h-3 w-3 ml-1" />
-                                    ערוך
-                                  </>
-                                )}
-                              </Button>
-                            )}
                           </div>
                         </>
                       )}
                     </CardHeader>
-                    
-                    {isSelected && !isEditMode && expandedRoomIds.includes(room.id) && (
+
+                    {isSelected && !isEditMode && (
                       <CardContent className="pt-0 space-y-3" onClick={e => e.stopPropagation()}>
-                        {/* שורה עליונה: כמות ותקרה */}
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <Label className="text-xs text-gray-600 mb-1 block">כמות</Label>
@@ -830,7 +794,7 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
                               </Button>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center">
                             <Label className="flex items-center gap-2 cursor-pointer text-sm">
                               <input
@@ -844,69 +808,6 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
                               </span>
                             </Label>
                           </div>
-                        </div>
-
-                        {/* שורה תחתונה: רמת מורכבות (מחליף פתחים) */}
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">רמת מורכבות</Label>
-                          <Select
-                            value={currentComplexity}
-                            onValueChange={(value) => updateRoomComplexity(room.id, value)}
-                            dir="rtl"
-                          >
-                            <SelectTrigger className="h-8 text-sm bg-white" dir="rtl">
-                              <SelectValue placeholder="בחר מורכבות" />
-                            </SelectTrigger>
-                            <SelectContent 
-                              className="z-[9999] bg-white" 
-                              position="popper" 
-                              sideOffset={5}
-                              align="start"
-                              avoidCollisions={true}
-                              dir="rtl"
-                            >
-                              {COMPLEXITY_OPTIONS.map(o => (
-                                <SelectItem key={o.id} value={o.id} className="cursor-pointer text-right" dir="rtl">
-                                  <div className="flex flex-col items-start py-1 text-right w-full" dir="rtl">
-                                    <div className="flex items-center gap-2 w-full justify-start">
-                                      <span className="font-medium">{o.label}</span>
-                                      <span className="text-xs text-gray-500">(×{o.factor.toFixed(2)})</span>
-                                    </div>
-                                    {o.description && (
-                                      <span className="text-xs text-gray-500 mt-0.5 leading-tight text-right">{o.description}</span>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* תוצאה לחדר זה */}
-                        <div className="text-xs bg-gradient-to-l from-indigo-50 to-white p-3 rounded border border-indigo-200">
-                          <div className="flex justify-between items-center mb-2 pb-2 border-b border-indigo-100">
-                            <span className="font-semibold text-gray-700">חישוב לחדר זה:</span>
-                            <Badge variant="outline" className="text-xs bg-white border-indigo-300">
-                              {selectedRoom?.difficultyData?.label || 'רגיל'}
-                            </Badge>
-                          </div>
-                          <div className="flex justify-between text-gray-600 mb-1">
-                            <span>קירות (בסיס: {room.wallAreaSqM} מ"ר):</span>
-                            <span className="font-mono font-semibold text-blue-600">
-                              {(() => {
-                                const complexityFactor = selectedRoom?.difficultyData?.factor || COMPLEXITY_OPTIONS[0].factor;
-                                return (room.wallAreaSqM * complexityFactor * (selectedRoom?.quantity || 1)).toFixed(1);
-                              })()} מ"ר
-                            </span>
-                          </div>
-                          {selectedRoom?.includeCeiling && (
-                            <div className="flex justify-between text-gray-600">
-                              <span>תקרה (בסיס: {room.ceilingAreaSqM} מ"ר):</span>
-                              <span className="font-mono font-semibold text-purple-600">
-                                {((room.ceilingAreaSqM * (selectedRoom?.difficultyData?.factor || COMPLEXITY_OPTIONS[0].factor)) * (selectedRoom?.quantity || 1)).toFixed(1)} מ"ר
-                              </span>
-                            </div>
-                          )}
                         </div>
                       </CardContent>
                     )}
