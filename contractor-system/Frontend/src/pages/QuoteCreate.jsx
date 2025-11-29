@@ -1830,12 +1830,15 @@ export default function QuoteCreate() {
 
     switch (step) {
       case 1:
+        // אם אף שדה לא מולא - neutral
         if (!projectInfo.clientName && !projectInfo.projectAddress && !projectInfo.projectName && !projectInfo.clientEmail) {
           return 'neutral';
         }
 
-        const hasBasicInfo = projectInfo.clientName && projectInfo.projectAddress;
-        if (hasBasicInfo) return 'completed';
+        // אם יש לפחות אחד מהשדות החשובים - completed
+        const hasAnyKeyInfo = projectInfo.clientName || projectInfo.projectAddress || projectInfo.projectName;
+        if (hasAnyKeyInfo) return 'completed';
+
         return 'incomplete';
 
       case 2:
@@ -2669,9 +2672,29 @@ export default function QuoteCreate() {
               categories={getOrderedSelectedCategories()}
               currentId={currentCategoryForItems}
               onSelect={async (catId) => {
-                // ✅ Save current category data before switching
+                // ✅ Save current category data AND add to cart before switching
                 if (itemSelectorRef.current && itemSelectorRef.current.saveCurrentCategoryData) {
-                  await itemSelectorRef.current.saveCurrentCategoryData();
+                  const savedData = await itemSelectorRef.current.saveCurrentCategoryData();
+
+                  // ✅ Add saved items to cart (same logic as "Next" button)
+                  if (savedData) {
+                    const itemsToAdd = savedData.quoteItems || [];
+                    const stagedItems = savedData.stagedManualItems || [];
+
+                    setSelectedItems(prevItems => {
+                      const otherCategoryItems = prevItems.filter(item => item.categoryId !== currentCategoryForItems);
+                      const newItems = [...otherCategoryItems, ...itemsToAdd, ...stagedItems];
+
+                      console.log('🛒 [CategoryStepper] Added items to cart:', {
+                        categoryId: currentCategoryForItems,
+                        quoteItems: itemsToAdd.length,
+                        stagedItems: stagedItems.length,
+                        newTotal: newItems.length
+                      });
+
+                      return newItems;
+                    });
+                  }
                 }
                 setCurrentCategoryForItems(catId);
               }}

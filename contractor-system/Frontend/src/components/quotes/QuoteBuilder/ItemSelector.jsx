@@ -3843,9 +3843,11 @@ const ItemSelector = React.forwardRef(({
     saveCurrentCategoryData: async () => {
       console.log('[ItemSelector] saveCurrentCategoryData called via ref for category:', currentCategoryForItems);
       if (currentCategoryForItems) {
-        await saveCurrentCategoryData(currentCategoryForItems);
-        console.log('[ItemSelector] Data saved for category:', currentCategoryForItems);
+        const savedData = await saveCurrentCategoryData(currentCategoryForItems);
+        console.log('[ItemSelector] Data saved for category:', currentCategoryForItems, savedData);
+        return savedData; // ✅ Return the saved data so parent can use it!
       }
+      return null;
     }
   }), [currentCategoryForItems, saveCurrentCategoryData]);
 
