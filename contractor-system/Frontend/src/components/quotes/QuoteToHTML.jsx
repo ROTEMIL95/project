@@ -777,35 +777,513 @@ export default function QuoteToHTML({ quote }) {
       .quote-footer strong {
         color: #374151; /* text-gray-700 */
       }
-      
+
+      /* ===== PRINT STYLES - Optimized for PDF/Print Output ===== */
       @media print {
+        /* ===== Page Setup ===== */
+        @page {
+          size: A4 portrait;
+          margin: 15mm;
+        }
+
+        /* ===== Body & Container ===== */
         body {
-          padding: 0;
-          background: white;
+          padding: 0 !important;
+          margin: 0 !important;
+          background: white !important;
+          font-size: 10pt;
+          line-height: 1.4;
         }
-        
+
         .quote-container {
-          box-shadow: none;
+          max-width: 100% !important;
+          box-shadow: none !important;
+          border-radius: 0 !important;
+          margin: 0 !important;
         }
-        
-        .category-block {
+
+        /* ===== Header ===== */
+        .quote-header {
+          background: #000 !important;
+          color: white !important;
+          padding: 20px 15px !important;
+          page-break-after: avoid;
+        }
+
+        .quote-header h1 {
+          font-size: 20pt;
+          margin-bottom: 5px;
+        }
+
+        .quote-date {
+          font-size: 10pt;
+        }
+
+        /* ===== Info Sections ===== */
+        .info-section {
+          background: white !important;
+          padding: 12px 15px !important;
+          border-bottom: 1px solid #ddd !important;
           page-break-inside: avoid;
         }
-        
+
+        .info-section-title {
+          font-size: 12pt;
+          margin-bottom: 10px;
+          color: #000 !important;
+        }
+
+        .info-grid {
+          gap: 8px;
+        }
+
+        .info-item {
+          background: #f5f5f5 !important;
+          padding: 8px !important;
+          border: 1px solid #ddd !important;
+          border-radius: 4px !important;
+        }
+
+        .info-label {
+          font-size: 8pt;
+          color: #666 !important;
+        }
+
+        .info-value {
+          font-size: 10pt;
+          color: #000 !important;
+        }
+
+        /* ===== Timeline Section ===== */
         .timeline-section {
+          background: white !important;
+          padding: 12px 15px !important;
+          margin: 10px 15px !important;
+          border: 2px solid #000 !important;
+          border-radius: 6px !important;
           page-break-inside: avoid;
         }
 
+        .timeline-header {
+          margin-bottom: 10px;
+        }
+
+        .timeline-title {
+          font-size: 12pt;
+          color: #000 !important;
+        }
+
+        .timeline-item {
+          background: #f5f5f5 !important;
+          padding: 8px 10px !important;
+          border: 1px solid #999 !important;
+        }
+
+        .timeline-item-label {
+          font-size: 7pt;
+          color: #666 !important;
+        }
+
+        .timeline-item-value {
+          font-size: 10pt;
+          color: #000 !important;
+        }
+
+        /* ===== Category Blocks ===== */
+        .category-block {
+          margin: 15px 10px !important;
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+
+        .category-header {
+          background: #000 !important;
+          color: white !important;
+          border: 2px solid #000 !important;
+          padding: 12px 15px !important;
+          border-radius: 4px 4px 0 0 !important;
+        }
+
+        .category-icon {
+          font-size: 18pt;
+          filter: grayscale(1);
+        }
+
+        .category-title {
+          font-size: 14pt;
+          color: white !important;
+        }
+
+        .category-content {
+          border: 2px solid #000 !important;
+          border-top: none !important;
+        }
+
+        /* ===== Tables ===== */
+        .items-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 9pt;
+          table-layout: fixed;
+        }
+
+        .items-table thead {
+          background: #e0e0e0 !important;
+        }
+
+        .items-table th {
+          padding: 6px 4px !important;
+          font-size: 8pt;
+          color: #000 !important;
+          border-bottom: 2px solid #000 !important;
+          font-weight: 700;
+          word-wrap: break-word;
+        }
+
+        .items-table td {
+          padding: 6px 4px !important;
+          font-size: 9pt;
+          color: #000 !important;
+          border-bottom: 1px solid #ccc !important;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        .items-table tbody tr:hover {
+          background: transparent !important;
+        }
+
+        /* Room size colors - Convert to grayscale for print */
+        .room-small {
+          border-right: 3px solid #666 !important;
+          background: #f5f5f5 !important;
+        }
+
+        .room-medium {
+          border-right: 3px solid #999 !important;
+          background: #f0f0f0 !important;
+        }
+
+        .room-large {
+          border-right: 3px solid #333 !important;
+          background: #e8e8e8 !important;
+        }
+
+        /* ===== Category Summary ===== */
+        .category-summary {
+          background: #f5f5f5 !important;
+          padding: 12px 15px !important;
+          border-top: 2px solid #000 !important;
+          page-break-inside: avoid;
+        }
+
+        .summary-grid {
+          gap: 8px;
+        }
+
+        .summary-item {
+          background: white !important;
+          padding: 8px !important;
+          border: 1px solid #999 !important;
+        }
+
+        .summary-label {
+          font-size: 7pt;
+          color: #666 !important;
+        }
+
+        .summary-value {
+          font-size: 12pt;
+          color: #000 !important;
+        }
+
+        .summary-value-small {
+          font-size: 9pt;
+          color: #000 !important;
+        }
+
+        /* ===== Commitments in Category ===== */
+        .commitments-section {
+          background: white !important;
+          padding: 12px 15px !important;
+          border-top: 1px solid #000 !important;
+          page-break-inside: avoid;
+        }
+
+        .commitments-title {
+          font-size: 10pt;
+          color: #000 !important;
+        }
+
+        .commitments-content {
+          background: #f9f9f9 !important;
+          padding: 10px !important;
+          border: 1px solid #999 !important;
+          border-right-width: 3px !important;
+          border-right-color: #000 !important;
+          font-size: 9pt;
+          color: #000 !important;
+        }
+
+        /* ===== Variable Costs Section ===== */
         .variable-costs-section {
+          margin: 15px 10px !important;
           page-break-inside: avoid;
         }
 
-        .commitments-wrapper, .quote-footer {
+        .variable-costs-header {
+          border-bottom: 2px solid #000 !important;
+          padding-bottom: 5px;
+          margin-bottom: 10px;
+        }
+
+        .variable-costs-header h2 {
+          font-size: 14pt;
+          color: #000 !important;
+        }
+
+        .variable-cost-item {
+          background: #f5f5f5 !important;
+          border: 1px solid #999 !important;
+          padding: 10px !important;
+          margin-bottom: 6px;
+        }
+
+        .variable-cost-item-desc {
+          font-size: 10pt;
+          color: #000 !important;
+        }
+
+        .variable-cost-item-value {
+          font-size: 12pt;
+          color: #000 !important;
+        }
+
+        .variable-costs-total {
+          background: #e0e0e0 !important;
+          border: 2px solid #000 !important;
+          padding: 10px !important;
+          margin-top: 10px;
+        }
+
+        .variable-costs-total-label,
+        .variable-costs-total-value {
+          color: #000 !important;
+        }
+
+        /* ===== Final Summary ===== */
+        .final-summary {
+          margin: 15px 10px !important;
+          background: #000 !important;
+          color: white !important;
+          padding: 15px !important;
+          border: 3px solid #000 !important;
+          border-radius: 6px !important;
           page-break-inside: avoid;
-          margin-left: 0 !important; /* Remove margins for print */
-          margin-right: 0 !important; /* Remove margins for print */
-          padding-left: 20px; /* Add some padding for visual appeal */
-          padding-right: 20px;
+        }
+
+        .final-summary h2 {
+          font-size: 16pt;
+          margin-bottom: 12px;
+          color: white !important;
+        }
+
+        .final-grid {
+          gap: 10px;
+        }
+
+        .final-item {
+          background: #333 !important;
+          padding: 10px !important;
+          border: 2px solid #666 !important;
+        }
+
+        .final-label {
+          font-size: 9pt;
+          color: #ccc !important;
+        }
+
+        .final-value {
+          font-size: 14pt;
+          color: white !important;
+        }
+
+        /* ===== Payment Terms ===== */
+        .payment-terms {
+          margin: 15px 10px !important;
+          background: white !important;
+          border: 2px solid #000 !important;
+          page-break-inside: avoid;
+        }
+
+        .payment-terms-header {
+          background: #e0e0e0 !important;
+          padding: 10px 15px !important;
+          border-bottom: 2px solid #000 !important;
+        }
+
+        .payment-terms-title {
+          font-size: 12pt;
+          color: #000 !important;
+        }
+
+        .payment-terms-content {
+          padding: 12px 15px !important;
+        }
+
+        .payment-term {
+          background: #f5f5f5 !important;
+          padding: 8px 10px !important;
+          border: 1px solid #999 !important;
+          margin-bottom: 6px;
+        }
+
+        .term-milestone {
+          font-size: 10pt;
+          color: #000 !important;
+        }
+
+        .term-percentage,
+        .term-amount {
+          font-size: 11pt;
+          color: #000 !important;
+        }
+
+        .term-date {
+          font-size: 9pt;
+          color: #666 !important;
+        }
+
+        /* ===== General Commitments Wrapper ===== */
+        .commitments-wrapper {
+          margin: 15px 10px 15px 10px !important;
+          page-break-inside: avoid;
+        }
+
+        .commitments-grid {
+          gap: 12px;
+        }
+
+        .commitment-card {
+          background: white !important;
+          padding: 12px !important;
+          border: 2px solid #000 !important;
+          border-radius: 6px !important;
+          box-shadow: none !important;
+          page-break-inside: avoid;
+        }
+
+        .commitment-header {
+          border-bottom: 2px solid #999 !important;
+          padding-bottom: 8px;
+          margin-bottom: 10px;
+        }
+
+        .commitment-icon {
+          font-size: 16pt;
+          filter: grayscale(1);
+        }
+
+        .commitment-title {
+          font-size: 11pt;
+          color: #000 !important;
+        }
+
+        .commitment-content {
+          font-size: 9pt;
+          color: #000 !important;
+          line-height: 1.5;
+        }
+
+        .contractor-commitment-card,
+        .client-commitment-card {
+          background: #f9f9f9 !important;
+          border-color: #000 !important;
+        }
+
+        .contractor-commitment-header,
+        .client-commitment-header {
+          border-color: #666 !important;
+        }
+
+        .legal-note {
+          background: #f0f0f0 !important;
+          border: 1px solid #999 !important;
+          padding: 8px !important;
+          margin-top: 10px;
+        }
+
+        .legal-note p {
+          font-size: 8pt;
+          color: #333 !important;
+        }
+
+        /* ===== Footer ===== */
+        .quote-footer {
+          background: #f5f5f5 !important;
+          border-top: 2px solid #000 !important;
+          padding: 12px 15px !important;
+          margin: 15px 10px 10px 10px !important;
+          page-break-inside: avoid;
+        }
+
+        .quote-footer p {
+          font-size: 9pt;
+          color: #000 !important;
+          margin-bottom: 4px;
+        }
+
+        .quote-footer strong {
+          color: #000 !important;
+        }
+
+        /* ===== Page Break Controls ===== */
+        /* Prevent breaking inside key sections */
+        .category-block,
+        .timeline-section,
+        .variable-costs-section,
+        .final-summary,
+        .payment-terms,
+        .commitments-wrapper,
+        .quote-footer {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+
+        /* Allow breaks between categories if needed */
+        .category-block {
+          page-break-after: auto;
+        }
+
+        /* Keep header with content */
+        .category-header,
+        .payment-terms-header,
+        .commitment-header,
+        .variable-costs-header {
+          page-break-after: avoid;
+        }
+
+        /* Prevent widows/orphans in tables */
+        .items-table tr {
+          page-break-inside: avoid;
+        }
+
+        /* ===== Print-specific utilities ===== */
+        /* Remove unnecessary decorative elements */
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color-adjust: exact !important;
+        }
+
+        /* Ensure all text is black for maximum readability */
+        body, p, span, div, td, th {
+          color: #000 !important;
+        }
+
+        /* Override any hover states */
+        *:hover {
+          background: inherit !important;
         }
       }
     </style>
@@ -1041,9 +1519,13 @@ export default function QuoteToHTML({ quote }) {
 
                           // Helper function to get complexity column value (for separate column)
                           const getComplexityColumn = (item) => {
-                            if (!item.complexity || item.complexity === 'none') return '-';
+                            // Check for complexity - support both formats: string (paint) and complexityLevel (tiling)
+                            const complexityValue = item.complexityLevel || item.complexity;
+
+                            if (!complexityValue || complexityValue === 'none') return '-';
 
                             const complexityMap = {
+                              // Paint/Plaster complexity levels
                               'low': { name: 'פשוט', percent: 5 },
                               'simple': { name: 'פשוט', percent: 5 },
                               'moderate': { name: 'בינוני', percent: 15 },
@@ -1052,14 +1534,21 @@ export default function QuoteToHTML({ quote }) {
                               'complex': { name: 'מורכב', percent: 25 },
                               'very_complex': { name: 'מאוד מורכב', percent: 35 },
                               'very_high': { name: 'מאוד מורכב', percent: 35 },
-                              'custom': { name: item.customComplexityDescription || 'מותאם אישית', percent: null }
+                              'custom': { name: item.customComplexityDescription || 'מותאם אישית', percent: null },
+                              // Tiling complexity levels (10% increments)
+                              'light': { name: 'קלה', percent: 10 },
+                              'mild': { name: 'בינונית-קלה', percent: 20 },
+                              'standard': { name: 'בינונית', percent: 30 },
+                              'challenging': { name: 'גבוהה', percent: 40 },
+                              'difficult': { name: 'מאוד גבוהה', percent: 50 },
+                              'extreme': { name: 'קיצונית', percent: 60 }
                             };
 
-                            const complexityData = complexityMap[item.complexity];
+                            const complexityData = complexityMap[complexityValue];
                             if (!complexityData) return '-';
 
                             // Try to get percentage from quote.projectComplexities first, then fallback to default
-                            let complexityPercent = quote.projectComplexities?.complexities?.[item.complexity]?.percentage;
+                            let complexityPercent = quote.projectComplexities?.complexities?.[complexityValue]?.percentage;
                             if (complexityPercent === undefined || complexityPercent === null) {
                               complexityPercent = complexityData.percent;
                             }
