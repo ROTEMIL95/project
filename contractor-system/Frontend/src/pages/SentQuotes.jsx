@@ -46,6 +46,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Tooltip,
@@ -66,7 +67,17 @@ import ConfettiBurst from '@/components/effects/ConfettiBurst';
 import { ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/components/ui/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination"
 
 export default function SentQuotes() {
     const navigate = useNavigate();
@@ -93,6 +104,12 @@ export default function SentQuotes() {
     const [amountRangeFilter, setAmountRangeFilter] = useState('all');
     const [profitFilter, setProfitFilter] = useState('all'); // 'all', 'low', 'medium', 'high'
     const [projectTypeFilter, setProjectTypeFilter] = useState('all');
+
+    // עימוד ובחירה מרובה
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [selectedQuotes, setSelectedQuotes] = useState(new Set());
+    const [selectAll, setSelectAll] = useState(false);
 
     // Colors for charts
     const chartColors = ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6b7280'];
@@ -610,7 +627,112 @@ export default function SentQuotes() {
         setAmountRangeFilter('all');
         setProfitFilter('all');
         setProjectTypeFilter('all');
+        setSelectedQuotes(new Set()); // איפוס בחירה
+        setCurrentPage(1); // חזרה לעמוד ראשון
     };
+
+    // פונקציות עימוד
+    const paginatedQuotes = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return sortedQuotes.slice(startIndex, endIndex);
+    }, [sortedQuotes, currentPage, itemsPerPage]);
+
+    const totalPages = Math.ceil(sortedQuotes.length / itemsPerPage);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // פונקציות בחירה מרובה
+    const handleSelectQuote = (quoteId) => {
+        setSelectedQuotes(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(quoteId)) {
+                newSet.delete(quoteId);
+            } else {
+                newSet.add(quoteId);
+            }
+            return newSet;
+        });
+    };
+
+    const handleSelectAll = () => {
+        if (selectAll) {
+            // בטל סימון של כל ההצעות בעמוד הנוכחי
+            setSelectedQuotes(prev => {
+                const newSet = new Set(prev);
+                paginatedQuotes.forEach(quote => newSet.delete(quote.id));
+                return newSet;
+            });
+            setSelectAll(false);
+        } else {
+            // סמן את כל ההצעות בעמוד הנוכחי
+            setSelectedQuotes(prev => {
+                const newSet = new Set(prev);
+                paginatedQuotes.forEach(quote => newSet.add(quote.id));
+                return newSet;
+            });
+            setSelectAll(true);
+        }
+    };
+
+    const handleDeleteSelected = async () => {
+        if (selectedQuotes.size === 0) return;
+
+        const quotesToDelete = quotes.filter(q => selectedQuotes.has(q.id));
+
+        // עדכון UI מיידי
+        setQuotes(prevQuotes => prevQuotes.filter(q => !selectedQuotes.has(q.id)));
+        setSelectedQuotes(new Set());
+        setSelectAll(false);
+
+        toast({
+            title: "מוחק הצעות...",
+            description: `מוחק ${quotesToDelete.length} הצעות מחיר מהמערכת.`,
+        });
+
+        // מחיקה במקביל
+        try {
+            const deletePromises = quotesToDelete.map(async (quote) => {
+                try {
+                    await Promise.allSettled([
+                        Quote.delete(quote.id).catch(error => {
+                            const is404 = error.response?.status === 404 ||
+                                          error.message?.toLowerCase().includes('not found') ||
+                                          error.message?.includes('404');
+                            if (!is404) throw error;
+                        }),
+                        removeFinancialTransaction(quote.id)
+                    ]);
+                } catch (e) {
+                    console.error(`Error deleting quote ${quote.id}:`, e);
+                }
+            });
+
+            await Promise.all(deletePromises);
+
+            toast({
+                title: "ההצעות נמחקו בהצלחה",
+                description: `${quotesToDelete.length} הצעות מחיר נמחקו לצמיתות מהמערכת.`,
+            });
+        } catch (e) {
+            console.error("Error during bulk deletion:", e);
+            toast({
+                variant: "destructive",
+                title: "שגיאה במחיקה",
+                description: "חלק מההצעות לא נמחקו. נסה לרענן את העמוד.",
+            });
+        }
+    };
+
+    // עדכון selectAll כאשר משנים עמוד או רשימה
+    useEffect(() => {
+        const allCurrentPageSelected = paginatedQuotes.length > 0 &&
+            paginatedQuotes.every(quote => selectedQuotes.has(quote.id));
+        setSelectAll(allCurrentPageSelected);
+    }, [paginatedQuotes, selectedQuotes]);
 
     const formatCurrency = (value) => new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 
@@ -1033,11 +1155,59 @@ export default function SentQuotes() {
                 ) : sortedQuotes.length === 0 ? (
                     <div className="text-center py-16"><div className="bg-white rounded-2xl shadow-lg p-12 max-w-md mx-auto"><FileText className="h-16 w-16 mx-auto text-gray-300 mb-6" /><h3 className="text-2xl font-semibold text-gray-900 mb-4">אין הצעות מחיר</h3><p className="text-gray-600 mb-8 leading-relaxed">לא נמצאו הצעות מחיר התואמות לסינון. נסה לשנות את תנאי החיפוש.</p><Button onClick={() => navigate(createPageUrl('QuoteCreate'))} className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-3"><FileText className="h-5 w-5 ml-2" /> צור הצעת מחיר ראשונה</Button></div></div>
                 ) : (
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <>
+                        {/* כפתור מחיקה מרובה */}
+                        {selectedQuotes.size > 0 && (
+                            <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-blue-900">
+                                        {selectedQuotes.size} הצעות נבחרו
+                                    </p>
+                                </div>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            className="bg-red-600 hover:bg-red-700"
+                                        >
+                                            <Trash2 className="h-4 w-4 ml-2" />
+                                            מחק נבחרות ({selectedQuotes.size})
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                פעולה זו תמחק {selectedQuotes.size} הצעות מחיר לצמיתות. לא ניתן לשחזר את הנתונים.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>ביטול</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={handleDeleteSelected}
+                                                className="bg-red-600 hover:bg-red-700"
+                                            >
+                                                מחק הכל
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        )}
+
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="min-w-full">
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
+                                        <th className="px-3 py-2 text-center w-12">
+                                            <Checkbox
+                                                checked={selectAll}
+                                                onCheckedChange={handleSelectAll}
+                                                aria-label="בחר הכל"
+                                            />
+                                        </th>
                                         <th className="px-3 py-2 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider"><Button variant="ghost" className="p-0 h-auto hover:bg-transparent" onClick={() => requestSort('projectName')}>פרויקט / לקוח{getSortIndicator('projectName')}</Button></th>
                                         <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><Button variant="ghost" className="p-0 h-auto hover:bg-transparent" onClick={() => requestSort('createdAt')}>תאריך{getSortIndicator('createdAt')}</Button></th>
                                         <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><Button variant="ghost" className="p-0 h-auto hover:bg-transparent" onClick={() => requestSort('status')}>סטטוס{getSortIndicator('status')}</Button></th>
@@ -1049,7 +1219,7 @@ export default function SentQuotes() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
-                                {sortedQuotes.map((quote) => {
+                                {paginatedQuotes.map((quote) => {
                                     // Simplified and direct calculation from saved quote data
                                     const totalCost = quote.estimatedCost || 0;
                                     const totalProfit = (quote.finalAmount || 0) - totalCost;
@@ -1072,8 +1242,24 @@ export default function SentQuotes() {
                                         }
                                     };
 
+                                    const isSelected = selectedQuotes.has(quote.id);
+
                                     return (
-                                        <tr key={quote.id} className={`transition-colors ${getRowBackgroundClass(quote.status)}`}>
+                                        <tr
+                                            key={quote.id}
+                                            className={cn(
+                                                "transition-colors",
+                                                isSelected && "bg-blue-50 border-l-4 border-l-blue-500",
+                                                !isSelected && getRowBackgroundClass(quote.status)
+                                            )}
+                                        >
+                                            <td className="px-3 py-3 text-center">
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    onCheckedChange={() => handleSelectQuote(quote.id)}
+                                                    aria-label={`בחר ${quote.projectName}`}
+                                                />
+                                            </td>
                                             <td className="px-3 py-3 text-sm">
                                                 <div className="font-semibold text-gray-900 truncate max-w-48">{quote.projectName}</div>
                                                 <div className="text-gray-500 text-xs truncate max-w-48">{quote.clientName}</div>
@@ -1177,7 +1363,7 @@ export default function SentQuotes() {
                             </tbody>
                                 <tfoot className="bg-gray-800 text-white border-t-2 border-gray-600">
                                     <tr>
-                                        <td colSpan="3" className="px-3 py-4 text-sm font-bold text-right">סיכום ({sortedQuotes.length} הצעות)</td>
+                                        <td colSpan="4" className="px-3 py-4 text-sm font-bold text-right">סיכום ({sortedQuotes.length} הצעות)</td>
                                         <td className="px-3 py-4 text-center text-sm font-bold text-blue-200">{formatCurrency(sortedQuotes.reduce((sum, quote) => sum + (quote.finalAmount || 0), 0))}</td>
                                         <td className="px-3 py-4 text-center text-sm font-bold text-orange-200">
                                             {formatCurrency(sortedQuotes.reduce((sum, quote) => sum + (quote.estimatedCost || 0), 0))}
@@ -1210,6 +1396,123 @@ export default function SentQuotes() {
                             </table>
                         </div>
                     </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
+                            {/* Page Info */}
+                            <div className="text-sm text-gray-600">
+                                מציג {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, sortedQuotes.length)} מתוך {sortedQuotes.length} הצעות
+                            </div>
+
+                            {/* Pagination Navigation */}
+                            <Pagination>
+                                <PaginationContent>
+                                    <PaginationItem>
+                                        <PaginationPrevious
+                                            onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                                            className={cn(
+                                                currentPage === 1 && "pointer-events-none opacity-50"
+                                            )}
+                                        />
+                                    </PaginationItem>
+
+                                    {/* First Page */}
+                                    {totalPages > 0 && (
+                                        <PaginationItem>
+                                            <PaginationLink
+                                                onClick={() => handlePageChange(1)}
+                                                isActive={currentPage === 1}
+                                            >
+                                                1
+                                            </PaginationLink>
+                                        </PaginationItem>
+                                    )}
+
+                                    {/* Ellipsis before current page range */}
+                                    {currentPage > 3 && totalPages > 5 && (
+                                        <PaginationItem>
+                                            <PaginationEllipsis />
+                                        </PaginationItem>
+                                    )}
+
+                                    {/* Pages around current page */}
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .filter(page => {
+                                            // Show pages near current page
+                                            if (totalPages <= 5) return page > 1 && page < totalPages;
+                                            return page > 1 && page < totalPages && Math.abs(page - currentPage) <= 1;
+                                        })
+                                        .map(page => (
+                                            <PaginationItem key={page}>
+                                                <PaginationLink
+                                                    onClick={() => handlePageChange(page)}
+                                                    isActive={currentPage === page}
+                                                >
+                                                    {page}
+                                                </PaginationLink>
+                                            </PaginationItem>
+                                        ))}
+
+                                    {/* Ellipsis after current page range */}
+                                    {currentPage < totalPages - 2 && totalPages > 5 && (
+                                        <PaginationItem>
+                                            <PaginationEllipsis />
+                                        </PaginationItem>
+                                    )}
+
+                                    {/* Last Page */}
+                                    {totalPages > 1 && (
+                                        <PaginationItem>
+                                            <PaginationLink
+                                                onClick={() => handlePageChange(totalPages)}
+                                                isActive={currentPage === totalPages}
+                                            >
+                                                {totalPages}
+                                            </PaginationLink>
+                                        </PaginationItem>
+                                    )}
+
+                                    <PaginationItem>
+                                        <PaginationNext
+                                            onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                                            className={cn(
+                                                currentPage === totalPages && "pointer-events-none opacity-50"
+                                            )}
+                                        />
+                                    </PaginationItem>
+                                </PaginationContent>
+                            </Pagination>
+
+                            {/* Items Per Page Selector */}
+                            <div className="flex items-center gap-2">
+                                <Label htmlFor="items-per-page" className="text-sm text-gray-600 whitespace-nowrap">
+                                    הצעות לעמוד:
+                                </Label>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="h-8 w-16">
+                                            {itemsPerPage}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {[10, 25, 50, 100].map((size) => (
+                                            <DropdownMenuItem
+                                                key={size}
+                                                onClick={() => {
+                                                    setItemsPerPage(size);
+                                                    setCurrentPage(1);
+                                                }}
+                                            >
+                                                {size}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+                    )}
+                    </>
                 )}
 
                 <div className="mt-12 space-y-8">
