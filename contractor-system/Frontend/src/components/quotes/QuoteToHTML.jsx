@@ -947,12 +947,29 @@ export default function QuoteToHTML({ quote }) {
             
             <!-- קטגוריות -->
             ${Object.keys(itemsByCategory).map(categoryId => {
+              // Convert category ID from snake_case to camelCase for database lookup
+              const convertCategoryKey = (catId) => {
+                const mapping = {
+                  'cat_paint_plaster': 'catPaintPlaster',
+                  'cat_tiling': 'catTiling',
+                  'cat_demolition': 'catDemolition',
+                  'cat_electricity': 'catElectricity',
+                  'cat_plumbing': 'catPlumbing',
+                  'cat_construction': 'catConstruction'
+                };
+                return mapping[catId] || catId;
+              };
+
               const items = itemsByCategory[categoryId];
               const style = CATEGORY_STYLES[categoryId] || CATEGORY_STYLES['cat_construction'];
               const summary = categorySummaries[categoryId];
+
+              // Convert categoryId to match database format (camelCase)
+              const dbCategoryId = convertCategoryKey(categoryId);
+
               // Use category-specific commitment from database, fallback to general commitment
-              const commitment = quote.categoryCommitments?.[categoryId] || quote.companyInfo?.contractorCommitments || '';
-              const timings = quote.categoryTimings?.[categoryId] || {};
+              const commitment = quote.categoryCommitments?.[dbCategoryId] || quote.companyInfo?.contractorCommitments || '';
+              const timings = quote.categoryTimings?.[dbCategoryId] || {};
               
               return `
                 <div class="category-block">
@@ -1247,7 +1264,7 @@ export default function QuoteToHTML({ quote }) {
                           <div class="summary-value-small" style="color: ${style.textColor};">${format(new Date(timings.startDate), 'd.M.yyyy', { locale: he })}</div>
                         </div>
                         ` : ''}
-                        
+
                         ${timings.endDate ? `
                         <div class="summary-item">
                           <div class="summary-label">תאריך סיום</div>

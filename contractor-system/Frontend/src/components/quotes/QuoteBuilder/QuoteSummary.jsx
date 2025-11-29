@@ -93,8 +93,9 @@ const ProjectCashFlowChart = ({ paymentTerms = [], finalAmount = 0, selectedItem
 
     // Find the actual project end date from category timings
     Object.values(categoryTimings).forEach(timing => {
-        if (timing.endDate) {
-            const categoryEndDate = new Date(timing.endDate);
+        const endDate = timing.end_date || timing.endDate; // Support both snake_case and camelCase
+        if (endDate) {
+            const categoryEndDate = new Date(endDate);
             if (categoryEndDate > projectEndDate) {
                 projectEndDate = categoryEndDate;
             }
@@ -138,9 +139,10 @@ const ProjectCashFlowChart = ({ paymentTerms = [], finalAmount = 0, selectedItem
         
         // Calculate expenses - FIXED: Only on category START date
         Object.entries(categoryTimings).forEach(([categoryId, timing]) => {
-            if (timing.startDate) {
-                const categoryStartDate = new Date(timing.startDate);
-                
+            const startDate = timing.start_date || timing.startDate; // Support both snake_case and camelCase
+            if (startDate) {
+                const categoryStartDate = new Date(startDate);
+
                 // Check if today is the START date of this category
                 if (format(categoryStartDate, 'dd/MM') === dateStr) {
                     // Add ALL expenses for this category on the start date
@@ -404,7 +406,10 @@ export default function QuoteSummary({
     
     const workforceData = Object.entries(categoryTimings || {})
         .map(([categoryId, timings]) => {
-            if (!timings || !timings.startDate || !timings.endDate) return null;
+            const startDate = timings?.start_date || timings?.startDate; // Support both formats
+            const endDate = timings?.end_date || timings?.endDate; // Support both formats
+
+            if (!timings || !startDate || !endDate) return null;
             const categoryItems = realItems.filter(item => item.categoryId === categoryId);
             if (categoryItems.length === 0) return null;
 
@@ -412,8 +417,8 @@ export default function QuoteSummary({
                 const workDuration = Number(item.workDuration) || 0;
                 return sum + workDuration;
             }, 0);
-            
-            const availableWorkDays = calculateWorkingDays(timings.startDate, timings.endDate);
+
+            const availableWorkDays = calculateWorkingDays(startDate, endDate);
             const workersNeeded = availableWorkDays > 0 ? Math.ceil(totalWorkDaysNeeded / availableWorkDays) : 0;
             return workersNeeded;
         })

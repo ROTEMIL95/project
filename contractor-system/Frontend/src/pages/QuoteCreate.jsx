@@ -1261,7 +1261,10 @@ export default function QuoteCreate() {
           setSelectedCategories(categoriesFromItems);
         }
 
-        if (existingQuote.categoryTimings) {
+        if (existingQuote.category_timings) {
+          setCategoryTimings(existingQuote.category_timings);
+        } else if (existingQuote.categoryTimings) {
+          // Fallback for old format
           setCategoryTimings(existingQuote.categoryTimings);
         }
 
@@ -1551,7 +1554,11 @@ export default function QuoteCreate() {
         estimatedWorkDays: currentTotals.totalWorkDays || 0,
         estimatedCost: currentTotals.totalCost,
         estimatedProfitPercent: currentTotals.totalCost > 0 ? ((currentTotals.total - currentTotals.totalCost) / currentTotals.totalCost) * 100 : 0,
-        companyInfo: user?.user_metadata?.companyInfo || {},
+        companyInfo: {
+          ...(user?.user_metadata?.companyInfo || {}),
+          contractorCommitments: user?.user_metadata?.contractorCommitments || '',
+          clientCommitments: user?.user_metadata?.clientCommitments || ''
+        },
         paymentTerms: paymentTerms || [],
         categoryCommitments: user?.user_metadata?.categoryCommitments || {},
         tilingWorkTypes: tilingWorkTypes, // New state
@@ -1562,6 +1569,8 @@ export default function QuoteCreate() {
       console.log('[QuoteCreate] 💾 user:', user);
       console.log('[QuoteCreate] 💾 user.user_metadata:', user?.user_metadata);
       console.log('[QuoteCreate] 💾 companyInfo:', user?.user_metadata?.companyInfo);
+      console.log('[QuoteCreate] 💾 contractorCommitments:', user?.user_metadata?.contractorCommitments);
+      console.log('[QuoteCreate] 💾 clientCommitments:', user?.user_metadata?.clientCommitments);
       console.log('[QuoteCreate] 💾 categoryCommitments:', user?.user_metadata?.categoryCommitments);
       console.log('[QuoteCreate] 💾 projectInfo:', projectInfo);
       console.log('[QuoteCreate] 💾 Full quoteDataToSave:', quoteDataToSave);
