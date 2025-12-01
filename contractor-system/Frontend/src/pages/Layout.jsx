@@ -108,7 +108,8 @@ const PageLayout = ({ children, currentPageName }) => {
     { name: 'הזנת נתונים', icon: <Calculator className="h-5 w-5" />, path: 'CostCalculator', color: 'green' },
     { name: 'מחירון קבלן', icon: <Settings2 className="h-5 w-5" />, path: 'ContractorPricing', color: 'teal' },
     { name: 'הצעות שנשלחו', icon: <Send className="h-5 w-5" />, path: 'SentQuotes', color: 'sky' },
-    { name: 'פרטי קבלן', icon: <Contact className="h-5 w-5" />, path: 'ContractAgreement', color: 'pink' }
+    { name: 'פרטי קבלן', icon: <Contact className="h-5 w-5" />, path: 'ContractAgreement', color: 'pink' },
+    { name: 'ניהול פיננסי', icon: <Coins className="h-5 w-5" />, path: 'Finance', color: 'amber', disabled: true, badge: 'בקרוב!' }
   ];
 
   return (
@@ -272,17 +273,6 @@ const PageLayout = ({ children, currentPageName }) => {
           </div>
           
           <div className="border-t border-gray-200 px-4 py-4 space-y-2">
-            {/* Financial Management - Coming Soon */}
-            <div className="relative w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-400 rounded-lg bg-gray-50 cursor-not-allowed opacity-60">
-              <div className="flex items-center">
-                <Coins className="h-5 w-5 ml-3 text-amber-400" />
-                <span>ניהול פיננסי</span>
-              </div>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-400 to-pink-500 text-white">
-                בקרוב!
-              </span>
-            </div>
-
             <button onClick={() => {navigate(createPageUrl('Support')); setIsSidebarOpen(false);}} className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-100 transition-colors shimmer-element text-right">
               <HelpCircle className="h-5 w-5 ml-3 text-gray-500" />
               <span>עזרה ותמיכה</span>
