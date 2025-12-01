@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_KEY: str
     SUPABASE_SERVICE_KEY: str
-    SUPABASE_JWT_SECRET: str  # JWT Secret for local token validation
+    SUPABASE_JWT_SECRET: str = ""  # JWT Secret for local token validation (optional - falls back to remote validation if not set)
 
     # JWT
     JWT_SECRET: str
