@@ -108,7 +108,7 @@ const PageLayout = ({ children, currentPageName }) => {
     { name: 'הזנת נתונים', icon: <Calculator className="h-5 w-5" />, path: 'CostCalculator', color: 'green' },
     { name: 'מחירון קבלן', icon: <Settings2 className="h-5 w-5" />, path: 'ContractorPricing', color: 'teal' }, // NEW: quick access
     { name: 'הצעות שנשלחו', icon: <Send className="h-5 w-5" />, path: 'SentQuotes', color: 'sky' },
-    { name: 'ניהול פיננסי', icon: <Coins className="h-5 w-5" />, path: 'Finance', color: 'amber' },
+    { name: 'ניהול פיננסי', icon: <Coins className="h-5 w-5" />, path: 'Finance', color: 'amber', disabled: true, badge: 'בקרוב!' },
     { name: 'פרטי קבלן', icon: <Contact className="h-5 w-5" />, path: 'ContractAgreement', color: 'pink' }
   ];
 
@@ -219,25 +219,39 @@ const PageLayout = ({ children, currentPageName }) => {
             <nav className="space-y-2">
               {menuItems.map((item) => {
                 const isActive = currentPageName === item.path;
+                const isDisabled = item.disabled;
+
                 return (
                   <div
                     key={item.name}
                     className={cn(
-                      "group flex items-center px-4 py-3 text-sm font-bold rounded-xl cursor-pointer transition-all duration-300 transform hover:-translate-y-0.5 shimmer-element",
-                      isActive
+                      "group flex items-center justify-between px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300",
+                      isDisabled
+                        ? "cursor-not-allowed opacity-50 bg-gray-50"
+                        : "cursor-pointer transform hover:-translate-y-0.5 shimmer-element",
+                      isActive && !isDisabled
                         ? 'bg-gradient-to-r from-indigo-600 to-purple-500 text-white shadow-lg'
-                        : `text-gray-600 hover:bg-${item.color}-50 hover:text-${item.color}-700`
+                        : !isDisabled && `text-gray-600 hover:bg-${item.color}-50 hover:text-${item.color}-700`
                     )}
                     onClick={() => {
-                      navigate(createPageUrl(item.path));
-                      setIsSidebarOpen(false); // Changed: close sidebar on navigation
+                      if (!isDisabled) {
+                        navigate(createPageUrl(item.path));
+                        setIsSidebarOpen(false);
+                      }
                     }}
                   >
-                    <span className={cn(
-                        "ml-4 transition-colors", 
-                        isActive ? 'text-white' : `text-${item.color}-500`
-                    )}>{item.icon}</span>
-                    <span>{item.name}</span>
+                    <div className="flex items-center">
+                      <span className={cn(
+                          "ml-4 transition-colors",
+                          isActive && !isDisabled ? 'text-white' : isDisabled ? 'text-gray-400' : `text-${item.color}-500`
+                      )}>{item.icon}</span>
+                      <span>{item.name}</span>
+                    </div>
+                    {item.badge && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-400 to-pink-500 text-white">
+                        {item.badge}
+                      </span>
+                    )}
                   </div>
                 );
               })}
