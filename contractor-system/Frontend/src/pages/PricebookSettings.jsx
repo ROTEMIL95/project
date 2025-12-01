@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useUser } from '@/components/utils/UserContext';
 import { supabase } from '@/lib/supabase';
+import { User } from '@/lib/entities';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,6 +50,10 @@ export default function PricebookSettings() {
   const [plumb, setPlumb] = useState({ desiredProfitPercent: "" });
   const [elec, setElec] = useState({ desiredProfitPercent: "" });
   const [construct, setConstruct] = useState({ desiredProfitPercent: "", workerCostPerUnit: "" });
+
+  // State for catalog items (needed to apply changes to existing items)
+  const [paintItems, setPaintItems] = useState([]);
+  const [tilingItems, setTilingItems] = useState([]);
 
   // הגדרות עלויות נוספות עם תזמון
   const [additionalCostDefaults, setAdditionalCostDefaults] = useState({
@@ -298,9 +303,59 @@ export default function PricebookSettings() {
       });
 
       setGeneralNotes(profile?.pricebook_general_notes || "");
+
+      // Load catalog items (needed to apply changes to existing items)
+      const paintItemsFromMetadata = user.user_metadata?.paintItems || [];
+      const tilingItemsFromMetadata = user.user_metadata?.tilingItems || [];
+      setPaintItems(paintItemsFromMetadata);
+      setTilingItems(tilingItemsFromMetadata);
+
       setLoading(false);
     })();
   }, [user, userLoading]);
+
+  // Helper function to calculate paint cost per meter (copied from CostCalculator logic)
+  const calculatePaintCostPerMeter = (item) => {
+    if (!item) return 0;
+
+    const bucketPrice = Number(item.bucketPrice) || 0;
+    const coverage = Number(item.coverage) || 1;
+    const workerDailyCost = Number(item.workerDailyCost) || 0;
+    const coatsNeeded = Number(item.coatsNeeded) || 1;
+    const metersPerDay = Number(item.metersPerDay) || 1;
+
+    // Material cost per sqm
+    const materialCostPerMeter = (bucketPrice / coverage) * coatsNeeded;
+
+    // Labor cost per sqm
+    const laborCostPerMeter = workerDailyCost / metersPerDay;
+
+    return materialCostPerMeter + laborCostPerMeter;
+  };
+
+  // Helper function to calculate tiling basic cost per meter (copied from CostCalculator logic)
+  const calculateTilingBasicCostPerMeter = (item) => {
+    if (!item) return 0;
+
+    const materialCost = Number(item.materialCost) || 0;
+    const additionalCost = Number(item.additionalCost) || 0;
+    const method = item.laborCostMethod || 'perDay';
+    const complexityValue = Number(item.complexityValue) || 1;
+
+    let laborCost = 0;
+    if (method === 'perDay') {
+      const laborCostPerDay = Number(item.laborCostPerDay) || 0;
+      const sqmPerDay = Number(item.sqmPerDay) || 1;
+      laborCost = laborCostPerDay / sqmPerDay;
+    } else if (method === 'perSqM') {
+      laborCost = Number(item.laborCostPerSqM) || 0;
+    }
+
+    // Apply complexity multiplier
+    laborCost = laborCost * complexityValue;
+
+    return materialCost + laborCost + additionalCost;
+  };
 
   const handleSave = useCallback(async () => {
     // Helper function to safely parse numbers, ignoring whitespace
@@ -413,6 +468,72 @@ export default function PricebookSettings() {
 
       if (error) throw error;
 
+      // Check if worker cost or profit percent changed for paint items
+      if (paintItems.length > 0 && (payload.paintUserDefaults.workerDailyCost || payload.paintUserDefaults.desiredProfitPercent)) {
+        const ok = window.confirm("להחיל את עלות הפועל ואחוז הרווח על כל פריטי הצבע/שפכטל השמורים? הפעולה תעדכן גם מחיר/עלות/רווח ממוצעים להצגה.");
+        if (ok) {
+          const updatedPaintItems = paintItems.map((item) => {
+            const newItem = { ...item };
+            if (payload.paintUserDefaults.workerDailyCost !== undefined) {
+              newItem.workerDailyCost = Number(payload.paintUserDefaults.workerDailyCost);
+              newItem.laborCost = Number(payload.paintUserDefaults.workerDailyCost);
+            }
+            if (payload.paintUserDefaults.desiredProfitPercent !== undefined) {
+              const baseCostPerMeter = Math.round(calculatePaintCostPerMeter({
+                ...newItem,
+                workerDailyCost: newItem.workerDailyCost
+              }) || 0);
+
+              const avgCustomerPrice = Math.round(baseCostPerMeter * (1 + (Number(payload.paintUserDefaults.desiredProfitPercent) / 100)));
+              const avgProfitPerMeter = Math.round(avgCustomerPrice - baseCostPerMeter);
+
+              newItem.desiredProfitPercent = Number(payload.paintUserDefaults.desiredProfitPercent);
+              newItem.averageCostPerMeter = baseCostPerMeter;
+              newItem.averageCustomerPrice = avgCustomerPrice;
+              newItem.averageProfitPerMeter = avgProfitPerMeter;
+              newItem.averageProfitPercent = Number(payload.paintUserDefaults.desiredProfitPercent);
+            }
+            return newItem;
+          });
+
+          await User.updateMyUserData({ paintItems: updatedPaintItems });
+          setPaintItems(updatedPaintItems);
+        }
+      }
+
+      // Check if worker cost or profit percent changed for tiling items
+      if (tilingItems.length > 0 && (payload.tilingUserDefaults.laborCostPerDay || payload.tilingUserDefaults.desiredProfitPercent)) {
+        const ok = window.confirm("להחיל את עלות העובד ואחוז הרווח הרצוי על כל פריטי הריצוף השמורים? הפעולה תעדכן גם את המחיר/עלות/רווח הממוצעים להצגה.");
+        if (ok) {
+          const laborCostPerDay = Number(payload.tilingUserDefaults.laborCostPerDay || 0);
+          const desiredProfit = payload.tilingUserDefaults.desiredProfitPercent !== undefined ? Number(payload.tilingUserDefaults.desiredProfitPercent) : undefined;
+
+          const updatedTilingItems = tilingItems.map((item) => {
+            const newItem = {
+              ...item,
+              laborCostPerDay: laborCostPerDay,
+            };
+
+            if (desiredProfit !== undefined) {
+              const baseCostPerMeter = Math.round(calculateTilingBasicCostPerMeter(newItem) || 0);
+              const avgCustomerPrice = Math.round(baseCostPerMeter * (1 + (desiredProfit / 100)));
+              const avgProfitPerMeter = Math.round(avgCustomerPrice - baseCostPerMeter);
+
+              newItem.desiredProfitPercent = desiredProfit;
+              newItem.averageCostPerMeter = baseCostPerMeter;
+              newItem.averageCustomerPrice = avgCustomerPrice;
+              newItem.averageProfitPerMeter = avgProfitPerMeter;
+              newItem.averageProfitPercent = desiredProfit;
+            }
+
+            return newItem;
+          });
+
+          await User.updateMyUserData({ tilingItems: updatedTilingItems });
+          setTilingItems(updatedTilingItems);
+        }
+      }
+
       toast({
         title: "נשמר בהצלחה",
         description: "ההגדרות נשמרו בהצלחה.",
@@ -430,7 +551,7 @@ export default function PricebookSettings() {
         variant: "destructive"
       });
     }
-  }, [generalSettings, paint, tiling, demo, plumb, elec, construct, additionalCostDefaults, generalNotes, activeMap, paintExpenseTiming, tilingExpenseTiming, demoExpenseTiming, constructExpenseTiming, plumbExpenseTiming, elecExpenseTiming, user, navigate]);
+  }, [generalSettings, paint, tiling, demo, plumb, elec, construct, additionalCostDefaults, generalNotes, activeMap, paintExpenseTiming, tilingExpenseTiming, demoExpenseTiming, constructExpenseTiming, plumbExpenseTiming, elecExpenseTiming, user, navigate, paintItems, tilingItems, calculatePaintCostPerMeter, calculateTilingBasicCostPerMeter]);
 
   useEffect(() => {
     const handler = (e) => {
