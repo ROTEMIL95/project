@@ -30,8 +30,9 @@ export default function TilingManualItemDialog({
   // יחידת מידה
   const [unit, setUnit] = useState('מ״ר');
 
-  // ✅ ADD: Tile size field
-  const [selectedSize, setSelectedSize] = useState('');
+  // ✅ Tile size fields - split into two parts
+  const [sizeWidth, setSizeWidth] = useState('');
+  const [sizeHeight, setSizeHeight] = useState('');
 
   const prevOpenRef = useRef(open);
 
@@ -51,7 +52,12 @@ export default function TilingManualItemDialog({
         });
         setTimeUnit('days');
         setUnit(editingItem.unit || 'מ״ר');
-        setSelectedSize(editingItem.selectedSize || ''); // ✅ ADD: Load selectedSize
+
+        // Parse existing selectedSize like "60X60" into width and height
+        const existingSize = editingItem.selectedSize || '';
+        const parts = existingSize.split('X');
+        setSizeWidth(parts[0] || '');
+        setSizeHeight(parts[1] || '');
       } else {
         // Reset form for new item
         setFormData({
@@ -63,7 +69,8 @@ export default function TilingManualItemDialog({
         });
         setTimeUnit('days');
         setUnit('מ״ר');
-        setSelectedSize(''); // ✅ ADD: Reset selectedSize
+        setSizeWidth('');
+        setSizeHeight('');
       }
     }
     prevOpenRef.current = open;
@@ -123,6 +130,9 @@ export default function TilingManualItemDialog({
     // ✅ materialCost is already the total cost, don't multiply by quantity
     const totalMaterialCost = Number(formData.materialCost) || 0;
 
+    // Combine width and height with X
+    const combinedSize = (sizeWidth && sizeHeight) ? `${sizeWidth}X${sizeHeight}` : (sizeWidth || sizeHeight || null);
+
     const itemToAdd = {
       id: `tiling_manual_${Date.now()}`,
       name: formData.name,
@@ -137,7 +147,7 @@ export default function TilingManualItemDialog({
       profitPercent: profitPercent,
       workDuration: workDurationInDays, // Always store as days
       workType: workTypes?.[0]?.id || 'ריצוף', // ✅ FIX: Changed default from 'floor_tiling' to Hebrew 'ריצוף'
-      selectedSize: selectedSize || null, // ✅ ADD: Include selectedSize
+      selectedSize: combinedSize, // ✅ Combine width X height
     };
 
     if (onAdd) {
@@ -163,7 +173,7 @@ export default function TilingManualItemDialog({
         <div className="space-y-4 py-2">
           <div>
             <Label htmlFor="name" className="text-sm flex items-center gap-1">
-              שם הפריט <span className="text-red-500">*</span>
+              שם הפריט
             </Label>
             <Input
               id="name"
@@ -176,7 +186,7 @@ export default function TilingManualItemDialog({
 
           <div>
             <Label htmlFor="description" className="text-sm">
-              תיאור הפריט <span className="text-red-500">*</span>
+              תיאור הפריט
             </Label>
             <Textarea
               id="description"
@@ -191,7 +201,7 @@ export default function TilingManualItemDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="quantity" className="text-sm">
-                כמות <span className="text-red-500">*</span>
+                כמות
               </Label>
               <Input
                 id="quantity"
@@ -206,37 +216,35 @@ export default function TilingManualItemDialog({
             </div>
 
             <div>
-              <Label htmlFor="selectedSize" className="text-sm">
+              <Label htmlFor="sizeWidth" className="text-sm">
                 גודל אריח
               </Label>
-              <Input
-                id="selectedSize"
-                value={selectedSize}
-                onChange={(e) => setSelectedSize(e.target.value)}
-                placeholder="60x60"
-                className="mt-1 h-9"
-              />
+              <div className="flex items-center gap-1 mt-1 max-w-[140px]">
+                <Input
+                  id="sizeWidth"
+                  type="number"
+                  value={sizeWidth}
+                  onChange={(e) => setSizeWidth(e.target.value)}
+                  placeholder="60"
+                  className="h-9 text-center w-14"
+                />
+                <div className="flex-shrink-0 w-6 h-9 flex items-center justify-center bg-indigo-100 border border-indigo-300 rounded font-bold text-indigo-700">
+                  X
+                </div>
+                <Input
+                  id="sizeHeight"
+                  type="number"
+                  value={sizeHeight}
+                  onChange={(e) => setSizeHeight(e.target.value)}
+                  placeholder="60"
+                  className="h-9 text-center w-14"
+                />
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="unit" className="text-sm">
-                יחידת מידה
-              </Label>
-              <Select value={unit} onValueChange={setUnit}>
-                <SelectTrigger className="mt-1 h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="z-[9999]">
-                  <SelectItem value="מ״ר">מ"ר</SelectItem>
-                  <SelectItem value="מטר רץ">מטר רץ</SelectItem>
-                  <SelectItem value="יחידה">יחידה</SelectItem>
-                  <SelectItem value="מ״א">מ"א</SelectItem>
-                  <SelectItem value="שעות">שעות</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
 
             <div>
               <Label htmlFor="materialCost" className="text-sm">
