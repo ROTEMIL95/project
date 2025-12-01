@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Save, DollarSign, ChevronDown, ChevronUp, Settings, Info, CheckCircle2, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { createPageUrl } from '@/utils';
 import { toast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -416,7 +417,11 @@ export default function PricebookSettings() {
         title: "נשמר בהצלחה",
         description: "ההגדרות נשמרו בהצלחה.",
       });
-      // Don't navigate away - stay on settings page
+
+      // Navigate to dashboard after showing success toast
+      setTimeout(() => {
+        navigate(createPageUrl('Dashboard'));
+      }, 1000);
     } catch (error) {
       console.error("Error saving settings:", error);
       toast({
