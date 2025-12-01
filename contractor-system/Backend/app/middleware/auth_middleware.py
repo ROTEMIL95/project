@@ -2,7 +2,6 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from app.config import settings
-from app.database import get_supabase
 from typing import Optional
 import logging
 
@@ -34,39 +33,93 @@ def verify_supabase_token(
         )
 
     token = credentials.credentials
-    supabase = get_supabase()
 
     try:
-        # Get user from Supabase using the token
-        # This validates the token against Supabase Auth service
+        # Verify JWT token locally using Supabase JWT Secret
+        # This approach avoids sending large tokens back to Supabase API (prevents 431 errors)
+        # and improves performance by eliminating HTTP round-trip
         logger.debug(f"Attempting to verify token for request to {request.url.path}")
-        response = supabase.auth.get_user(token)
 
-        if not response or not response.user:
-            logger.warning(f"Token verification failed: No user returned from Supabase for path {request.url.path}")
+        # Decode and validate JWT token
+        # - Validates signature using SUPABASE_JWT_SECRET
+        # - Validates expiration time (exp claim)
+        # - Validates audience (must be "authenticated" for Supabase auth tokens)
+        payload = jwt.decode(
+            token,
+            settings.SUPABASE_JWT_SECRET,
+            algorithms=["HS256"],
+            audience="authenticated",  # Required for Supabase auth tokens
+            options={
+                "verify_signature": True,
+                "verify_exp": True,
+                "verify_aud": True
+            }
+        )
+
+        # Extract user data from token payload
+        user_id = payload.get("sub")
+        email = payload.get("email")
+        user_metadata = payload.get("user_metadata", {})
+
+        # Validate required claims
+        if not user_id:
+            logger.warning(f"Token missing 'sub' claim for path {request.url.path}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired authentication token",
+                detail="Invalid token: missing user ID",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        user = response.user
-        logger.debug(f"Successfully verified token for user {user.id} (email: {user.email})")
+        # Optional: Validate issuer (iss) matches Supabase URL
+        issuer = payload.get("iss")
+        if issuer and not issuer.startswith(settings.SUPABASE_URL):
+            logger.warning(f"Token issuer mismatch: expected {settings.SUPABASE_URL}, got {issuer}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: issuer mismatch",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        logger.debug(f"Successfully verified token for user {user_id} (email: {email})")
 
         return {
-            "sub": user.id,
-            "email": user.email,
-            "user_metadata": user.user_metadata or {}
+            "sub": user_id,
+            "email": email,
+            "user_metadata": user_metadata
         }
+
+    except JWTError as e:
+        # Handle JWT-specific errors with detailed messages
+        error_type = type(e).__name__
+        logger.error(f"JWT validation error ({error_type}) for path {request.url.path}: {str(e)}")
+        logger.error(f"Token preview (first 20 chars): {token[:20] if token else 'None'}...")
+
+        # Provide user-friendly error messages based on error type
+        if "expired" in str(e).lower():
+            detail = "Token has expired. Please log in again."
+        elif "signature" in str(e).lower():
+            detail = "Invalid token signature. Please log in again."
+        elif "audience" in str(e).lower():
+            detail = "Invalid token audience. Please log in again."
+        else:
+            detail = "Invalid authentication token. Please log in again."
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=detail,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     except HTTPException:
         raise
+
     except Exception as e:
-        # Log detailed error for debugging
-        logger.error(f"Token verification error for path {request.url.path}: {str(e)}", exc_info=True)
+        # Catch-all for unexpected errors
+        logger.error(f"Unexpected token verification error for path {request.url.path}: {str(e)}", exc_info=True)
         logger.error(f"Token preview (first 20 chars): {token[:20] if token else 'None'}...")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token verification failed: {str(e)}",
+            detail="Token verification failed. Please log in again.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
