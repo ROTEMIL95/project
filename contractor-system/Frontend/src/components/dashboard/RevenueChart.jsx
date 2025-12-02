@@ -24,18 +24,12 @@ export default function RevenueChart({ user }) {
       setError(null); // Clear any previous errors
       try {
         if (user && user.email) {
-          console.log("RevenueChart: Fetching quotes for user:", user.email);
-
           const allQuotes = await Quote.filter({});
-          console.log("RevenueChart: Fetched quotes:", allQuotes.length);
 
           const approvedQuotes = allQuotes.filter((q) => q.status === 'approved');
-          console.log('[RevenueChart] 📊 Approved quotes:', approvedQuotes.length);
-          console.log('[RevenueChart] 📋 Full approved quotes data:', approvedQuotes);
 
           const totalRevenue = approvedQuotes.reduce((sum, quote) => {
             const revenue = quote.totalPrice || quote.finalAmount || quote.totalAmount || 0;
-            console.log('[RevenueChart] 💵 Revenue for quote:', { id: quote.id, totalPrice: quote.totalPrice, finalAmount: quote.finalAmount, totalAmount: quote.totalAmount, revenue });
             return sum + revenue;
           }, 0);
 
@@ -44,22 +38,8 @@ export default function RevenueChart({ user }) {
             const totalCost = quote.totalCost || quote.estimatedCost || 0;
             const profit = quote.profitAmount || (totalPrice - totalCost) || 0;
 
-            console.log('[RevenueChart] 💰 Processing quote for profit:', {
-              id: quote.id,
-              profitAmount: quote.profitAmount,
-              totalPrice: quote.totalPrice,
-              finalAmount: quote.finalAmount,
-              totalCost: quote.totalCost,
-              estimatedCost: quote.estimatedCost,
-              calculatedTotalPrice: totalPrice,
-              calculatedTotalCost: totalCost,
-              calculatedProfit: profit
-            });
-
             return sum + Math.max(0, profit);
           }, 0);
-
-          console.log('[RevenueChart] 📈 Total stats:', { totalRevenue, totalProfit });
 
           const sentQuotes = allQuotes.filter((q) => q.status === 'sent' || q.status === 'approved');
           const closingRate = sentQuotes.length > 0 ? approvedQuotes.length / sentQuotes.length * 100 : 0;

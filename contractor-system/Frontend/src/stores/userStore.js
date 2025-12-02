@@ -105,10 +105,6 @@ export const useUserStore = create((set, get) => ({
 
             if (!profileData) {
               console.warn('[userStore] Profile is NULL from backend API', supabaseUser.id);
-            } else {
-              console.log('[userStore] 🔍 Profile loaded from backend:', profileData);
-              console.log('[userStore] 🔍 contractor_commitments:', profileData.contractor_commitments);
-              console.log('[userStore] 🔍 client_commitments:', profileData.client_commitments);
             }
           } catch (profileError) {
             console.error('[userStore] Failed to load profile:', profileError.message || profileError);
@@ -150,12 +146,6 @@ export const useUserStore = create((set, get) => ({
             defaultPaymentTerms: profileData?.default_payment_terms || []
           }
         } : null;
-
-        // 🔍 DEBUG: Log what was set in user_metadata
-        if (user) {
-          console.log('[userStore] 🎯 user.user_metadata.contractorCommitments:', user.user_metadata.contractorCommitments);
-          console.log('[userStore] 🎯 user.user_metadata.clientCommitments:', user.user_metadata.clientCommitments);
-        }
 
         set({
           user,

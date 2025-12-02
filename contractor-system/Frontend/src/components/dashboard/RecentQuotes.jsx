@@ -27,52 +27,29 @@ export default function RecentQuotes({ user }) {
       setError(null); // Reset error on new fetch attempt
       try {
         if (user && user.email) {
-          console.log("[RecentQuotes] Starting fetch for user:", {
-            userId: user.id,
-            email: user.email,
-          });
-
           // Ensure session is available before making API calls
           if (!session) {
-            console.log("[RecentQuotes] No session available, attempting to refresh...");
             const { data, error } = await supabase.auth.refreshSession();
             if (error || !data.session) {
-              console.warn("[RecentQuotes] Session refresh failed, showing empty state");
               setRecentQuotes([]);
               setLoading(false);
               return;
             }
-            console.log("[RecentQuotes] Session refreshed successfully");
           }
 
           // Check if Quote.filter is available
           if (typeof Quote.filter !== 'function') {
-            console.log("[RecentQuotes] Backend not connected, showing empty state.");
             setRecentQuotes([]);
             setLoading(false);
             return;
           }
 
           const allQuotes = await Quote.filter({});
-          console.log("[RecentQuotes] Fetched quotes:", {
-            totalQuotes: allQuotes.length,
-            quotes: allQuotes.map(q => ({
-              id: q.id,
-              projectName: q.projectName,
-              clientName: q.clientName,
-              status: q.status,
-              totalPrice: q.totalPrice,
-              totalCost: q.totalCost,
-              createdAt: q.createdAt,
-            })),
-          });
 
           // Limit to 5 most recent quotes (already sorted by created_at descending in Quote.filter)
           const recentFive = allQuotes.slice(0, 5);
-          console.log("[RecentQuotes] Showing recent 5 quotes:", recentFive.length);
           setRecentQuotes(recentFive);
         } else {
-          console.warn("[RecentQuotes] No user data available");
           setRecentQuotes([]);
         }
       } catch (error) {

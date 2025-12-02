@@ -105,7 +105,6 @@ export default function UpcomingWorkforce() {
           const approvedQuotes = await Quote.filter({
             status: 'approved'
           });
-          console.log('[UpcomingWorkforce] Fetched approved quotes:', approvedQuotes.length, approvedQuotes);
 
           const upcomingCategories = [];
           const today = new Date();
@@ -114,18 +113,6 @@ export default function UpcomingWorkforce() {
             // Try both camelCase and snake_case - the API might return snake_case
             const categoryTimings = quote.categoryTimings || quote.category_timings || {};
             const { items = [], paymentTerms = [], finalAmount = 0, createdAt, endDate: projectEndDate } = quote;
-
-            console.log('[UpcomingWorkforce] Processing quote:', {
-              id: quote.id,
-              projectName: quote.projectName,
-              categoryTimings_camel: quote.categoryTimings,
-              category_timings_snake: quote.category_timings,
-              final: categoryTimings,
-              hasCategoryTimings: !!categoryTimings && Object.keys(categoryTimings).length > 0,
-              categoryTimingsKeys: Object.keys(categoryTimings || {}),
-              hasItems: items && items.length > 0,
-              itemsCount: items?.length || 0
-            });
 
             // חישוב תאריך סיום העבודה האחרון בפרויקט
             let latestCategoryEndDate = new Date(0);
@@ -261,7 +248,6 @@ export default function UpcomingWorkforce() {
           });
 
           upcomingCategories.sort((a, b) => a.daysUntilStart - b.daysUntilStart);
-          console.log('[UpcomingWorkforce] Final upcoming categories:', upcomingCategories.length, upcomingCategories);
           setUpcomingWork(upcomingCategories);
         }
       } catch (error) {

@@ -17,16 +17,11 @@ export function identifyPriceTier(item, quantity, layers = 1) {
   const numQty = Number(quantity);
   // שינוי: במקום itemId ו-catalogItems, הפונקציה מקבלת ישירות את אובייקט הפריט
   if (isNaN(numQty) || numQty <= 0 || !item) {
-    console.log(`identifyPriceTier: Invalid parameters - quantity: ${numQty}, item: ${item?.id || 'N/A'}, layers: ${layers}`);
     return null;
   }
 
-  // console.log(`identifyPriceTier: Looking for quantity ${numQty}, layer ${layers} in item:`, item.itemName || item.name);
-  // console.log(`Item priceTiers:`, item.priceTiers);
-
   if (!Array.isArray(item.priceTiers) || item.priceTiers.length === 0) {
     const price = Number(item.customerPrice || item.averageCustomerPrice || 0);
-    // console.log(`identifyPriceTier: No tiers found, using default price: ${price}`);
     return { tier: null, range: 'כללי', price: price };
   }
 
@@ -41,11 +36,8 @@ export function identifyPriceTier(item, quantity, layers = 1) {
     .filter(t => !isNaN(t.max) && t.max > 0)
     .sort((a, b) => a.max - b.max);
 
-  // console.log(`identifyPriceTier: Processed tiers:`, tiers);
-
   if (tiers.length === 0) {
     const price = Number(item.customerPrice || item.averageCustomerPrice || 0);
-    // console.log(`identifyPriceTier: No valid tiers, using default price: ${price}`);
     return { tier: null, range: 'כללי', price: price };
   }
 
@@ -58,7 +50,6 @@ export function identifyPriceTier(item, quantity, layers = 1) {
     if (numQty > min && numQty <= tier.max) {
       matchedTier = tier;
       range = `${Math.round(min + 1)} - ${tier.max}`;
-      // console.log(`identifyPriceTier: Found matching tier for quantity ${numQty}: range ${range}`);
       break;
     }
     min = tier.max;
@@ -67,40 +58,28 @@ export function identifyPriceTier(item, quantity, layers = 1) {
   if (!matchedTier && numQty > min) {
     matchedTier = tiers[tiers.length - 1];
     range = `${min}+`;
-    // console.log(`identifyPriceTier: Using highest tier for quantity ${numQty}: range ${range}`);
   }
 
   if (!matchedTier) {
     matchedTier = tiers[0];
     range = `1 - ${matchedTier.max}`;
-    // console.log(`identifyPriceTier: Using first tier as fallback: range ${range}`);
   }
 
   // שלב 3: קביעת המחיר עם טיפול במחירים חסרים ובמספר שכבות ספציפי
   let price = matchedTier.price;
-  // console.log(`identifyPriceTier: Initial price from tier: ${price}`);
 
   // אם יש מחירים לפי שכבות, נשתמש במחיר הספציפי לפי מספר השכבות
   if (matchedTier.pricesByLayer && typeof matchedTier.pricesByLayer === 'object') {
-    // console.log(`identifyPriceTier: Found pricesByLayer:`, matchedTier.pricesByLayer);
     const layerKey = String(layers);
     const layerPrice = Number(matchedTier.pricesByLayer[layerKey] || 0);
 
-    // console.log(`identifyPriceTier: Looking for layer ${layerKey}, found price: ${layerPrice}`);
-
     if (layerPrice > 0) {
       price = layerPrice;
-      // console.log(`identifyPriceTier: Using layer-specific price: ${price}`);
-    } else {
-      // console.log(`identifyPriceTier: No valid price for layer ${layerKey}, keeping tier price: ${price}`);
     }
-  } else {
-    // console.log(`identifyPriceTier: No pricesByLayer found, using tier price: ${price}`);
   }
 
   // אם המחיר עדיין אפס או שלא נמצא, נחפש במדרגות קודמות
   if (price <= 0) {
-    // console.log(`identifyPriceTier: Price is 0, searching in previous tiers...`);
     const matchedIndex = tiers.findIndex(t => t.max === matchedTier.max);
     for (let i = matchedIndex - 1; i >= 0; i--) {
       // בודק קודם במחירים לפי שכבות
@@ -109,14 +88,12 @@ export function identifyPriceTier(item, quantity, layers = 1) {
         const layerPrice = Number(tiers[i].pricesByLayer[layerKey] || 0);
         if (layerPrice > 0) {
           price = layerPrice;
-          // console.log(`identifyPriceTier: Found price in previous tier ${i}: ${price}`);
           break;
         }
       }
       // אם לא מוצא, בודק במחיר הכללי של המדרגה
       if (tiers[i].price > 0) {
         price = tiers[i].price;
-        // console.log(`identifyPriceTier: Found general price in previous tier ${i}: ${price}`);
         break;
       }
     }
@@ -125,10 +102,8 @@ export function identifyPriceTier(item, quantity, layers = 1) {
   // אם עדיין אין מחיר, שימוש במחיר הבסיס של הפריט
   if (price <= 0) {
     price = Number(item.customerPrice || item.averageCustomerPrice || 0);
-    // console.log(`identifyPriceTier: Using fallback item price: ${price}`);
   }
 
-  // console.log(`identifyPriceTier: Final result - price: ${price}, range: ${range}`);
   return { tier: matchedTier.originalTier, range, price };
 }
 
@@ -141,10 +116,7 @@ export function identifyPriceTier(item, quantity, layers = 1) {
  * @returns {Object|null} מדדים מחושבים.
 */
 export const calculateItemMetricsForQuantity = (item, quantity, allItems = [], options = {}) => {
-    console.log("calculateItemMetricsForQuantity called with:", { item, quantity, options });
-
     if (!item || !quantity || quantity <= 0) {
-        console.warn("Invalid input:", { item: !!item, quantity });
         return null;
     }
 
@@ -152,8 +124,6 @@ export const calculateItemMetricsForQuantity = (item, quantity, allItems = [], o
     const layers = options.layers || 1;
     const applyFixedCost = options.applyFixedCost !== false;
     const complexity = options.complexity || { percent: 0, description: '' };
-
-    console.log("Parsed options:", { layers, applyFixedCost, complexity });
 
     // ===========================================
     // 1. CALCULATE ALL CONTRACTOR-SIDE COSTS FIRST
@@ -291,7 +261,6 @@ export const calculateItemMetricsForQuantity = (item, quantity, allItems = [], o
         pricingMethod: pricingMethod, // Return which method was used
     };
 
-    console.log("Final result:", result);
     return result;
 };
 
@@ -344,9 +313,6 @@ export const calculateTilingMetrics = (tilingItem, area, projectComplexities = {
         const desiredProfitPercent = Number(tilingItem.desiredProfitPercent) || 30;
         const profit = totalCost * (desiredProfitPercent / 100);
         const customerPrice = Math.round(totalCost + profit);
-
-        console.log("🔧 calculateTilingMetrics FIXED - Using laborCostPerDay:", dailyLaborCost);
-        console.log("🔧 calculateTilingMetrics FIXED - Total labor cost:", totalLaborCost);
 
         return {
             validArea,

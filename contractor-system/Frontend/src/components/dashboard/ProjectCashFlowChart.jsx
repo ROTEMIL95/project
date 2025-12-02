@@ -47,7 +47,6 @@ export default function ProjectCashFlowChart() {
         }
 
         const allQuotes = await Quote.filter(quotesQuery);
-        console.log('[ProjectCashFlowChart] Fetched quotes:', allQuotes.length, allQuotes);
 
         // יצירת רשימת פרויקטים לפילטר
         const projectList = allQuotes.map(quote => ({
@@ -175,7 +174,6 @@ export default function ProjectCashFlowChart() {
                 monthData.projects.push(quote.projectName);
               }
               totalIncomeSum += normalizedPrice;
-              console.log('[ProjectCashFlowChart] ✅ Added fallback income for quote:', quote.id, normalizedPrice);
             }
           }
 
@@ -183,13 +181,6 @@ export default function ProjectCashFlowChart() {
           if (quote.status === 'approved') {
             const totalProjectCost = normalizedCost;
             let distributedCost = 0;
-
-            console.log('[ProjectCashFlowChart] 💰 Processing quote:', {
-              id: quote.id,
-              projectName: quote.projectName,
-              normalizedCost,
-              hasCategoryTimings: Object.keys(categoryTimings).length > 0
-            });
 
             // חישוב הוצאות לפי קטגוריות ותאריכי עבודה בפועל
             Object.entries(categoryTimings).forEach(([categoryId, timing]) => {
@@ -222,7 +213,6 @@ export default function ProjectCashFlowChart() {
               if (monthlyDataMap.has(currentMonthKey)) {
                 monthlyDataMap.get(currentMonthKey).expenses += totalProjectCost;
                 totalExpensesSum += totalProjectCost;
-                console.log('[ProjectCashFlowChart] ✅ Added fallback expense for quote:', quote.id, totalProjectCost);
               }
             }
 
@@ -300,15 +290,6 @@ export default function ProjectCashFlowChart() {
           ...month,
           netFlow: month.income - month.expenses
         }));
-
-        console.log('[ProjectCashFlowChart] 📊 Final results:', {
-          totalIncome: totalIncomeSum,
-          totalExpenses: totalExpensesSum,
-          netFlow: totalIncomeSum - totalExpensesSum,
-          activeProjects: filteredQuotes.length,
-          chartDataPoints: finalData.length,
-          monthsWithExpenses: finalData.filter(m => m.expenses > 0).length
-        });
 
         setChartData(finalData);
         setStats({

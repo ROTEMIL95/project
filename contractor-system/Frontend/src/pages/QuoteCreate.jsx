@@ -409,20 +409,6 @@ export default function QuoteCreate() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [savedQuoteId, setSavedQuoteId] = useState(null);
 
-  // Debug: Track showShareDialog changes
-  useEffect(() => {
-    console.log('🔴 [QuoteCreate] showShareDialog state changed to:', showShareDialog);
-    console.log('🔴 [QuoteCreate] savedQuoteId:', savedQuoteId);
-  }, [showShareDialog, savedQuoteId]);
-
-  // Debug: Log user data on mount
-  useEffect(() => {
-    if (user) {
-      console.log('👤 [QuoteCreate] User loaded:', user);
-      console.log('👤 [QuoteCreate] companyInfo:', user?.user_metadata?.companyInfo);
-      console.log('👤 [QuoteCreate] categoryCommitments:', user?.user_metadata?.categoryCommitments);
-    }
-  }, [user]);
 
   const { toast } = useToast();
   

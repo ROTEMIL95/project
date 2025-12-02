@@ -38,14 +38,12 @@ export default function Dashboard() {
       if (!user || tokenRefreshed) return;
 
       try {
-        console.log('[Dashboard] 🔄 Preemptively refreshing Supabase session...');
         const { data, error } = await supabase.auth.refreshSession();
 
         if (error) {
           console.warn('[Dashboard] ⚠️ Failed to refresh session:', error.message);
           // Don't throw - let the API retry mechanism handle it
         } else if (data?.session) {
-          console.log('[Dashboard] ✅ Session refreshed successfully before loading data');
           setTokenRefreshed(true);
         }
       } catch (err) {

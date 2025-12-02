@@ -485,88 +485,20 @@ export default React.forwardRef(function TilingCategoryEditor({
 
   useEffect(() => {
     if (initialRooms && initialRooms.length > 0 && !hasInitializedFromProp) {
-      console.log('[TilingCategoryEditor] Restoring items from initialRooms:', initialRooms.length);
       setLocalItems(initialRooms);
       setHasInitializedFromProp(true);
       hasInitializedFromSelectedItems.current = true; // Mark as initialized
     }
   }, [initialRooms, hasInitializedFromProp]);
 
-  // ✅ NEW: Sync deletions from cart back to localItems
-  useEffect(() => {
-    console.log('🔵 [DEBUG useEffect sync deletions] ========== START ==========');
-    console.log('🔵 [DEBUG] hasInitializedFromSelectedItems.current:', hasInitializedFromSelectedItems.current);
-    console.log('🔵 [DEBUG] selectedItems:', selectedItems);
-
-    // Only run after initial setup is complete
-    if (!hasInitializedFromSelectedItems.current || !Array.isArray(selectedItems)) {
-      console.log('🔵 [DEBUG] Skipping sync - not initialized or selectedItems not array');
-      console.log('🔵 [DEBUG useEffect sync deletions] ========== END (SKIPPED) ==========');
-      return;
-    }
-
-    // Get all tiling item IDs that exist in selectedItems (cart)
-    const tilingItemsInCart = selectedItems
-      .filter(item => item.categoryId === categoryId && item.itemType === 'tiling')
-      .map(item => {
-        // Extract base ID (remove _tiling or _panel suffix if exists)
-        if (item.id.endsWith('_tiling') || item.id.endsWith('_panel')) {
-          return item.id.substring(0, item.id.lastIndexOf('_'));
-        }
-        return item.id;
-      });
-
-    const uniqueCartIds = new Set(tilingItemsInCart);
-
-    console.log('🔵 [DEBUG] Tiling items in cart (base IDs):', Array.from(uniqueCartIds));
-    console.log('🔵 [DEBUG] Total unique cart IDs:', uniqueCartIds.size);
-
-    // Check if any localItems need to be removed (they're not in cart anymore)
-    setLocalItems(prevItems => {
-      console.log('🔵 [DEBUG] prevItems in setLocalItems:', prevItems);
-      console.log('🔵 [DEBUG] prevItems count:', prevItems.length);
-
-      // Only update if there's an actual difference
-      const itemsToRemove = prevItems.filter(localItem => !uniqueCartIds.has(localItem.id));
-
-      console.log('🔵 [DEBUG] Items to remove:', itemsToRemove.map(i => ({ id: i.id, name: i.name, isManualItem: i.isManualItem })));
-
-      // If no items need to be removed, don't update state
-      if (itemsToRemove.length === 0) {
-        console.log('🔵 [DEBUG] No items to remove - returning prevItems unchanged');
-        console.log('🔵 [DEBUG useEffect sync deletions] ========== END (NO CHANGES) ==========');
-        return prevItems;
-      }
-
-      console.log('[TilingCategoryEditor] 🗑️ Syncing deletions from cart:', itemsToRemove.map(i => i.id));
-
-      const itemsToKeep = prevItems.filter(localItem => uniqueCartIds.has(localItem.id));
-
-      console.log('🔵 [DEBUG] Items to keep:', itemsToKeep.map(i => ({ id: i.id, name: i.name, isManualItem: i.isManualItem })));
-      console.log('🔵 [DEBUG] Items to keep count:', itemsToKeep.length);
-
-      // If all items were removed and none remain, reset to default blank item
-      if (itemsToKeep.length === 0) {
-        console.log('[TilingCategoryEditor] All items removed, resetting to blank item');
-        console.log('🔵 [DEBUG useEffect sync deletions] ========== END (RESET TO BLANK) ==========');
-        return [{
-          id: `new_item_${Date.now()}`,
-          name: `אזור 1`,
-          subCategory: '',
-          quantity: 0,
-          panelQuantity: 0,
-          manualPriceOverride: false,
-          manualCustomerPrice: null,
-          complexity: { level: 'none', description: TILING_COMPLEXITY_OPTIONS.find((opt) => opt.value === 'none')?.description || '', multiplier: 0 },
-          selectedSize: null,
-          workType: '',
-        }];
-      }
-
-      console.log('🔵 [DEBUG useEffect sync deletions] ========== END (ITEMS REMOVED) ==========');
-      return itemsToKeep;
-    });
-  }, [selectedItems, categoryId]);
+  // ✅ REMOVED: Sync deletions useEffect - was causing race condition bug
+  // The useEffect that synced deletions from cart back to localItems has been removed because:
+  // 1. It created a race condition when adding manual items
+  // 2. Manual items were added to localItems before being added to selectedItems
+  // 3. This useEffect would run and think area items were deleted from cart
+  // 4. It would then remove area items from localItems incorrectly
+  // 5. Deletions are already handled by handleRemoveItem calling onRemoveItemFromQuote
+  // 6. Live sync is handled by useEffect at line 705 calling onUpdateCategoryData
 
   // Helper: toggle inline editor below a specific available item
   const toggleInlineFormFor = useCallback((catalogItemId) => {
@@ -610,19 +542,11 @@ export default React.forwardRef(function TilingCategoryEditor({
     setLoading(false);
   }, [userTilingItems]);
 
-  // Effect to log the structure of loaded tiling items for debugging/inspection
-  useEffect(() => {
-    if (tilingItems && tilingItems.length > 0) {
-      console.log('=== מבנה פריטי ריצוף מהקטלוג (Tiling Items) ===');
-      console.log('פריט ראשון:', tilingItems[0]);
-      console.log('כל השדות בפריט הראשון:', Object.keys(tilingItems[0]));
-    }
-  }, [tilingItems]);
+  // Effect removed - was for debugging tiling items structure
 
   useEffect(() => {
     // ✅ FIX: Only initialize from selectedItems if we haven't already initialized from initialRooms
     if (hasInitializedFromSelectedItems.current) {
-      console.log('[TilingCategoryEditor] ⏭️ Skipping selectedItems initialization - already initialized from initialRooms');
       return;
     }
 
@@ -766,10 +690,6 @@ export default React.forwardRef(function TilingCategoryEditor({
   }, []);
 
   const handleAddManualItem = useCallback((manualItemValues) => {
-    console.log('🟣 [DEBUG handleAddManualItem] ========== START ==========');
-    console.log('🟣 [DEBUG] Manual item values received:', manualItemValues);
-    console.log('🟣 [DEBUG] Current localItems BEFORE adding manual item:', localItems);
-
     // Create a manual item entry for local items (so it doesn't get lost during saveData)
     // This is a special item that will be passed through to the cart as-is
     const manualItemForLocal = {
@@ -793,16 +713,8 @@ export default React.forwardRef(function TilingCategoryEditor({
       workType: manualItemValues.workType || '',
     };
 
-    console.log('🟣 [DEBUG] Manual item object created:', manualItemForLocal);
-
     // Add to localItems so it persists through saveData
-    setLocalItems((prev) => {
-      const newLocalItems = [...prev, manualItemForLocal];
-      console.log('🟣 [DEBUG] localItems AFTER adding manual item:', newLocalItems);
-      console.log('🟣 [DEBUG] Total items in localItems:', newLocalItems.length);
-      console.log('🟣 [DEBUG handleAddManualItem] ========== END ==========');
-      return newLocalItems;
-    });
+    setLocalItems((prev) => [...prev, manualItemForLocal]);
 
     setShowManualDialog(false);
   }, [categoryId, localItems]);
@@ -855,8 +767,6 @@ export default React.forwardRef(function TilingCategoryEditor({
   }, [tilingItems]);
 
   const handleRemoveItem = useCallback((itemId) => {
-    console.log(`🗑️ [TilingCategoryEditor] handleRemoveItem called for: ${itemId}`);
-
     // Remove from local state
     setLocalItems((prev) => {
       if (prev.length === 1 && prev[0].id === itemId) {
@@ -880,8 +790,6 @@ export default React.forwardRef(function TilingCategoryEditor({
     // ✅ FIX: Remove associated items from cart immediately using all possible ID variants
     // Don't rely on selectedItems prop as it might be stale - let the parent handle the filtering
     if (onRemoveItemFromQuote) {
-      console.log(`🗑️ [TilingCategoryEditor] Requesting removal from cart for itemId: ${itemId}`);
-
       // Try all possible ID transformations that might exist in the cart
       const possibleIds = [
         itemId,                    // Original ID
@@ -890,7 +798,6 @@ export default React.forwardRef(function TilingCategoryEditor({
       ];
 
       possibleIds.forEach(id => {
-        console.log(`  🗑️ Attempting to remove ID: ${id}`);
         onRemoveItemFromQuote(id);
       });
     }
@@ -1067,15 +974,7 @@ export default React.forwardRef(function TilingCategoryEditor({
     };
   }, [calculatedItemsMetrics, preciseWorkDays]);
 
-  // שלב 1: פונקציה חדשה לאיסוף נתונים מפורטים עם לוגים
   const saveData = useCallback(() => {
-    console.log("🟠 [DEBUG saveData] ========== START ==========");
-    console.log("🟠 [DEBUG] localItems (raw data from form):", localItems);
-    console.log("🟠 [DEBUG] localItems count:", localItems.length);
-    console.log("🟠 [DEBUG] Manual items in localItems:", localItems.filter(i => i.isManualItem).map(i => ({ id: i.id, name: i.name })));
-    console.log("🟠 [DEBUG] Area items in localItems:", localItems.filter(i => !i.isManualItem).map(i => ({ id: i.id, name: i.name })));
-    console.log("🟠 [DEBUG] currentCategorySummaryMetrics (aggregated totals):", currentCategorySummaryMetrics);
-
     // הכנת נתונים למשלוח - נמיר כל פריט ב-localItems למבנה המתאים ל-selectedItems
     // ✅ NEW: When an item has both quantity AND panelQuantity, split it into 2 separate quote items
     const processedItemsForQuote = [];
@@ -1243,21 +1142,7 @@ export default React.forwardRef(function TilingCategoryEditor({
         processedItemsForQuote.push(panelItem);
       }
 
-      console.log(`🔧 TilingCategoryEditor: Processing item ${index + 1}:`, {
-        originalItem: item,
-        hasRegularTiling,
-        hasPanel,
-        splitIntoTwoItems: hasRegularTiling && hasPanel,
-        itemMetrics: itemMetrics,
-        complexityData: complexityData
-      });
     });
-
-    console.log("🟠 [DEBUG] Processed items ready for selectedItems:", processedItemsForQuote);
-    console.log("🟠 [DEBUG] Total items processed:", processedItemsForQuote.length);
-    console.log("🟠 [DEBUG] Manual items in processedItemsForQuote:", processedItemsForQuote.filter(i => i.source === 'tiling_manual').map(i => ({ id: i.id, name: i.name })));
-    console.log("🟠 [DEBUG] Area items in processedItemsForQuote:", processedItemsForQuote.filter(i => i.source === 'tiling_area_detail').map(i => ({ id: i.id, name: i.name })));
-    console.log("🟠 [DEBUG saveData] ========== END ==========");
 
     // ✅ Return object with both quoteItems and rawRooms for restoration
     return {
@@ -1268,25 +1153,14 @@ export default React.forwardRef(function TilingCategoryEditor({
 
   // ✅ NEW: Live update parent's categoryDataMap whenever localItems or metrics change
   useEffect(() => {
-    console.log('🟢 [DEBUG useEffect live update parent] ========== START ==========');
-    console.log('🟢 [DEBUG] onUpdateCategoryData exists:', !!onUpdateCategoryData);
-    console.log('🟢 [DEBUG] localItems count:', localItems.length);
-
     if (onUpdateCategoryData && typeof onUpdateCategoryData === 'function') {
       const data = saveData();
-      console.log('🟢 [DEBUG] Calling onUpdateCategoryData with data:', {
-        categoryId: categoryId,
-        quoteItemsCount: data.quoteItems.length,
-        roomsCount: data.rawRooms.length
-      });
       onUpdateCategoryData({
         categoryId: categoryId,
         quoteItems: data.quoteItems,
         rooms: data.rawRooms
       });
-      console.log('🟢 [DEBUG] onUpdateCategoryData called successfully');
     }
-    console.log('🟢 [DEBUG useEffect live update parent] ========== END ==========');
   }, [localItems, calculatedItemsMetrics, onUpdateCategoryData, saveData, categoryId]);
 
   // For proper ref exposure, this component needs to be wrapped with React.forwardRef.

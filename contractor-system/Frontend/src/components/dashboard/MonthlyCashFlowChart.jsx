@@ -68,7 +68,6 @@ export default function MonthlyCashFlowChart({ user }) {
       setLoading(true);
       try {
         if (!user || !user.email || !user.id) {
-          console.log("MonthlyCashFlowChart: Waiting for user authentication...");
           setChartData([]);
           setStats({ totalIncome: 0, totalExpenses: 0, netFlow: 0 });
           setLoading(false);
@@ -78,19 +77,14 @@ export default function MonthlyCashFlowChart({ user }) {
         // Verify we have a valid Supabase session before making API calls
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          console.log("MonthlyCashFlowChart: No session available, attempting to refresh...");
           const { data, error } = await supabase.auth.refreshSession();
           if (error || !data.session) {
-            console.warn("MonthlyCashFlowChart: Session refresh failed - user needs to log in");
             setChartData([]);
             setStats({ totalIncome: 0, totalExpenses: 0, netFlow: 0 });
             setLoading(false);
             return;
           }
-          console.log("MonthlyCashFlowChart: Session refreshed successfully");
         }
-
-        console.log("MonthlyCashFlowChart: Fetching quotes for user:", user.email, "status:", 'approved');
 
         // Check if Quote.filter is available
         if (typeof Quote.filter !== 'function') {
@@ -102,18 +96,6 @@ export default function MonthlyCashFlowChart({ user }) {
         }
 
         const approvedQuotes = await Quote.filter({ status: 'approved' });
-        console.log("MonthlyCashFlowChart: Fetched approved quotes:", approvedQuotes.length);
-        console.log('[MonthlyCashFlowChart] 📊 Approved quotes data:', approvedQuotes.map(q => ({
-          id: q.id,
-          projectName: q.projectName,
-          totalPrice: q.totalPrice,
-          finalAmount: q.finalAmount,
-          totalCost: q.totalCost,
-          estimatedCost: q.estimatedCost,
-          hasPaymentTerms: !!q.paymentTerms && q.paymentTerms.length > 0,
-          hasCategoryTimings: !!q.categoryTimings && Object.keys(q.categoryTimings).length > 0,
-          hasItems: !!q.items && q.items.length > 0
-        })));
         
         const today = startOfDay(new Date());
         const rangeDays = parseInt(range, 10) || 30;
@@ -189,15 +171,6 @@ export default function MonthlyCashFlowChart({ user }) {
 
           const projectPaymentTerms = (paymentTerms && paymentTerms.length > 0) ? paymentTerms : user.defaultPaymentTerms;
 
-          console.log('[MonthlyCashFlowChart] 💰 Processing quote:', {
-            id: quote.id,
-            projectName: quote.projectName,
-            total_price,
-            total_cost,
-            hasPaymentTerms: !!projectPaymentTerms && projectPaymentTerms.length > 0,
-            hasCategoryTimings: Object.keys(categoryTimings).length > 0
-          });
-
           // חישוב הכנסות - עם fallback אם אין payment terms
           if (projectPaymentTerms && projectPaymentTerms.length > 0) {
             let latestCategoryEndDate = new Date(0);
@@ -256,11 +229,6 @@ export default function MonthlyCashFlowChart({ user }) {
             });
           } else if (total_price > 0) {
             // Fallback: אם אין payment terms, הצג הכנסה היום
-            console.log('[MonthlyCashFlowChart] 📅 Income fallback - using today:', {
-              quoteId: quote.id,
-              total_price,
-              displayDate: today.toISOString()
-            });
             const dateKey = format(today, 'yyyy-MM-dd');
               if (dailyDataMap.has(dateKey)) {
                 const current = dailyDataMap.get(dateKey);
@@ -276,7 +244,6 @@ export default function MonthlyCashFlowChart({ user }) {
                 });
                 dailyDataMap.set(dateKey, current);
                 totalIncomeSum += total_price;
-                console.log('[MonthlyCashFlowChart] ✅ Added fallback income:', total_price);
               }
           }
 
@@ -515,11 +482,6 @@ export default function MonthlyCashFlowChart({ user }) {
 
           // Fallback: אם אין category timings כלל, הצג הוצאה היום
           if (Object.keys(categoryTimings).length === 0 && total_cost > 0) {
-            console.log('[MonthlyCashFlowChart] 📅 Expense fallback - using today:', {
-              quoteId: quote.id,
-              total_cost,
-              displayDate: today.toISOString()
-            });
             const dateKey = format(today, 'yyyy-MM-dd');
               if (dailyDataMap.has(dateKey)) {
                 const current = dailyDataMap.get(dateKey);
@@ -535,7 +497,6 @@ export default function MonthlyCashFlowChart({ user }) {
                 });
                 dailyDataMap.set(dateKey, current);
                 totalExpensesSum += total_cost;
-                console.log('[MonthlyCashFlowChart] ✅ Added fallback expense:', total_cost);
               }
           }
 
@@ -616,16 +577,8 @@ export default function MonthlyCashFlowChart({ user }) {
             }
           }
         });
-        
+
         const finalChartData = Array.from(dailyDataMap.values());
-        console.log('[MonthlyCashFlowChart] 📈 Final stats:', {
-          totalIncome: totalIncomeSum,
-          totalExpenses: totalExpensesSum,
-          netFlow: totalIncomeSum - totalExpensesSum,
-          chartDataPoints: finalChartData.length,
-          daysWithIncome: finalChartData.filter(d => d.income > 0).length,
-          daysWithExpenses: finalChartData.filter(d => d.expenses > 0).length
-        });
 
         setChartData(finalChartData);
         setStats({ totalIncome: totalIncomeSum, totalExpenses: totalExpensesSum, netFlow: totalIncomeSum - totalExpensesSum });
