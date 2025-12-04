@@ -17,6 +17,28 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Migration: Clean old localStorage from previous implementations
+    const migrationKey = 'auth_migration_v1_completed';
+    if (!localStorage.getItem(migrationKey)) {
+      console.log('🧹 [AuthContext] Running auth migration: cleaning old localStorage...');
+
+      // Remove old cookie auth flag
+      localStorage.removeItem('cookie_auth_enabled');
+
+      // Remove any old sb-* keys from previous auth attempts
+      let removedCount = 0;
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-') || key.includes('cookie')) {
+          console.log(`🧹 [AuthContext] Removing old key: ${key}`);
+          localStorage.removeItem(key);
+          removedCount++;
+        }
+      });
+
+      localStorage.setItem(migrationKey, 'true');
+      console.log(`✅ [AuthContext] Auth migration complete - removed ${removedCount} old keys`);
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);

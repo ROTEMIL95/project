@@ -70,9 +70,31 @@ class APIClient {
 
     // Add Authorization header if session exists
     if (session?.access_token) {
+      const tokenSize = session.access_token.length;
+      const maxSafeSize = 4096; // 4KB limit
+
+      if (tokenSize > maxSafeSize) {
+        console.error(`[API] ⚠️ Token too large! Size: ${tokenSize} chars (limit: ${maxSafeSize})`);
+        console.error('[API] This may cause 431 Request Header Fields Too Large error');
+        console.error('[API] Forcing logout to clear corrupted session...');
+
+        // Force logout - wrapped in try-catch to ensure error message shows
+        try {
+          await supabase.auth.signOut();
+          console.log('[API] ✅ Corrupted session cleared successfully');
+        } catch (logoutError) {
+          console.error('[API] ⚠️ Logout failed, but continuing with error...', logoutError);
+        }
+
+        throw new Error(
+          'Authentication token is corrupted. Please log in again.\n' +
+          `(Token size: ${tokenSize} chars, expected: ~1400 chars)`
+        );
+      }
+
       headers['Authorization'] = `Bearer ${session.access_token}`;
       console.debug('[API] Authorization header added with Supabase access token');
-      console.debug('[API] Token preview:', session.access_token.substring(0, 20) + '...');
+      console.debug('[API] Token size:', tokenSize, 'chars');
     } else {
       console.warn('[API] No access token available - API call will likely fail with 401');
     }
@@ -235,13 +257,11 @@ class APIClient {
    * Note: Don't set Content-Type for FormData - browser will set it with boundary
    */
   async upload(endpoint, formData) {
-    const { data: { session } } = await supabase.auth.getSession();
+    // Use getAuthHeaders to validate token size and get Authorization header
+    const headers = await this.getAuthHeaders(false);
 
-    const headers = {};
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`;
-    }
-    // Don't set Content-Type - browser will set it automatically with boundary for FormData
+    // Remove Content-Type if set (browser must set with boundary)
+    delete headers['Content-Type'];
 
     const url = `${this.baseURL}${endpoint}`;
 
