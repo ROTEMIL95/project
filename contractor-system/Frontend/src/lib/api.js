@@ -86,6 +86,11 @@ class APIClient {
           console.error('[API] ⚠️ Logout failed, but continuing with error...', logoutError);
         }
 
+        // Full page reload to completely clear browser memory
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login?error=token_expired';
+        }
+
         throw new Error(
           'Authentication token is corrupted. Please log in again.\n' +
           `(Token size: ${tokenSize} chars, expected: ~1400 chars)`

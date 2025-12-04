@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,17 @@ const Login = () => {
     password: ''
   });
   const [errors, setErrors] = useState({});
+
+  // Check for token_expired error in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('error') === 'token_expired') {
+      toast.error('הסשן שלך פג תוקף. אנא התחבר מחדש.', {
+        duration: 5000,
+        position: 'top-center'
+      });
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
