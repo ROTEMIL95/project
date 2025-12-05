@@ -18,71 +18,49 @@ export const AuthProvider = ({ children }) => {
   const [justLoggedIn, setJustLoggedIn] = useState(false);
 
   /**
-   * Clean up user metadata if JWT token is too large
-   * This fixes corrupted tokens by removing all metadata and keeping only essentials
+   * Check JWT token size and warn user if it's too large
+   * Large tokens (>4KB) cannot be cleaned automatically due to CORS/header size limits
    */
-  const cleanupUserMetadata = async () => {
+  const checkTokenSize = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
-        console.log('[Auth] No session found for cleanup');
+        console.log('[Auth] No session found for token check');
         return;
       }
 
       const tokenSize = session.access_token.length;
       console.log('[Auth] Current token size:', tokenSize, 'chars');
 
-      // If token is larger than 4KB, clean it up
+      // If token is larger than 4KB, it needs manual cleanup
       if (tokenSize > 4096) {
-        console.warn('[Auth] 🧹 Token is too large, cleaning up user metadata...');
-
-        // Keep only essential metadata
-        const currentUser = session.user;
-        const essentialMetadata = {
-          full_name: currentUser.user_metadata?.full_name || '',
-          phone: currentUser.user_metadata?.phone || '',
-          email: currentUser.email,
-        };
-
-        console.log('[Auth] Updating user with essential metadata only:', essentialMetadata);
-
-        // Update user with clean metadata
-        const { error } = await supabase.auth.updateUser({
-          data: essentialMetadata
-        });
-
-        if (error) {
-          console.error('[Auth] Failed to cleanup metadata:', error);
-          return;
-        }
-
-        console.log('[Auth] ✅ Metadata cleaned successfully');
-
-        // Refresh session to get new clean token
-        console.log('[Auth] Refreshing session to get new token...');
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-
-        if (refreshError) {
-          console.error('[Auth] Failed to refresh session:', refreshError);
-          return;
-        }
-
-        if (refreshData?.session) {
-          const newTokenSize = refreshData.session.access_token.length;
-          console.log('[Auth] ✅ New token size after cleanup:', newTokenSize, 'chars');
-
-          if (newTokenSize < tokenSize) {
-            console.log('[Auth] 🎉 Successfully reduced token size by', tokenSize - newTokenSize, 'chars');
-          } else {
-            console.warn('[Auth] ⚠️ Token size did not decrease. The issue may be in app_metadata (requires Supabase admin access)');
-          }
-        }
+        console.error('═══════════════════════════════════════════════════════════════');
+        console.error('❌ JWT TOKEN IS TOO LARGE - MANUAL FIX REQUIRED');
+        console.error('═══════════════════════════════════════════════════════════════');
+        console.error(`Current token size: ${tokenSize} chars (normal: ~1,400 chars)`);
+        console.error(`This is ${Math.round(tokenSize / 1400)}x larger than normal!`);
+        console.error('');
+        console.error('OPTION 1: Manual cleanup via Supabase Dashboard (recommended)');
+        console.error('-----------------------------------------------------------');
+        console.error('1. Go to: https://app.supabase.com/project/tmyrplrwblqnusgctebp/auth/users');
+        console.error('2. Find your user by email');
+        console.error('3. Click on user → Edit user → Raw User Meta Data');
+        console.error('4. Delete unnecessary data, keep only: full_name, phone, email');
+        console.error('5. Save and log in again');
+        console.error('');
+        console.error('OPTION 2: Contact support');
+        console.error('-------------------------');
+        console.error(`Email: support@example.com`);
+        console.error(`Include: User email + Token size (${tokenSize} chars)`);
+        console.error('');
+        console.error('⚠️ TEMPORARY: System will allow access but may have issues');
+        console.error('═══════════════════════════════════════════════════════════════');
       } else {
-        console.log('[Auth] ✅ Token size is acceptable, no cleanup needed');
+        console.log('[Auth] ✅ Token size is acceptable');
       }
     } catch (error) {
-      console.error('[Auth] Error during metadata cleanup:', error);
+      console.error('[Auth] Error during token size check:', error);
     }
   };
 
@@ -117,10 +95,10 @@ export const AuthProvider = ({ children }) => {
           }
         }, 10000);
 
-        // Automatically clean up metadata if token is too large
+        // Check token size after login
         console.log('[Auth] User signed in, checking token size...');
         setTimeout(() => {
-          cleanupUserMetadata();
+          checkTokenSize();
         }, 1000); // Wait 1 second for session to stabilize
       }
     });
