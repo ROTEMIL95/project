@@ -87,18 +87,16 @@ class APIClient {
         }
 
         // Full page reload to completely clear browser memory
-        // Don't return or throw - just let the redirect happen and execution will stop when page unloads
         if (typeof window !== 'undefined') {
           window.location.href = '/login?error=token_expired';
-          // No return/throw needed - page will unload and caller will never receive a response
-          // This prevents the caller from proceeding with empty headers
+          // Don't throw - let page unload cleanly
+        } else {
+          // Only throw in non-browser environments (SSR/tests)
+          throw new Error(
+            'Authentication token is corrupted. Please log in again.\n' +
+            `(Token size: ${tokenSize} chars, expected: ~1400 chars)`
+          );
         }
-
-        // Fallback for non-browser environments (e.g., server-side rendering, tests)
-        throw new Error(
-          'Authentication token is corrupted. Please log in again.\n' +
-          `(Token size: ${tokenSize} chars, expected: ~1400 chars)`
-        );
       }
 
       headers['Authorization'] = `Bearer ${session.access_token}`;
