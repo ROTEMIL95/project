@@ -89,7 +89,9 @@ class APIClient {
         // Full page reload to completely clear browser memory
         if (typeof window !== 'undefined') {
           window.location.href = '/login?error=token_expired';
-          // Don't throw - let page unload cleanly
+          // Return immediately to prevent corrupted token from being added to headers
+          // Page will unload asynchronously, but we must not let execution continue
+          return {};
         } else {
           // Only throw in non-browser environments (SSR/tests)
           throw new Error(
