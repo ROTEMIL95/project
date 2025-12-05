@@ -71,7 +71,7 @@ class APIClient {
     // Add Authorization header if session exists
     if (session?.access_token) {
       const tokenSize = session.access_token.length;
-      const maxSafeSize = 4096; // 4KB limit
+      const maxSafeSize = 61440; // 60KB limit (temporary - increased to allow investigation)
 
       if (tokenSize > maxSafeSize) {
         console.error(`[API] ⚠️ Token too large! Size: ${tokenSize} chars (limit: ${maxSafeSize})`);
@@ -121,6 +121,42 @@ class APIClient {
       headers['Authorization'] = `Bearer ${session.access_token}`;
       console.debug('[API] Authorization header added with Supabase access token');
       console.debug('[API] Token size:', tokenSize, 'chars');
+
+      // If token is unusually large (>4KB), decode and log payload for debugging
+      if (tokenSize > 4096) {
+        try {
+          // JWT format: header.payload.signature
+          const parts = session.access_token.split('.');
+          if (parts.length === 3) {
+            // Decode payload (Base64URL)
+            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            console.warn('[API] 🔍 Large JWT detected! Payload analysis:');
+            console.warn('[API] JWT Payload keys:', Object.keys(payload));
+
+            // Log sizes of each field in payload
+            Object.entries(payload).forEach(([key, value]) => {
+              const fieldSize = JSON.stringify(value).length;
+              if (fieldSize > 100) {
+                console.warn(`[API]   - ${key}: ${fieldSize} chars`);
+              }
+            });
+
+            // Check for unusually large fields
+            const largeFields = Object.entries(payload)
+              .filter(([, value]) => JSON.stringify(value).length > 1000)
+              .map(([key, value]) => ({ key, size: JSON.stringify(value).length }));
+
+            if (largeFields.length > 0) {
+              console.error('[API] ❌ Found large fields in JWT:');
+              largeFields.forEach(({ key, size }) => {
+                console.error(`[API]   - ${key}: ${size} chars`);
+              });
+            }
+          }
+        } catch (decodeError) {
+          console.error('[API] Failed to decode JWT for analysis:', decodeError);
+        }
+      }
     } else {
       console.warn('[API] No access token available - API call will likely fail with 401');
     }
