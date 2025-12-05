@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
 
   useEffect(() => {
     // Get initial session
@@ -27,10 +28,26 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Set justLoggedIn flag when user signs in
+      if (event === 'SIGNED_IN') {
+        setJustLoggedIn(true);
+        // Store in sessionStorage so api.js can access it
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('justLoggedIn', Date.now().toString());
+        }
+        // Clear the flag after 10 seconds
+        setTimeout(() => {
+          setJustLoggedIn(false);
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('justLoggedIn');
+          }
+        }, 10000);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -40,6 +57,7 @@ export const AuthProvider = ({ children }) => {
     user,
     session,
     loading,
+    justLoggedIn,
     signUp: async (email, password, metadata) => {
       const { data, error } = await supabase.auth.signUp({
         email,

@@ -76,6 +76,23 @@ class APIClient {
       if (tokenSize > maxSafeSize) {
         console.error(`[API] ⚠️ Token too large! Size: ${tokenSize} chars (limit: ${maxSafeSize})`);
         console.error('[API] This may cause 431 Request Header Fields Too Large error');
+
+        // Check if user just logged in (within last 10 seconds)
+        // If so, allow the large token temporarily to avoid logout loop
+        if (typeof window !== 'undefined') {
+          const justLoggedInTimestamp = sessionStorage.getItem('justLoggedIn');
+          if (justLoggedInTimestamp) {
+            const timeSinceLogin = Date.now() - parseInt(justLoggedInTimestamp, 10);
+            if (timeSinceLogin < 10000) {
+              console.warn('[API] ⚠️ Token is large but user just logged in - allowing temporarily');
+              console.warn('[API] This token will be rejected after 10 seconds if not fixed');
+              // Allow the token to pass through for now
+              headers['Authorization'] = `Bearer ${session.access_token}`;
+              return headers;
+            }
+          }
+        }
+
         console.error('[API] Forcing logout to clear corrupted session...');
 
         // Force logout - wrapped in try-catch to ensure error message shows
