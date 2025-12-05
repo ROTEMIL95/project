@@ -269,6 +269,12 @@ class APIClient {
     // Use getAuthHeaders to validate token size and get Authorization header
     const headers = await this.getAuthHeaders(false);
 
+    // Check if we have an authorization header - if not, this request will fail
+    if (!headers['Authorization']) {
+      console.warn('[API] No authorization token available for upload:', endpoint);
+      throw new Error('No active session - please log in');
+    }
+
     // Remove Content-Type if set (browser must set with boundary)
     delete headers['Content-Type'];
 
