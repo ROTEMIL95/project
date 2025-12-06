@@ -136,12 +136,8 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.auth.resetPasswordForEmail(email);
       return { data, error };
     },
-    updateProfile: async (updates) => {
-      const { data, error } = await supabase.auth.updateUser({
-        data: updates,
-      });
-      return { data, error };
-    },
+    // REMOVED: updateProfile - we now use userProfileAPI.updateMe() instead
+    // This prevents bloating the JWT token with user data
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

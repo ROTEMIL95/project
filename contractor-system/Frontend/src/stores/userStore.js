@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import { userAPI } from '@/lib/api';
 
-const CACHE_KEY = "b44_user_cache_v1";
+const CACHE_KEY = "b44_user_cache_v2"; // Changed from v1 to v2 to invalidate old bloated cache
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
