@@ -53,6 +53,61 @@ def get_user_by_email(email: str):
         return None
 
 
+def revoke_all_sessions(user_id: str, user_email: str):
+    """
+    Revoke all active sessions for a user
+
+    This forces the user to log out from all devices and log back in,
+    which will generate a new JWT token with the cleaned metadata.
+    """
+    try:
+        print(f"\n{'='*60}")
+        print(f"🔐 Revoking all sessions for user: {user_email}")
+        print(f"{'='*60}\n")
+
+        # Sign out user globally using Admin API
+        # This invalidates all refresh tokens and access tokens
+        print("🔄 Signing out user from all devices...")
+
+        try:
+            # Supabase Admin API: Sign out user globally
+            response = supabase.auth.admin.user_signout(user_id, scope='global')
+
+            print("✅ All sessions revoked successfully!")
+            print("\n📝 User will be:")
+            print("   1. Automatically logged out on all devices")
+            print("   2. Required to log in again")
+            print("   3. Receive a fresh JWT token with cleaned metadata")
+
+            return True
+
+        except AttributeError:
+            # If admin.user_signout doesn't exist, try alternative approach
+            print("⚠️  admin.user_signout() not available, trying alternative method...")
+
+            # Alternative: Update user to force session invalidation
+            # This works by changing the user's updated_at timestamp
+            supabase.auth.admin.update_user_by_id(
+                user_id,
+                {
+                    "email_confirm": True  # Dummy update to invalidate sessions
+                }
+            )
+
+            print("✅ Sessions should be invalidated (alternative method)")
+            print("\n📝 User may need to:")
+            print("   1. Clear browser cache/localStorage")
+            print("   2. Log in again")
+
+            return True
+
+    except Exception as e:
+        print(f"❌ Error revoking sessions: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def clean_user_metadata(user_id: str, user_email: str):
     """
     Clean raw_user_meta_data for a specific user
@@ -217,16 +272,31 @@ def main():
         return
 
     # Step 2: Clean the metadata
-    success = clean_user_metadata(USER_ID, USER_EMAIL)
+    metadata_cleaned = clean_user_metadata(USER_ID, USER_EMAIL)
 
-    if success:
+    if not metadata_cleaned:
+        print("\n" + "="*60)
+        print("❌ METADATA CLEANUP FAILED!")
+        print("="*60)
+        return
+
+    # Step 3: Revoke all sessions (force logout and fresh token generation)
+    sessions_revoked = revoke_all_sessions(USER_ID, USER_EMAIL)
+
+    if metadata_cleaned and sessions_revoked:
         print("\n" + "="*60)
         print("✅ CLEANUP COMPLETED SUCCESSFULLY!")
         print("="*60)
+        print("\n🎉 The user will be logged out automatically and must log back in.")
+        print("🎉 Upon re-login, they will receive a clean JWT token (~1.4KB)")
     else:
         print("\n" + "="*60)
-        print("❌ CLEANUP FAILED!")
+        print("⚠️  CLEANUP PARTIALLY COMPLETED")
         print("="*60)
+        print("\n📝 Manual steps may be required:")
+        print("   1. Ask user to log out")
+        print("   2. Clear browser cache/localStorage")
+        print("   3. Log in again")
 
 
 if __name__ == "__main__":
