@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import CategorySwitcher from "@/components/common/CategorySwitcher";
 import { createPageUrl } from '@/utils';
 import { supabase } from '@/lib/supabase';
+import { userProfileAPI } from '@/lib/api';
 import { useUser } from '@/components/utils/UserContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -376,12 +377,9 @@ export default function DemolitionCalculator() {
                     }));
 
                     try {
-                        // Save seeded items to user metadata
-                        await supabase.auth.updateUser({
-                            data: {
-                                ...user.user_metadata,
-                                demolitionItems: seededItems
-                            }
+                        // Save seeded items to user_profiles table
+                        await userProfileAPI.updateMe({
+                            demolition_items: seededItems
                         });
 
                         items = seededItems;
@@ -407,11 +405,8 @@ export default function DemolitionCalculator() {
     const handleUpdateDefaults = async (newDefaults) => {
         setLoading(true);
         try {
-            await supabase.auth.updateUser({
-                data: {
-                    ...user.user_metadata,
-                    demolitionDefaults: newDefaults
-                }
+            await userProfileAPI.updateMe({
+                demolition_defaults: newDefaults
             });
             setDemolitionDefaults(newDefaults);
             setDemolitionItems(prevItems => prevItems.map(item => calculateItemMetrics(item, newDefaults)));
@@ -438,11 +433,8 @@ export default function DemolitionCalculator() {
 
         try {
             // Remove calculated fields before saving to DB
-            await supabase.auth.updateUser({
-                data: {
-                    ...user.user_metadata,
-                    demolitionItems: updatedItems.map(({ contractorCost, clientPrice, profitAmount, profitPercent, ...rest }) => rest)
-                }
+            await userProfileAPI.updateMe({
+                demolition_items: updatedItems.map(({ contractorCost, clientPrice, profitAmount, profitPercent, ...rest }) => rest)
             });
             const itemsWithMetrics = updatedItems.map(item => calculateItemMetrics(item, demolitionDefaults));
             setDemolitionItems(itemsWithMetrics);
@@ -461,11 +453,8 @@ export default function DemolitionCalculator() {
         const updatedItems = demolitionItems.filter(i => i.id !== itemId);
         try {
             // Remove calculated fields before saving to DB
-            await supabase.auth.updateUser({
-                data: {
-                    ...user.user_metadata,
-                    demolitionItems: updatedItems.map(({ contractorCost, clientPrice, profitAmount, profitPercent, ...rest }) => rest)
-                }
+            await userProfileAPI.updateMe({
+                demolition_items: updatedItems.map(({ contractorCost, clientPrice, profitAmount, profitPercent, ...rest }) => rest)
             });
             setDemolitionItems(updatedItems);
         } catch (error) {

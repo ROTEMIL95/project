@@ -26,6 +26,7 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import { userProfileAPI } from '@/lib/api';
 
 import { calculatePanelCosts } from '@/components/costCalculator/PricingService'; // New import for panel calculation
 
@@ -159,10 +160,8 @@ export default function TilingSimulator({
   // שמירת הגדרות המשתמש
   const handleSaveSettings = async () => {
     try {
-      await supabase.auth.updateUser({
-        data: {
-          tilingSettings: settings
-        }
+      await userProfileAPI.updateMe({
+        tiling_settings: settings
       });
     } catch (error) {
       console.error("Error saving tiling settings:", error);

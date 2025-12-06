@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useUser } from '@/components/utils/UserContext';
 import { supabase } from '@/lib/supabase';
+import { userProfileAPI } from '@/lib/api';
 
 export default function PaintSimulator({ onAddToQuote }) {
   const { user } = useUser();
@@ -105,10 +106,8 @@ export default function PaintSimulator({ onAddToQuote }) {
 
   const handleSaveSettings = async (newSettings) => {
     try {
-      await supabase.auth.updateUser({
-        data: {
-          paintSettings: newSettings
-        }
+      await userProfileAPI.updateMe({
+        paint_settings: newSettings
       });
       setSettings(newSettings);
     } catch (error) {

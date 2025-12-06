@@ -17,6 +17,7 @@ import TilingDefaultsSettings from '@/components/costCalculator/TilingDefaultsSe
 import TilingQuickDefaults from '@/components/costCalculator/TilingQuickDefaults';
 import PaintQuickDefaults from '@/components/costCalculator/PaintQuickDefaults';
 import { supabase } from '@/lib/supabase';
+import { userProfileAPI } from '@/lib/api';
 import { Category, User } from '@/lib/entities';
 import { cn } from '@/lib/utils';
 import CategorySwitcher from "@/components/common/CategorySwitcher";
@@ -922,16 +923,13 @@ export default function CostCalculator() {
 
     const handleSaveRoomEstimates = async (updatedEstimates) => {
         try {
-            // Update user metadata via Supabase Auth
-            await supabase.auth.updateUser({
-                data: {
-                    ...userData.user_metadata,
-                    roomEstimates: updatedEstimates
-                }
+            // Update user_profiles table via API
+            await userProfileAPI.updateMe({
+                room_estimates: updatedEstimates
             });
-            
+
             setShowRoomEstimatesSettings(false);
-            
+
             // The useUser hook will automatically refresh the user data
             console.log('Room estimates saved successfully');
         } catch (error) {

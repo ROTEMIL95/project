@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { userProfileAPI } from '@/lib/api';
 import { useUser } from '@/components/utils/UserContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,11 +88,8 @@ export default function PaintSettings() {
         setIsSaving(true);
         setError(null);
         try {
-            await supabase.auth.updateUser({
-                data: {
-                    ...user.user_metadata,
-                    paintItems
-                }
+            await userProfileAPI.updateMe({
+                paint_items: paintItems
             });
         } catch (err) {
             setError("שגיאה בשמירת הנתונים.");

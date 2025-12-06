@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from '@/components/utils/UserContext';
 import { supabase } from '@/lib/supabase';
+import { userProfileAPI } from '@/lib/api';
 import { 
   Home, 
   Calculator, 
@@ -422,12 +423,9 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
 
   const handleSaveRoomEstimates = async () => {
     try {
-      // Save to user metadata
-      await supabase.auth.updateUser({
-        data: {
-          ...user.user_metadata,
-          roomEstimates: roomEstimatesData
-        }
+      // Save to user_profiles table
+      await userProfileAPI.updateMe({
+        room_estimates: roomEstimatesData
       });
       alert('הגדרות החדרים נשמרו בהצלחה!');
       setIsEditMode(false);

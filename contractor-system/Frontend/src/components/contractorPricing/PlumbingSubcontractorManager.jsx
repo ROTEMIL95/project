@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useUser } from '@/components/utils/UserContext';
 import { supabase } from '@/lib/supabase';
+import { userProfileAPI } from '@/lib/api';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -357,13 +358,14 @@ export default function PlumbingSubcontractorManager() {
       : [...items, newItem];
 
     setItems(updated);
-    // שמירה מיידית של הפריט החדש/המעודכן למסד המשתמש
-    await supabase.auth.updateUser({
-      data: {
-        ...user.user_metadata,
-        plumbingSubcontractorItems: updated
-      }
+    // שמירה מיידית של הפריט החדש/המעודכן למסד הנתונים
+    await userProfileAPI.updateMe({
+      plumbing_subcontractor_items: updated
     });
+    // Refresh user data to reflect changes
+    if (refreshUser) {
+      await refreshUser();
+    }
     closeDialog();
   };
 
@@ -372,12 +374,13 @@ export default function PlumbingSubcontractorManager() {
     if (!window.confirm("למחוק את הפריט הזה?")) return;
     const updated = items.filter((x) => x.id !== id);
     setItems(updated);
-    await supabase.auth.updateUser({
-      data: {
-        ...user.user_metadata,
-        plumbingSubcontractorItems: updated
-      }
+    await userProfileAPI.updateMe({
+      plumbing_subcontractor_items: updated
     });
+    // Refresh user data to reflect changes
+    if (refreshUser) {
+      await refreshUser();
+    }
   };
 
   // נתונים לתצוגה (סינון)
