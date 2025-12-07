@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Quote } from '@/lib/entities';
 import { useUser } from '@/components/utils/UserContext';
@@ -9,6 +9,7 @@ import { Loader2, AlertCircle, ArrowLeft, Edit, Download } from 'lucide-react';
 
 export default function QuoteView() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useUser();
   const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState(null);
@@ -19,7 +20,7 @@ export default function QuoteView() {
       setLoading(true);
       setError(null);
       try {
-        const urlParams = new URLSearchParams(window.location.search);
+        const urlParams = new URLSearchParams(location.search);
         const quoteId = urlParams.get('id');
 
         if (!quoteId) {
@@ -34,12 +35,11 @@ export default function QuoteView() {
           return;
         }
 
-        const fetchedQuotes = await Quote.filter({ id: quoteId });
-        const fetchedQuote = fetchedQuotes[0];
+        // Use getById instead of filter for direct ID lookup
+        const fetchedQuote = await Quote.getById(quoteId);
 
         if (fetchedQuote) {
           setQuote(fetchedQuote);
-          console.log("Quote loaded for viewing:", fetchedQuote); // Debug log
         } else {
           setError("הצעת המחיר לא נמצאה או שאין לך הרשאה לצפות בה.");
         }
@@ -52,7 +52,7 @@ export default function QuoteView() {
     };
 
     fetchQuoteData();
-  }, [user]);
+  }, [user, location.search]); // Re-fetch when URL changes (different quote ID)
 
   const handleEdit = () => {
     navigate(createPageUrl(`QuoteCreate?id=${quote.id}`));

@@ -226,7 +226,7 @@ export default function SentQuotes() {
         // Allow admins to edit any quote, or users to edit their own quotes
         const isAdmin = user?.role === 'admin';
         const isOwner = user && quote.userId === user.id;
-        
+
         if (user && !isAdmin && !isOwner) {
             toast({
                 variant: "destructive",
@@ -235,6 +235,7 @@ export default function SentQuotes() {
             });
             return;
         }
+
         navigate(createPageUrl(`QuoteCreate?id=${quote.id}`));
     };
 
@@ -1318,7 +1319,12 @@ export default function SentQuotes() {
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                                <Button variant="ghost" size="sm" onClick={() => navigate(createPageUrl(`QuoteView?id=${quote.id}`))} className="h-7 w-7 p-0 hover:bg-blue-100">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => navigate(createPageUrl(`QuoteView?id=${quote.id}`))}
+                                                                    className="h-7 w-7 p-0 hover:bg-blue-100"
+                                                                >
                                                                     <Eye className="h-3 w-3 text-blue-600" />
                                                                 </Button>
                                                             </TooltipTrigger>

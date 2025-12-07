@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { supabase } from '@/lib/supabase';
 import { Quote } from '@/lib/entities';
@@ -394,6 +394,7 @@ function PersistedStep3({
 
 export default function QuoteCreate() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, refresh: refreshUser } = useUser();
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true); // Renamed from 'isLoading'
@@ -470,6 +471,9 @@ export default function QuoteCreate() {
 
   // Run-once guard to prevent re-initialization that resets currentStep to 1
   const didInitRef = useRef(false);
+
+  // Track new quote session to prevent quote data from being copied
+  const isNewQuoteSessionRef = useRef(false);
 
   // NEW: filter categories by user's active map
   const userCategories = useMemo(() => {
@@ -1190,8 +1194,8 @@ export default function QuoteCreate() {
           return;
       }
 
-      const quotes = await Quote.filter({ id: quoteId });
-      const existingQuote = quotes[0];
+      // Use getById instead of filter for direct ID lookup
+      const existingQuote = await Quote.getById(quoteId);
 
       if (existingQuote) {
         setQuoteData(existingQuote);
@@ -1391,6 +1395,32 @@ export default function QuoteCreate() {
     }
   }, [currentStep, selectedCategories, currentCategoryForItems]);
 
+  // 🆕 FIX: Reset quote data when navigating to /QuoteCreate without ?id=
+  // This fixes Bug #4: quotes were being "copied" from previous quotes
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const quoteIdParam = urlParams.get('id');
+
+    // Case 1: User transitioned from editing (?id=123) to new quote (no ID)
+    if (!quoteIdParam && existingQuoteId && !isNewQuoteSessionRef.current) {
+      const defaultTerms = (currentUser?.user_metadata?.defaultPaymentTerms && Array.isArray(currentUser.user_metadata.defaultPaymentTerms))
+        ? currentUser.user_metadata.defaultPaymentTerms
+        : [];
+      resetQuoteData(defaultTerms);
+      isNewQuoteSessionRef.current = true; // Mark that we started a new session
+    }
+
+    // Case 2: User is editing a quote, and the quote ID has changed (switching between quotes)
+    if (quoteIdParam && existingQuoteId && quoteIdParam !== existingQuoteId.toString()) {
+      loadExistingQuote(quoteIdParam, currentUser);
+      isNewQuoteSessionRef.current = false;
+    }
+
+    // Case 3: User entered edit mode - reset the flag
+    if (quoteIdParam) {
+      isNewQuoteSessionRef.current = false;
+    }
+  }, [location.search, existingQuoteId, currentUser, resetQuoteData, loadExistingQuote]);
 
   const handleProjectInfoChange = (field, value) => {
     setProjectInfo(prev => ({ ...prev, [field]: value }));
