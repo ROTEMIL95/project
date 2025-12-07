@@ -804,10 +804,12 @@ export default function QuoteToHTML({ quote }) {
 
         /* ===== Header ===== */
         .quote-header {
-          background: #000 !important;
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
           color: white !important;
           padding: 20px 15px !important;
           page-break-after: avoid;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         .quote-header h1 {
@@ -856,12 +858,14 @@ export default function QuoteToHTML({ quote }) {
 
         /* ===== Timeline Section ===== */
         .timeline-section {
-          background: white !important;
+          background: #f9fafb !important;
           padding: 12px 15px !important;
           margin: 10px 15px !important;
-          border: 2px solid #000 !important;
+          border: 2px solid #d1d5db !important;
           border-radius: 6px !important;
           page-break-inside: avoid;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         .timeline-header {
@@ -897,26 +901,30 @@ export default function QuoteToHTML({ quote }) {
         }
 
         .category-header {
-          background: #000 !important;
-          color: white !important;
-          border: 2px solid #000 !important;
+          /* Keep original category colors - will be set inline */
           padding: 12px 15px !important;
           border-radius: 4px 4px 0 0 !important;
+          border-width: 2px !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         .category-icon {
           font-size: 18pt;
-          filter: grayscale(1);
+          /* Keep icons colorful - remove grayscale */
         }
 
         .category-title {
           font-size: 14pt;
-          color: white !important;
+          /* Color will be set inline based on category */
         }
 
         .category-content {
-          border: 2px solid #000 !important;
+          /* Border color will be set inline based on category */
+          border-width: 2px !important;
           border-top: none !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         /* ===== Tables ===== */
@@ -953,20 +961,26 @@ export default function QuoteToHTML({ quote }) {
           background: transparent !important;
         }
 
-        /* Room size colors - Convert to grayscale for print */
+        /* Room size colors - Keep original colors for print */
         .room-small {
-          border-right: 3px solid #666 !important;
-          background: #f5f5f5 !important;
+          border-right: 4px solid #10b981 !important;
+          background: linear-gradient(to left, #ecfdf5, #ffffff) !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         .room-medium {
-          border-right: 3px solid #999 !important;
-          background: #f0f0f0 !important;
+          border-right: 4px solid #3b82f6 !important;
+          background: linear-gradient(to left, #eff6ff, #ffffff) !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         .room-large {
-          border-right: 3px solid #333 !important;
-          background: #e8e8e8 !important;
+          border-right: 4px solid #a855f7 !important;
+          background: linear-gradient(to left, #faf5ff, #ffffff) !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         /* ===== Category Summary ===== */
@@ -1074,12 +1088,15 @@ export default function QuoteToHTML({ quote }) {
         /* ===== Final Summary ===== */
         .final-summary {
           margin: 15px 10px !important;
-          background: #000 !important;
+          background: #111827 !important;
           color: white !important;
           padding: 15px !important;
-          border: 3px solid #000 !important;
+          border: 3px solid #1f2937 !important;
           border-radius: 6px !important;
           page-break-inside: avoid;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2) !important;
         }
 
         .final-summary h2 {
@@ -1093,14 +1110,16 @@ export default function QuoteToHTML({ quote }) {
         }
 
         .final-item {
-          background: #333 !important;
+          background: #1f2937 !important;
           padding: 10px !important;
-          border: 2px solid #666 !important;
+          border: 2px solid #374151 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         .final-label {
           font-size: 9pt;
-          color: #ccc !important;
+          color: #d1d5db !important;
         }
 
         .final-value {
@@ -1181,7 +1200,7 @@ export default function QuoteToHTML({ quote }) {
 
         .commitment-icon {
           font-size: 16pt;
-          filter: grayscale(1);
+          /* Keep emoji icons colorful - removed grayscale filter */
         }
 
         .commitment-title {
@@ -1269,16 +1288,11 @@ export default function QuoteToHTML({ quote }) {
         }
 
         /* ===== Print-specific utilities ===== */
-        /* Remove unnecessary decorative elements */
+        /* Preserve colors in print */
         * {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
           color-adjust: exact !important;
-        }
-
-        /* Ensure all text is black for maximum readability */
-        body, p, span, div, td, th {
-          color: #000 !important;
         }
 
         /* Override any hover states */
