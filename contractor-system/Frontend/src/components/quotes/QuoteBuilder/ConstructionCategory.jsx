@@ -126,6 +126,10 @@ export default function ConstructionCategory({
   // NEW: State to track which items are expanded (show cost breakdown)
   const [expandedItems, setExpandedItems] = React.useState({});
 
+  // NEW: State to control if work days are displayed as rounded or exact
+  // Default is TRUE = show rounded days
+  const [showRoundedDays, setShowRoundedDays] = React.useState(true);
+
   // NEW: Toggle function for expanding/collapsing item details
   const toggleItemExpanded = (itemId) => {
     setExpandedItems(prev => ({
@@ -1114,19 +1118,28 @@ export default function ConstructionCategory({
                 <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 text-center">
                   <div className="text-[11px] text-purple-800">ימי עבודה (סה״כ)</div>
                   <div className="text-xl font-bold text-purple-700">
-                    {isRoundedApplied ? roundedDays.toFixed(1) : currentDays.toFixed(1)}
+                    {showRoundedDays ? roundedDays.toFixed(1) : currentDays.toFixed(1)}
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex justify-between items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRoundedDays(!showRoundedDays)}
+                  className="text-sm"
+                >
+                  <Clock className="w-4 h-4 ml-2" />
+                  {showRoundedDays ? "הצג ימים מדויקים" : "הצג ימים מעוגלים"}
+                </Button>
+
                 <Button
                   onClick={handleToggleRound}
                   disabled={!canApplyRounding}
                   className="bg-indigo-600 hover:bg-indigo-700"
                 >
                   <Clock className="w-4 h-4 ml-2" />
-                  {isRoundedApplied ? "ימים מדויקים" : "עיגול ימי עבודה"}
+                  {isRoundedApplied ? "בטל עיגול ממחירים" : "החל עיגול למחירים"}
                 </Button>
               </div>
             </div>
