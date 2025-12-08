@@ -271,29 +271,25 @@ export default function ConstructionCategory({
     const qty = Number(qtyMap[it.id] ?? 1) || 1;
     const complexity = getComplexity(it.id);
     const complexityData = COMPLEXITY_LEVELS.find(c => c.id === complexity) || COMPLEXITY_LEVELS[0];
-    
-    const laborCostPerDay = Number(pricingDefaults.laborCostPerDay) || 1000;
-    const laborHourRate = laborCostPerDay / 8;
-    
-    // חישוב עלויות
+
+    // Use saved prices from contractor pricebook
+    const unitCost = Number(it.contractorCostPerUnit) || 0;
+    const unitPrice = Number(it.clientPricePerUnit) || 0;
+
+    // Calculate material and labor costs for display
     const materialCostPerUnit = Number(it.materialCostPerUnit) || 0;
     const laborHoursPerUnit = Number(it.laborHoursPerUnit) || 0;
-    
-    // המורכבות משפיעה רק על זמן העבודה
-    const effectiveLaborHours = laborHoursPerUnit * complexityData.multiplier;
-    const laborCostPerUnit = effectiveLaborHours * laborHourRate;
-    
-    const contractorCostPerUnit = materialCostPerUnit + laborCostPerUnit;
-    
-    const profitPercent = Number(it.desiredProfitPercent ?? pricingDefaults.desiredProfitPercent) || 0;
-    const clientPricePerUnit = Number(
-      it.clientPricePerUnit ?? Math.round(contractorCostPerUnit * (1 + profitPercent / 100))
-    ) || 0;
+    const laborCostPerDay = Number(pricingDefaults.laborCostPerDay) || 1000;
+    const laborHourRate = laborCostPerDay / 8;
+    const laborCostPerUnit = laborHoursPerUnit * laborHourRate;
 
     const totalMaterialCost = materialCostPerUnit * qty;
     const totalLaborCost = laborCostPerUnit * qty;
-    const totalCost = contractorCostPerUnit * qty;
-    const totalPrice = clientPricePerUnit * qty;
+    const totalCost = unitCost * qty;
+    const totalPrice = unitPrice * qty;
+
+    // Complexity only affects work duration, not price
+    const effectiveLaborHours = laborHoursPerUnit * complexityData.multiplier;
     const workDays = (effectiveLaborHours * qty) / 8;
 
     const itemToAdd = {
@@ -304,7 +300,7 @@ export default function ConstructionCategory({
       description: it.name + (it.description ? ` — ${it.description}` : ""),
       quantity: qty,
       unit: it.unit || "יחידה",
-      unitPrice: clientPricePerUnit,
+      unitPrice: unitPrice,
       totalPrice: Math.round(totalPrice),
       totalCost: Math.round(totalCost),
       materialCost: Math.round(totalMaterialCost),
@@ -318,7 +314,7 @@ export default function ConstructionCategory({
         materialCostPerUnit: materialCostPerUnit,
         workerHourCost: laborHourRate,
         laborDayCost: laborCostPerDay,
-        desiredProfitPercent: profitPercent,
+        desiredProfitPercent: Number(it.desiredProfitPercent ?? pricingDefaults.desiredProfitPercent) || 0,
         complexityLevel: complexity,
         complexityMultiplier: complexityData.multiplier,
         type: "catalog"
@@ -411,140 +407,6 @@ export default function ConstructionCategory({
 
   const currentDays = Number(summary.days) || 0;
   const roundedDays = Math.ceil(currentDays);
-  const laborDayCost = Number(pricingDefaults.laborCostPerDay) || 0;
-  const desiredProfit = Number(pricingDefaults.desiredProfitPercent) || 0;
-  const canApplyRounding = constructionItems.length > 0 && typeof setSelectedItems === "function";
-
-  const isRoundedApplied = React.useMemo(
-    () => constructionItems.some((it) => it?.meta?.roundWorkDaysApplied),
-    [constructionItems]
-  );
-
-  const applyRoundWorkDaysAndDistribute = () => {
-    if (!canApplyRounding) return;
-
-    const targetDays = Math.ceil(currentDays);
-    const extraDaysToApply = Math.max(0, targetDays - currentDays);
-    if (extraDaysToApply <= 0) return;
-    const contractorDelta = Math.round(extraDaysToApply * laborDayCost);
-    const customerDelta = Math.round(contractorDelta * (1 + desiredProfit / 100));
-
-    setSelectedItems((prev) => {
-      const itemsInCat = prev.filter((it) => it.categoryId === "cat_construction");
-      if (itemsInCat.length === 0) return prev;
-
-      const totalPriceInCat = itemsInCat.reduce((s, it) => s + (Number(it.totalPrice) || 0), 0);
-      
-      let maxDurationItemIndexInCat = -1;
-      let maxDuration = -1;
-      itemsInCat.forEach((it, idx) => {
-        const d = Number(it.workDuration) || 0;
-        if (d > maxDuration) {
-          maxDuration = d;
-          maxDurationItemIndexInCat = idx;
-        }
-      });
-
-      const priceShares = new Array(itemsInCat.length).fill(0);
-      const costShares = new Array(itemsInCat.length).fill(0);
-      let distributedPriceSum = 0;
-      let distributedCostSum = 0;
-
-      for (let idx = 0; idx < itemsInCat.length; idx++) {
-        const it = itemsInCat[idx];
-        const weight = totalPriceInCat > 0 ? (Number(it.totalPrice) || 0) / totalPriceInCat : 1 / itemsInCat.length;
-
-        let currentPriceShare;
-        let currentCostShare;
-
-        if (idx < itemsInCat.length - 1) {
-          currentPriceShare = Math.round(customerDelta * weight);
-          currentCostShare = Math.round(contractorDelta * weight);
-        } else {
-          currentPriceShare = customerDelta - distributedPriceSum;
-          currentCostShare = contractorDelta - distributedCostSum;
-        }
-
-        priceShares[idx] = currentPriceShare;
-        costShares[idx] = currentCostShare;
-        distributedPriceSum += currentPriceShare;
-        distributedCostSum += currentCostShare;
-      }
-
-      let currentItemIndexInCat = -1;
-      return prev.map((it) => {
-        if (it.categoryId !== "cat_construction") return it;
-
-        currentItemIndexInCat++;
-        const addPrice = priceShares[currentItemIndexInCat];
-        const addCost = costShares[currentItemIndexInCat];
-
-        const newTotalPrice = Math.round((Number(it.totalPrice) || 0) + addPrice);
-        const newTotalCost = Math.round((Number(it.totalCost) || 0) + addCost);
-        const qty = Number(it.quantity) || 1;
-        const newUnitPrice = qty > 0 ? Math.round((newTotalPrice / qty) * 100) / 100 : it.unitPrice;
-
-        let newWorkDuration = Number(it.workDuration) || 0;
-        if (currentItemIndexInCat === maxDurationItemIndexInCat) {
-          newWorkDuration = (Number(it.workDuration) || 0) + extraDaysToApply;
-        }
-
-        return {
-          ...it,
-          totalPrice: newTotalPrice,
-          totalCost: newTotalCost,
-          profit: newTotalPrice - newTotalCost,
-          unitPrice: newUnitPrice,
-          workDuration: newWorkDuration,
-          meta: {
-            ...(it.meta || {}),
-            roundWorkDaysApplied: true,
-            roundWorkDaysTargetDays: Number(targetDays),
-            roundWorkDaysExtraDays: (it.meta?.roundWorkDaysExtraDays || 0) + (currentItemIndexInCat === maxDurationItemIndexInCat ? extraDaysToApply : 0),
-            priceDeltaApplied: (it.meta?.priceDeltaApplied || 0) + addPrice,
-            costDeltaApplied: (it.meta?.costDeltaApplied || 0) + addCost,
-          },
-        };
-      });
-    });
-  };
-
-  const revertRoundWorkDays = () => {
-    setSelectedItems((prev) =>
-      prev.map((it) => {
-        if (it.categoryId !== "cat_construction") return it;
-        const meta = it.meta || {};
-        if (!meta.roundWorkDaysApplied) return it;
-        const priceDelta = Number(meta.priceDeltaApplied) || 0;
-        const costDelta = Number(meta.costDeltaApplied) || 0;
-        const extraDaysApplied = Number(meta.roundWorkDaysExtraDays) || 0;
-        const qty = Number(it.quantity) || 1;
-        const newTotalPrice = Math.max(0, Math.round((Number(it.totalPrice) || 0) - priceDelta));
-        const newTotalCost = Math.max(0, Math.round((Number(it.totalCost) || 0) - costDelta));
-        const newUnitPrice = qty > 0 ? Math.round((newTotalPrice / qty) * 100) / 100 : it.unitPrice;
-        const newWorkDuration = Math.max(0, (Number(it.workDuration) || 0) - extraDaysApplied);
-        const { priceDeltaApplied, costDeltaApplied, roundWorkDaysApplied, roundWorkDaysExtraDays, roundWorkDaysTargetDays, ...restMeta } = meta;
-        return {
-          ...it,
-          totalPrice: newTotalPrice,
-          totalCost: newTotalCost,
-          profit: newTotalPrice - newTotalCost,
-          unitPrice: newUnitPrice,
-          workDuration: newWorkDuration,
-          meta: restMeta,
-        };
-      })
-    );
-  };
-
-  const handleToggleRound = () => {
-    if (!canApplyRounding) return;
-    if (isRoundedApplied) {
-      revertRoundWorkDays();
-    } else {
-      applyRoundWorkDaysAndDistribute();
-    }
-  };
 
   const dateBtnBase = "justify-start h-10 w-full";
   const startBtnClasses = startDate
@@ -565,11 +427,19 @@ export default function ConstructionCategory({
     if (!editorPreset) return null;
 
     const laborHourRateLocal = (Number(pricingDefaults.laborCostPerDay) || 0) / 8;
-    
-    const calculatedContractorCostPerUnit = Number(
-      editorPreset.contractorCostPerUnit ??
-      ((Number(editorPreset.materialCostPerUnit) || 0) + laborHourRateLocal * (Number(editorPreset.laborHoursPerUnit) || 0))
-    ) || 0;
+
+    // Get current quantity and complexity from the UI state
+    const currentQty = getQty(editorPreset.id);
+    const currentComplexity = getComplexity(editorPreset.id);
+    const complexityData = COMPLEXITY_LEVELS.find(c => c.id === currentComplexity) || COMPLEXITY_LEVELS[0];
+
+    // Calculate costs with complexity multiplier applied
+    const materialCostPerUnit = Number(editorPreset.materialCostPerUnit) || 0;
+    const laborHoursPerUnit = Number(editorPreset.laborHoursPerUnit) || 0;
+    const effectiveLaborHours = laborHoursPerUnit * complexityData.multiplier;
+    const laborCostPerUnit = effectiveLaborHours * laborHourRateLocal;
+
+    const calculatedContractorCostPerUnit = materialCostPerUnit + laborCostPerUnit;
 
     const profitPercent = Number(editorPreset.desiredProfitPercent ?? pricingDefaults.desiredProfitPercent) || 0;
 
@@ -582,38 +452,19 @@ export default function ConstructionCategory({
       description: editorPreset.description || "",
       subCategory: editorPreset.subCategory || "misc",
       unit: editorPreset.unit || "יחידה",
-      quantity: 1, 
+      quantity: currentQty, // Use the quantity from UI state
       contractorCostPerUnit: calculatedContractorCostPerUnit,
       desiredProfitPercent: profitPercent,
       clientPricePerUnit: calculatedClientPricePerUnit,
-      ignoreQuantity: false 
+      ignoreQuantity: false,
+      materialCost: Math.round(materialCostPerUnit * currentQty),
+      laborCost: Math.round(laborCostPerUnit * currentQty),
+      workDuration: (effectiveLaborHours * currentQty) / 8,
+      materialCostPerUnit: materialCostPerUnit,
+      workTimeValue: (effectiveLaborHours * currentQty) / 8,
+      workTimeUnit: 'days'
     };
-  }, [editorPreset, pricingDefaults]);
-
-  // ❌ REMOVED: Automatic rounding on item addition
-  // Users should manually trigger rounding via the button when they want it
-
-  // ✅ NEW: Reset rounding when adding items ONLY if it crosses to next day
-  const prevItemsCountRef = React.useRef(constructionItems.length);
-  const prevRoundedDaysRef = React.useRef(roundedDays);
-
-  React.useEffect(() => {
-    const currentCount = constructionItems.length;
-    const prevCount = prevItemsCountRef.current;
-    const prevRounded = prevRoundedDaysRef.current;
-
-    // If items were added AND rounding is currently applied
-    if (currentCount > prevCount && isRoundedApplied) {
-      // Only reset if the rounded value would change (crosses into next day)
-      if (roundedDays > prevRounded) {
-        revertRoundWorkDays();
-      }
-    }
-
-    prevItemsCountRef.current = currentCount;
-    prevRoundedDaysRef.current = roundedDays;
-  }, [constructionItems.length, isRoundedApplied, roundedDays]);
-
+  }, [editorPreset, pricingDefaults, qtyMap, complexityMap]);
 
   return (
     <>
@@ -801,25 +652,26 @@ export default function ConstructionCategory({
                           const complexity = getComplexity(it.id);
                           const complexityData = COMPLEXITY_LEVELS.find(c => c.id === complexity) || COMPLEXITY_LEVELS[0];
                           const unit = it.unit || "יחידה";
-                          
-                          const laborCostPerDay = Number(pricingDefaults.laborCostPerDay) || 1000;
-                          const laborHourRate = laborCostPerDay / 8;
-                          
+
+                          // Use saved prices from contractor pricebook
+                          const unitCost = Number(it.contractorCostPerUnit) || 0;
+                          const unitPrice = Number(it.clientPricePerUnit) || 0;
+
+                          // Calculate material and labor costs for display only
                           const materialCostPerUnit = Number(it.materialCostPerUnit) || 0;
                           const laborHoursPerUnit = Number(it.laborHoursPerUnit) || 0;
-                          
-                          const effectiveLaborHours = laborHoursPerUnit * complexityData.multiplier;
-                          const laborCostPerUnit = effectiveLaborHours * laborHourRate;
-                          const unitCost = materialCostPerUnit + laborCostPerUnit;
-                          
-                          const profitPercent = Number(it.desiredProfitPercent ?? pricingDefaults.desiredProfitPercent) || 0;
-                          const unitPrice = Number(it.clientPricePerUnit ?? Math.round(unitCost * (1 + profitPercent / 100))) || 0;
+                          const laborCostPerDay = Number(pricingDefaults.laborCostPerDay) || 1000;
+                          const laborHourRate = laborCostPerDay / 8;
+                          const laborCostPerUnit = laborHoursPerUnit * laborHourRate;
 
                           const totalMaterialCost = materialCostPerUnit * qty;
                           const totalLaborCost = laborCostPerUnit * qty;
                           const totalCost = unitCost * qty;
                           const totalPrice = unitPrice * qty;
-                          const totalProfit = Math.max(0, totalPrice - totalCost);
+                          const totalProfit = totalPrice - totalCost;
+
+                          // Complexity only affects work duration, not price
+                          const effectiveLaborHours = laborHoursPerUnit * complexityData.multiplier;
                           const workDays = (effectiveLaborHours * qty) / 8;
 
                           return (
@@ -946,25 +798,26 @@ export default function ConstructionCategory({
                     const complexity = getComplexity(it.id);
                     const complexityData = COMPLEXITY_LEVELS.find(c => c.id === complexity) || COMPLEXITY_LEVELS[0];
                     const unit = it.unit || "יחידה";
-                    
-                    const laborCostPerDay = Number(pricingDefaults.laborCostPerDay) || 1000;
-                    const laborHourRate = laborCostPerDay / 8;
-                    
+
+                    // Use saved prices from contractor pricebook
+                    const unitCost = Number(it.contractorCostPerUnit) || 0;
+                    const unitPrice = Number(it.clientPricePerUnit) || 0;
+
+                    // Calculate material and labor costs for display only
                     const materialCostPerUnit = Number(it.materialCostPerUnit) || 0;
                     const laborHoursPerUnit = Number(it.laborHoursPerUnit) || 0;
-                    
-                    const effectiveLaborHours = laborHoursPerUnit * complexityData.multiplier;
-                    const laborCostPerUnit = effectiveLaborHours * laborHourRate;
-                    const unitCost = materialCostPerUnit + laborCostPerUnit;
-                    
-                    const profitPercent = Number(it.desiredProfitPercent ?? pricingDefaults.desiredProfitPercent) || 0;
-                    const unitPrice = Number(it.clientPricePerUnit ?? Math.round(unitCost * (1 + profitPercent / 100))) || 0;
+                    const laborCostPerDay = Number(pricingDefaults.laborCostPerDay) || 1000;
+                    const laborHourRate = laborCostPerDay / 8;
+                    const laborCostPerUnit = laborHoursPerUnit * laborHourRate;
 
                     const totalMaterialCost = materialCostPerUnit * qty;
                     const totalLaborCost = laborCostPerUnit * qty;
                     const totalCost = unitCost * qty;
                     const totalPrice = unitPrice * qty;
-                    const totalProfit = Math.max(0, totalPrice - totalCost);
+                    const totalProfit = totalPrice - totalCost;
+
+                    // Complexity only affects work duration, not price
+                    const effectiveLaborHours = laborHoursPerUnit * complexityData.multiplier;
                     const workDays = (effectiveLaborHours * qty) / 8;
 
                     return (
@@ -1123,7 +976,7 @@ export default function ConstructionCategory({
                 </div>
               </div>
 
-              <div className="mt-4 flex justify-between items-center gap-3">
+              <div className="mt-4 flex justify-start items-center gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setShowRoundedDays(!showRoundedDays)}
@@ -1131,15 +984,6 @@ export default function ConstructionCategory({
                 >
                   <Clock className="w-4 h-4 ml-2" />
                   {showRoundedDays ? "הצג ימים מדויקים" : "הצג ימים מעוגלים"}
-                </Button>
-
-                <Button
-                  onClick={handleToggleRound}
-                  disabled={!canApplyRounding}
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                  <Clock className="w-4 h-4 ml-2" />
-                  {isRoundedApplied ? "בטל עיגול ממחירים" : "החל עיגול למחירים"}
                 </Button>
               </div>
             </div>

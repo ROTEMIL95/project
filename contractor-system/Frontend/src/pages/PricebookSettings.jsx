@@ -1446,6 +1446,7 @@ export default function PricebookSettings() {
               <div>
                 <Label>עלות עובד ליום (₪)</Label>
                 <Input type="number" value={construct.workerCostPerUnit} onChange={(e) => setConstruct({ ...construct, workerCostPerUnit: e.target.value })} />
+                <p className="text-xs text-gray-500 mt-1">עלות יום עבודה מלא (8 שעות)</p>
               </div>
               <div>
                 <Label>אחוז רווח רצוי (%)</Label>
