@@ -3,21 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useUser } from '@/components/utils/UserContext';
 import { supabase } from '@/lib/supabase';
-import { 
-  Home, 
-  Menu, 
+import {
+  Home,
+  Menu,
   X,
-  ShoppingCart, 
-  FileText, 
-  Hammer, 
-  BarChart3, 
-  Settings, 
+  ShoppingCart,
+  FileText,
+  Hammer,
+  BarChart3,
+  Settings,
   LogOut,
   HelpCircle,
   User as UserIcon,
-  Copy
+  Copy,
+  Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function Layout({ children, currentPageName }) {
   const { user } = useUser();
@@ -71,6 +73,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'קטלוג מוצרים', icon: <ShoppingCart className="h-5 w-5" />, path: 'Catalog' },
     { name: 'הצעות מחיר', icon: <FileText className="h-5 w-5" />, path: 'QuotesList' },
     { name: 'תבניות הצעות מחיר', icon: <Copy className="h-5 w-5" />, path: 'QuoteTemplates' },
+    { name: 'הזמנת חומרים', icon: <Package className="h-5 w-5" />, path: null, comingSoon: true },
     { name: 'פרויקטים', icon: <Hammer className="h-5 w-5" />, path: 'Projects' },
     { name: 'דוחות', icon: <BarChart3 className="h-5 w-5" />, path: 'Reports' },
     { name: 'הגדרות', icon: <Settings className="h-5 w-5" />, path: 'Settings' }
@@ -117,15 +120,26 @@ export default function Layout({ children, currentPageName }) {
               {menuItems.map((item) => (
                 <div
                   key={item.name}
-                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md cursor-pointer ${
+                  className={`flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md ${
+                    item.comingSoon
+                      ? 'cursor-not-allowed opacity-60'
+                      : 'cursor-pointer'
+                  } ${
                     currentPageName === item.path
                       ? 'bg-indigo-50 text-indigo-600'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
-                  onClick={() => navigate(createPageUrl(item.path))}
+                  onClick={() => !item.comingSoon && item.path && navigate(createPageUrl(item.path))}
                 >
-                  <span className="ml-3">{item.icon}</span>
-                  <span className="mx-4">{item.name}</span>
+                  <div className="flex items-center">
+                    <span className="ml-3">{item.icon}</span>
+                    <span className="mx-4">{item.name}</span>
+                  </div>
+                  {item.comingSoon && (
+                    <Badge className="bg-yellow-500 text-white text-xs px-2 py-0.5">
+                      בקרוב
+                    </Badge>
+                  )}
                 </div>
               ))}
             </nav>

@@ -79,11 +79,11 @@ export default function Dashboard() {
                   // its reference is stable and this effect will still only run once on mount.
 
   const quickActions = [
-    { title: "ניהול פרויקטים", description: "עקוב אחר לו\"ז, כוח אדם ותזרים", icon: <Briefcase className="w-8 h-8" />, path: "ProjectManagement", color: "purple", gradient: "from-purple-500 to-pink-600", comingSoon: true },
+    { title: "ניהול פרויקטים", description: "עקוב אחר לו\"ז, כוח אדם ותזרים", icon: <Briefcase className="w-8 h-8" />, path: "ProjectManagement", color: "purple", gradient: "from-purple-500 to-pink-600" },
     { title: "הזמנת חומרים", description: "הזמן חומרים ישירות מספקים", icon: <Package className="w-8 h-8" />, path: null, color: "amber", gradient: "from-amber-500 to-orange-600", comingSoon: true },
     { title: "הזנת נתונים", description: "להזין פרטים חדשים למחירון קבלן", icon: <Calculator className="w-8 h-8" />, path: "CostCalculator", color: "emerald", gradient: "from-emerald-500 to-teal-600" },
     { title: "הצעות שנשלחו", description: "עקוב אחר הצעות המחיר הקיימות", icon: <Send className="w-8 h-8" />, path: "SentQuotes", color: "blue", gradient: "from-blue-500 to-cyan-600" },
-    { title: "ניהול פיננסי", description: "עקוב אחר הכנסות והוצאות", icon: <Landmark className="w-8 h-8" />, path: "Finance", color: "green", gradient: "from-green-500 to-emerald-600" },
+    { title: "ניהול פיננסי", description: "עקוב אחר הכנסות והוצאות", icon: <Landmark className="w-8 h-8" />, path: "Finance", color: "green", gradient: "from-green-500 to-emerald-600", comingSoon: true },
     { title: "פרטי קבלן", description: "ערוך ונהל את תבנית החוזה שלך", icon: <FileSignature className="w-8 h-8" />, path: "ContractAgreement", color: "cyan", gradient: "from-cyan-500 to-sky-600" },
   ];
 

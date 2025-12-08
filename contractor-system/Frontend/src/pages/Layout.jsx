@@ -8,7 +8,7 @@ import { UserProvider, useUser } from '@/components/utils/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Home, Menu, X, LogOut, HelpCircle, User as UserIcon, Shield,
-  LayoutDashboard, FilePlus2, Briefcase, Calculator, Send, DollarSign, Contact, Coins, Settings2, Settings
+  LayoutDashboard, FilePlus2, Briefcase, Calculator, Send, DollarSign, Contact, Coins, Settings2, Settings, Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -109,6 +109,7 @@ const PageLayout = ({ children, currentPageName }) => {
     { name: 'מחירון קבלן', icon: <Settings2 className="h-5 w-5" />, path: 'ContractorPricing', color: 'teal' },
     { name: 'הצעות שנשלחו', icon: <Send className="h-5 w-5" />, path: 'SentQuotes', color: 'sky' },
     { name: 'פרטי קבלן', icon: <Contact className="h-5 w-5" />, path: 'ContractAgreement', color: 'pink' },
+    { name: 'הזמנת חומרים', icon: <Package className="h-5 w-5" />, path: 'MaterialOrdering', color: 'orange', disabled: true, badge: 'בקרוב!' },
     { name: 'ניהול פיננסי', icon: <Coins className="h-5 w-5" />, path: 'Finance', color: 'amber', disabled: true, badge: 'בקרוב!' }
   ];
 
