@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useUser } from '@/components/utils/UserContext';
-import { Calculator, FileText, Send, TrendingUp, ListChecks, ArrowLeft, Sparkles, Landmark, FileSignature, Plus, Briefcase, FilePlus2 } from 'lucide-react';
+import { Calculator, FileText, Send, TrendingUp, ListChecks, ArrowLeft, Sparkles, Landmark, FileSignature, Plus, Briefcase, FilePlus2, Package } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 import RecentQuotes from '@/components/dashboard/RecentQuotes';
 import RevenueChart from '@/components/dashboard/RevenueChart';
 import MonthlyCashFlowChart from '@/components/dashboard/MonthlyCashFlowChart';
@@ -78,7 +79,8 @@ export default function Dashboard() {
                   // its reference is stable and this effect will still only run once on mount.
 
   const quickActions = [
-    { title: "ניהול פרויקטים", description: "עקוב אחר לו\"ז, כוח אדם ותזרים", icon: <Briefcase className="w-8 h-8" />, path: "ProjectManagement", color: "purple", gradient: "from-purple-500 to-pink-600" },
+    { title: "ניהול פרויקטים", description: "עקוב אחר לו\"ז, כוח אדם ותזרים", icon: <Briefcase className="w-8 h-8" />, path: "ProjectManagement", color: "purple", gradient: "from-purple-500 to-pink-600", comingSoon: true },
+    { title: "הזמנת חומרים", description: "הזמן חומרים ישירות מספקים", icon: <Package className="w-8 h-8" />, path: null, color: "amber", gradient: "from-amber-500 to-orange-600", comingSoon: true },
     { title: "הזנת נתונים", description: "להזין פרטים חדשים למחירון קבלן", icon: <Calculator className="w-8 h-8" />, path: "CostCalculator", color: "emerald", gradient: "from-emerald-500 to-teal-600" },
     { title: "הצעות שנשלחו", description: "עקוב אחר הצעות המחיר הקיימות", icon: <Send className="w-8 h-8" />, path: "SentQuotes", color: "blue", gradient: "from-blue-500 to-cyan-600" },
     { title: "ניהול פיננסי", description: "עקוב אחר הכנסות והוצאות", icon: <Landmark className="w-8 h-8" />, path: "Finance", color: "green", gradient: "from-green-500 to-emerald-600" },
@@ -150,20 +152,38 @@ export default function Dashboard() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {quickActions.map((action, index) => (
-              <Card key={action.title} className={`group relative overflow-hidden hover:shadow-2xl transition-all duration-500 bg-white/80 backdrop-blur-sm border-0 cursor-pointer transform hover:-translate-y-2 shimmer-element hover:scale-105`} onClick={() => navigate(createPageUrl(action.path))}>
+              <Card
+                key={action.title}
+                className={`group relative overflow-hidden hover:shadow-2xl transition-all duration-500 bg-white/80 backdrop-blur-sm border-0 transform hover:-translate-y-2 shimmer-element hover:scale-105 ${
+                  action.comingSoon ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                }`}
+                onClick={() => !action.comingSoon && action.path && navigate(createPageUrl(action.path))}
+              >
                 <div className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
+
+                {/* Badge "בקרוב" */}
+                {action.comingSoon && (
+                  <Badge className="absolute top-3 right-3 bg-yellow-500 text-white font-semibold px-3 py-1 shadow-md z-10">
+                    בקרוב
+                  </Badge>
+                )}
+
                 <CardHeader className="relative pb-4">
                   <div className="flex items-center justify-between mb-4">
                     <div className={`p-4 rounded-2xl bg-gradient-to-br ${action.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                       <div className="text-white">{action.icon}</div>
                     </div>
-                    <ArrowLeft className={`w-5 h-5 text-${action.color}-400 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300`} />
+                    {!action.comingSoon && (
+                      <ArrowLeft className={`w-5 h-5 text-${action.color}-400 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300`} />
+                    )}
                   </div>
                   <CardTitle className={`text-xl font-bold text-gray-800 group-hover:text-${action.color}-700 transition-colors duration-300`}>{action.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="relative">
                   <CardDescription className="text-gray-600 leading-relaxed">{action.description}</CardDescription>
-                  <div className={`mt-4 h-1 bg-gradient-to-r ${action.gradient} rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-right`}></div>
+                  {!action.comingSoon && (
+                    <div className={`mt-4 h-1 bg-gradient-to-r ${action.gradient} rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-right`}></div>
+                  )}
                 </CardContent>
               </Card>
             ))}
