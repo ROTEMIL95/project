@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Calendar as CalendarIcon, Wrench, Plus, Pencil, ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
+import { Calendar as CalendarIcon, Wrench, Plus, Pencil, ArrowLeft, ArrowRight, ChevronDown, Search } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -47,6 +47,7 @@ export default function PlumbingCategory({
   const [defaults, setDefaults] = useState({ desiredProfitPercent: 30 }); // CHANGED: default profit percent from 40 to 30
   const [user, setUser] = useState(null); // Keep for backward compatibility with existing code
   const [subcatFilter, setSubcatFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState(""); // NEW: Search filter
   const [qtyMap, setQtyMap] = useState({}); // per item id
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -314,10 +315,25 @@ export default function PlumbingCategory({
   };
 
   const visibleItems = useMemo(() => {
-    const list = Array.isArray(items) ? items : [];
-    if (subcatFilter === "all") return list;
-    return list.filter((x) => x.subCategory === subcatFilter);
-  }, [items, subcatFilter]);
+    let list = Array.isArray(items) ? items : [];
+
+    // Filter by subcategory
+    if (subcatFilter !== "all") {
+      list = list.filter((x) => x.subCategory === subcatFilter);
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      list = list.filter((item) => {
+        const name = (item.name || "").toLowerCase();
+        const description = (item.description || "").toLowerCase();
+        return name.includes(query) || description.includes(query);
+      });
+    }
+
+    return list;
+  }, [items, subcatFilter, searchQuery]);
 
   const getQty = (id) => Number(qtyMap[id] ?? 1) || 1;
   const setQty = (id, v) => setQtyMap((m) => ({ ...m, [id]: v }));
@@ -478,11 +494,11 @@ export default function PlumbingCategory({
             )}
           </div>
 
-          {/* מסנן תתי־קטגוריות + כפתור הוספה למעלה */}
-          <div className="flex items-center justify-between">
-            <div className="flex justify-start">
+          {/* מסנן תתי־קטגוריות + חיפוש + כפתור הוספה למעלה */}
+          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 flex-1">
               <Select value={subcatFilter} onValueChange={setSubcatFilter}>
-                <SelectTrigger className="w-56">
+                <SelectTrigger className="w-full sm:w-56">
                   <SelectValue placeholder="כל התת־קטגוריות" />
                 </SelectTrigger>
                 <SelectContent>
@@ -492,9 +508,22 @@ export default function PlumbingCategory({
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* NEW: Search input */}
+              <div className="relative flex-1 md:max-w-xs">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="חיפוש לפי שם או תיאור..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
             </div>
+
             <div className="flex justify-end">
-              <Button variant="secondary" onClick={() => setShowAddDialog(true)}>
+              <Button variant="secondary" onClick={() => setShowAddDialog(true)} className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 ml-2" />
                 הוסף פריט
               </Button>
