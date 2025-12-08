@@ -210,23 +210,6 @@ export default function ManualCalcDialog() {
   const handleSave = () => {
     if (!canSave) return;
 
-    console.log('🎨 [ManualCalcDialog] handleSave called');
-    console.log('🎨 [ManualCalcDialog] Form state:', {
-      workType: form.workType,
-      wallsEnabled: form.wallsEnabled,
-      wallsLayers: form.wallsLayers,
-      wallsArea: form.wallsArea,
-      wallsType: form.wallsType,
-      ceilingEnabled: form.ceilingEnabled,
-      ceilingLayers: form.ceilingLayers,
-      ceilingArea: form.ceilingArea,
-      ceilingType: form.ceilingType,
-      layersWalls,
-      layersCeiling,
-      qtyWalls,
-      qtyCeiling,
-    });
-
     // Use existing ID if editing, otherwise create new ID
     const isEditing = ctxRef.current?.editingItemId;
     const nowId = isEditing || `manual_${form.workType}_${Date.now()}`;
@@ -262,7 +245,6 @@ export default function ManualCalcDialog() {
         sellingPrice: priceWalls,
         metrics: { totalSellingPrice: priceWalls }
       };
-      console.log('🎨 [ManualCalcDialog] Created wallsBreakdown:', wallsBreakdown);
       detailedBreakdown.push(wallsBreakdown);
     }
     if (form.ceilingEnabled && qtyCeiling > 0) {
@@ -285,11 +267,8 @@ export default function ManualCalcDialog() {
         sellingPrice: priceCeiling,
         metrics: { totalSellingPrice: priceCeiling }
       };
-      console.log('🎨 [ManualCalcDialog] Created ceilingBreakdown:', ceilingBreakdown);
       detailedBreakdown.push(ceilingBreakdown);
     }
-
-    console.log('🎨 [ManualCalcDialog] Final detailedBreakdown array:', detailedBreakdown);
 
     const item = {
       id: nowId,
@@ -383,19 +362,9 @@ export default function ManualCalcDialog() {
       window.dispatchEvent(ev);
     }
 
-    console.log('🎨 [ManualCalcDialog] Final item to be added to quote:', {
-      id: item.id,
-      source: item.source,
-      detailedBreakdown: item.detailedBreakdown,
-      manualMeta: item.manualMeta,
-    });
-
     if (typeof window.__b44AddItemToQuote === "function") {
-      console.log('🎨 [ManualCalcDialog] Splitting item into separate walls/ceiling items');
-
       // If editing, first remove the old item
       if (isEditing && typeof window.__b44RemoveItemFromQuote === "function") {
-        console.log('🎨 [ManualCalcDialog] Removing old item:', isEditing);
         window.__b44RemoveItemFromQuote(isEditing);
       }
 
@@ -431,7 +400,6 @@ export default function ManualCalcDialog() {
           workDuration: effectiveWorkDays * shareWalls,
           manualFormSnapshot: item.manualFormSnapshot, // Include snapshot for editing
         };
-        console.log('🎨 [ManualCalcDialog] Adding wall item:', wallItem);
         window.__b44AddItemToQuote(wallItem);
       }
 
@@ -458,7 +426,6 @@ export default function ManualCalcDialog() {
           workDuration: effectiveWorkDays * shareCeiling,
           manualFormSnapshot: item.manualFormSnapshot, // Include snapshot for editing
         };
-        console.log('🎨 [ManualCalcDialog] Adding ceiling item:', ceilingItem);
         window.__b44AddItemToQuote(ceilingItem);
       }
     } else {

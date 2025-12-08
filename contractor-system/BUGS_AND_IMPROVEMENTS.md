@@ -13,9 +13,9 @@
 התיקונים מחולקים לפי רמת חומרה ואזור במערכת.
 
 ### 📊 מצב נוכחי:
-- ✅ **תוקנו:** 2 תיקונים
+- ✅ **תוקנו:** 3 תיקונים
 - 🔄 **בעבודה:** 0 תיקונים
-- ⏳ **ממתינים:** 25 תיקונים
+- ⏳ **ממתינים:** 24 תיקונים
 
 ---
 
@@ -245,19 +245,26 @@
 
 ---
 
-### 14. בחירת פריט בדיאלוג מוחקת פריט באזור
-**סטטוס:** ⏳ ממתין
+### ✅ 14. בחירת פריט בדיאלוג מוחקת פריט באזור ✅
+**סטטוס:** ✅ תוקן ב-2025-12-08
 **בעיה:**
-- בריצוף: בוחרים פריט באזור
-- פותחים דיאלוג ובוחרים פריט אחר
+- בצבע ושפכטל: בוחרים פריט באזור
+- פותחים דיאלוג ידני ובוחרים פריט אחר
 - הפריט המקורי באזור **נמחק**
 
 **השפעה:** אובדן נתונים
-**מיקום:** קטגוריית ריצוף - בחירת פריטים
+**מיקום:** קטגוריית צבע ושפכטל - state management ב-ItemSelector
+**קבצים שתוקנו:**
+- [`ItemSelector.jsx:3476`](Frontend/src/components/quotes/QuoteBuilder/ItemSelector.jsx#L3476) - תיקון קריטי
+- [`QuoteCreate.jsx:862,950`](Frontend/src/pages/QuoteCreate.jsx#L862) - הגנה נוספת
 
-**פתרון נדרש:**
-- [ ] תיקון state management
-- [ ] שמירה נפרדת של פריטים באזור ובדיאלוג
+**הפתרון שיושם:**
+- ✅ תיקון סינון ב-ItemSelector - הסרת תנאי `source === 'paint_room_detail'`
+- ✅ הוספת `isPaintPlaster` check ב-QuoteCreate כשכבת הגנה
+- ✅ ניקוי 24 לוגי DEBUG מהקונסול
+
+**מי תיקן:** Claude Code
+**תאריך תיקון:** 2025-12-08
 
 ---
 
@@ -411,14 +418,14 @@
 |-----------|--------------|------|-------|
 | 🔴 קריטי | 4 | 17% | 1 תוקן, 3 ממתינים |
 | 🟠 גבוה | 8 | 33% | 1 תוקן, 7 ממתינים |
-| 🟡 בינוני | 12 | 50% | 0 תוקנו, 12 ממתינים |
-| **סה"כ** | **24** | **100%** | **2 תוקנו, 22 נותרו** |
+| 🟡 בינוני | 12 | 50% | 1 תוקן, 11 ממתינים |
+| **סה"כ** | **24** | **100%** | **3 תוקנו, 21 נותרו** |
 
 ### 📂 פילוח לפי אזורים במערכת
 
 | אזור במערכת | כמות תיקונים | תוקן | ממתין |
 |-------------|--------------|------|--------|
-| הצעת מחיר (Quote) | 9 | 2 | 7 |
+| הצעת מחיר (Quote) | 9 | 3 | 6 |
 | מחירון קבלן (Pricebook) | 4 | 0 | 4 |
 | ריצוף (Tiling) | 5 | 0 | 5 |
 | צבע (Paint) | 3 | 0 | 3 |
@@ -556,6 +563,76 @@ useEffect(() => {
 - ✅ עריכת הצעה → כפתור הצעה חדשה = נתונים מתאפסים
 - ✅ עריכת הצעה 1 → חזרה → עריכת הצעה 2 = מציג הצעה 2 נכון
 - ✅ צפייה בהצעה 1 → חזרה → צפייה בהצעה 2 = מציג הצעה 2 נכון
+
+---
+
+### Bug #14 - בחירת פריט בדיאלוג מוחקת פריט באזור
+**תאריך תיקון:** 2025-12-08
+**מי תיקן:** Claude Code
+
+**הבעיה:**
+בקטגוריית צבע ושפכטל, כאשר משתמש מוסיף פריט אזור ולאחר מכן מוסיף פריט דיאלוג ידני, הפריט המקורי באזור נעלם מהדף. זהו באג regression שתוקן בעבר אך חזר.
+
+**מיקום הבעיה האמיתי:**
+הבעיה לא הייתה ב-`QuoteCreate.jsx` אלא ב-[`ItemSelector.jsx:3475-3482`](ItemSelector.jsx#L3475-L3482)!
+
+ה-useEffect שאמור לטעון פריטים מ-`selectedItems` סינן רק פריטים עם `source === 'paint_room_detail'`:
+
+```javascript
+// ❌ BEFORE - הסינון השגוי
+const paintPlasterItems = selectedItems.filter(item =>
+  item.categoryId === 'cat_paint_plaster' && item.source === 'paint_room_detail'
+);
+```
+
+התוצאה: פריטי אזור (`paint_simulator`, `plaster_simulator`) ופריטים ידניים (`manual_calc`) לא נספרו, הקוד חשב שאין פריטים ומחק את כל ה-`categoryDataMap`!
+
+**הפתרון שיושם:**
+
+**1. תיקון קריטי ב-ItemSelector.jsx (שורה 3476):**
+```javascript
+// ✅ AFTER - סינון נכון
+const paintPlasterItems = selectedItems.filter(item =>
+  item.categoryId === 'cat_paint_plaster'
+  // Include ALL paint/plaster sources:
+  // - 'paint_room_detail' (room calculator)
+  // - 'paint_simulator', 'plaster_simulator' (area items)
+  // - 'manual_calc' (manual items)
+  // - 'paint_room_calc', 'plaster_room_calc' (room calc results)
+);
+```
+
+**2. הוספת לוג רלוונטי (שורות 3484-3488):**
+```javascript
+console.log('[ItemSelector] Paint/Plaster items in cart:', {
+  total: paintPlasterItems.length,
+  sources: [...new Set(paintPlasterItems.map(i => i.source))],
+  willClear: paintPlasterItems.length === 0
+});
+```
+
+**3. תיקון משלים ב-QuoteCreate.jsx (שורות 862, 950):**
+הוספנו גם `isPaintPlaster` check כשכבת הגנה נוספת.
+
+**4. ניקוי לוגים (24 לוגי DEBUG נמחקו):**
+- מחקנו 10 לוגים מ-ManualCalcDialog.jsx
+- מחקנו 14 לוגים מ-ItemSelector.jsx (🟡 DEBUG, 🔴 DEBUG)
+
+**תוצאה:**
+- ✅ פריטי אזור לא ייעלמו יותר כשמוסיפים פריטים ידניים
+- ✅ פריטים ידניים לא ייעלמו כשמוסיפים פריטי אזור
+- ✅ הקונסול נקי יותר (24 לוגים פחות)
+
+**קבצים שהשתנו:**
+- [`ItemSelector.jsx:3476,3484-3488`](ItemSelector.jsx#L3476) - תיקון קריטי + לוג
+- [`ItemSelector.jsx:3604-3653`](ItemSelector.jsx#L3604) - מחיקת 14 DEBUG logs
+- [`ManualCalcDialog.jsx`](ManualCalcDialog.jsx) - מחיקת 10 DEBUG logs
+- [`QuoteCreate.jsx:862,950,578-582`](QuoteCreate.jsx#L862) - הגנה נוספת + לוג
+
+**בדיקות שעברו:**
+- ✅ הוסף פריט אזור בקטגוריית צבע → פתח דיאלוג ידני → הוסף פריט ידני → פריט האזור נשאר
+- ✅ הוסף פריט אזור בקטגוריית שפכטל → פתח דיאלוג ידני → הוסף פריט ידני → פריט האזור נשאר
+- ✅ וודא שחישוב חלל מתקדם גם שומר פריטים
 
 ---
 

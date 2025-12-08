@@ -575,6 +575,11 @@ export default function QuoteCreate() {
         } else {
           // Add new items to cart
           console.log('🛒 [FloatingCart] Adding manual items to cart:', itemsToAdd);
+          console.log('[QuoteCreate] Added paint/plaster items to cart:', {
+            categoryId: itemsToAdd[0]?.categoryId,
+            sources: itemsToAdd.map(i => i.source),
+            totalInCart: prevItems.length + itemsToAdd.length
+          });
           return [...prevItems, ...itemsToAdd];
         }
       });
@@ -859,6 +864,7 @@ export default function QuoteCreate() {
       const isConstruction = itemCategoryId === 'cat_construction';
       const isPlumbing = itemCategoryId === 'cat_plumbing';
       const isElectricity = itemCategoryId === 'cat_electricity';
+      const isPaintPlaster = itemCategoryId === 'cat_paint_plaster';
 
       if (isDemolition && containsRounding) {
         const roundingItems = itemsWithBreakdown.filter(it => it.source === 'demolition_rounding');
@@ -946,7 +952,7 @@ export default function QuoteCreate() {
         });
 
         return updated;
-      } else if (isDemolition || isConstruction || isPlumbing || isElectricity || isTiling) {
+      } else if (isDemolition || isConstruction || isPlumbing || isElectricity || isTiling || isPaintPlaster) {
         return [...cleanedItems, ...itemsWithBreakdown];
       } else {
         const itemsFromOtherCategories = cleanedItems.filter(existingItem => existingItem.categoryId !== itemCategoryId);

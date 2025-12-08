@@ -3473,8 +3473,19 @@ const ItemSelector = React.forwardRef(({
     }
 
     const paintPlasterItems = selectedItems.filter(item =>
-      item.categoryId === 'cat_paint_plaster' && item.source === 'paint_room_detail'
+      item.categoryId === 'cat_paint_plaster'
+      // Include ALL paint/plaster sources:
+      // - 'paint_room_detail' (room calculator)
+      // - 'paint_simulator', 'plaster_simulator' (area items)
+      // - 'manual_calc' (manual items)
+      // - 'paint_room_calc', 'plaster_room_calc' (room calc results)
     );
+
+    console.log('[ItemSelector] Paint/Plaster items in cart:', {
+      total: paintPlasterItems.length,
+      sources: [...new Set(paintPlasterItems.map(i => i.source))],
+      willClear: paintPlasterItems.length === 0
+    });
 
     // 🔧 FIX: Clear categoryDataMap when no paint/plaster items in cart
     // Use functional setState to check CURRENT value (not stale closure)
@@ -3590,32 +3601,19 @@ const ItemSelector = React.forwardRef(({
 
   // חישוב סיכום כולל לריצוף - כולל פריטים ידניים
   const tilingCategorySummary = useMemo(() => {
-    console.log('🟡 [DEBUG tilingCategorySummary] ========== START ==========');
-    console.log('🟡 [DEBUG] selectedItems:', selectedItems);
-    console.log('🟡 [DEBUG] categoryDataMap:', categoryDataMap);
-
     // ✅ Only include manual items from selectedItems (items added via dialog)
     const manualTilingItems = selectedItems.filter(item =>
       item.categoryId === 'cat_tiling' && item.source === 'tiling_manual'
     );
 
-    console.log('🟡 [DEBUG] Manual tiling items from selectedItems:', manualTilingItems.map(i => ({ id: i.id, name: i.name, source: i.source })));
-
     // 🆕 Include items from TilingCategoryEditor (from categoryDataMap) - these are area-based items
     const tilingCategoryData = categoryDataMap['cat_tiling'];
     const localTilingItems = tilingCategoryData?.quoteItems || [];
 
-    console.log('🟡 [DEBUG] Local tiling items from categoryDataMap:', localTilingItems.map(i => ({ id: i.id, name: i.name, source: i.source })));
-
     // Combine: manual items (from dialog) + area items (from TilingCategoryEditor)
     const allItems = [...manualTilingItems, ...localTilingItems];
 
-    console.log('🟡 [DEBUG] All items (combined):', allItems.map(i => ({ id: i.id, name: i.name, source: i.source })));
-    console.log('🟡 [DEBUG] Total items:', allItems.length);
-
     if (allItems.length === 0) {
-      console.log('🟡 [DEBUG] No items found - returning zero summary');
-      console.log('🟡 [DEBUG tilingCategorySummary] ========== END (EMPTY) ==========');
       return {
         totalArea: 0,
         totalMaterialCost: 0,
@@ -3651,9 +3649,6 @@ const ItemSelector = React.forwardRef(({
       itemCount: 0
     });
 
-    console.log('🟡 [DEBUG] Summary calculated:', summary);
-    console.log('🟡 [DEBUG tilingCategorySummary] ========== END ==========');
-
     return summary;
   }, [selectedItems, stagedManualItems, categoryDataMap]);
 
@@ -3688,24 +3683,11 @@ const ItemSelector = React.forwardRef(({
   const electricalManagerRef = useRef(null);
 
   const handleUpdateItems = useCallback((data) => {
-      console.log('🔴 [DEBUG handleUpdateItems] ========== START ==========');
-      console.log('🔴 [DEBUG] Data received:', {
-        categoryId: data.categoryId,
-        quoteItemsCount: data.quoteItems?.length,
-        roomsCount: data.rooms?.length
-      });
-      console.log('🔴 [DEBUG] Full data:', data);
-
       setCategoryDataMap(prev => {
-          console.log('🔴 [DEBUG] Previous categoryDataMap:', prev);
-
           const newCategoryDataMap = {
               ...prev,
               [data.categoryId]: data
           };
-
-          console.log('🔴 [DEBUG] New categoryDataMap:', newCategoryDataMap);
-          console.log('🔴 [DEBUG handleUpdateItems] ========== END ==========');
 
           if (data.categoryId === 'cat_paint_plaster' && data.rooms && data.rooms.length > 0) {
               const allIndividualRoomBreakdowns = data.rooms.flatMap(room => room.roomBreakdown || []);
