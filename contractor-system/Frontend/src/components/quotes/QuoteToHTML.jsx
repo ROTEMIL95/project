@@ -1461,7 +1461,8 @@ export default function QuoteToHTML({ quote }) {
 
               // Use category-specific commitment from database, fallback to general commitment
               const commitment = quote.categoryCommitments?.[dbCategoryId] || quote.companyInfo?.contractorCommitments || '';
-              const timings = quote.categoryTimings?.[dbCategoryId] || {};
+              // Use original categoryId (snake_case) for categoryTimings lookup
+              const timings = quote.categoryTimings?.[categoryId] || {};
               
               return `
                 <div class="category-block">
