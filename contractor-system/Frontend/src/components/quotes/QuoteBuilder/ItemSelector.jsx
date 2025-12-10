@@ -1319,50 +1319,31 @@ const PaintRoomsManager = React.forwardRef(({
     const [isManualItemsOpen, setIsManualItemsOpen] = useState(false);
     const [preciseWorkDays, setPreciseWorkDays] = useState(false);
     const [preciseBucketCalculation, setPreciseBucketCalculation] = useState(false);
+    const [hasInitializedFromExisting, setHasInitializedFromExisting] = useState(false);
 
-    // 🔧 FIX: סנכרן rooms state עם categoryDataMap - אפס אזורים כשמוחקים הכל מהעגלה
+    // 🆕 FIX: Initialize rooms from existingCategoryData only once (matching TilingCategoryEditor pattern)
     useEffect(() => {
-        // בדוק אם יש פריטים מסוג paint_room_detail בעגלה
-        const paintPlasterItemsInCart = selectedItems.filter(item =>
-            item.categoryId === categoryId && item.source === 'paint_room_detail'
-        );
+        if (existingCategoryData &&
+            existingCategoryData.rooms &&
+            existingCategoryData.rooms.length > 0 &&
+            !hasInitializedFromExisting) {
 
-        // אם אין פריטים בעגלה וה-existingCategoryData ריק, אפס את rooms למצב התחלתי
-        if (paintPlasterItemsInCart.length === 0 &&
-            (!existingCategoryData || !existingCategoryData.rooms || existingCategoryData.rooms.length === 0)) {
+            console.log('🔄 [PaintRoomsManager useEffect] Initializing rooms from existingCategoryData:', {
+                roomsCount: existingCategoryData.rooms.length,
+                rooms: existingCategoryData.rooms
+            });
 
-            console.log('🧹 [PaintRoomsManager] Resetting rooms - no items in cart');
-
-            setRooms([{
-                id: Date.now(),
-                name: `אזור 1`,
-                isPaintSelected: false,
-                isPlasterSelected: false,
-                isDetailedPaint: false,
-                isPlasterDetailed: false,
-                paintItemId: '',
-                paintQuantity: '',
-                paintLayers: 0,
-                wallPaintId: '', wallPaintQuantity: '', wallPaintLayers: 0,
-                ceilingPaintId: '', ceilingPaintQuantity: '', ceilingPaintLayers: 0,
-                calculatedWallArea: 0,
-                calculatedCeilingArea: 0,
-                roomBreakdown: [],
-                plasterItemId: '',
-                plasterQuantity: '',
-                plasterLayers: 0,
-                wallPlasterId: '', wallPlasterQuantity: '', wallPlasterLayers: 0,
-                ceilingPlasterId: '', ceilingPlasterQuantity: '', ceilingPlasterLayers: 0,
-                isComplexityOpen: false,
-                paintComplexity: '',
-                paintCustomComplexityDescription: '',
-                plasterComplexity: '',
-                plasterCustomComplexityDescription: '',
-                paintCalculatedMetrics: null,
-                plasterCalculatedMetrics: null,
-            }]);
+            setRooms(existingCategoryData.rooms);
+            setHasInitializedFromExisting(true);
         }
-    }, [selectedItems, categoryId, existingCategoryData]);
+    }, [existingCategoryData, hasInitializedFromExisting]);
+
+    // ✅ REMOVED: Sync deletions useEffect - was causing race condition bug
+    // The useEffect that reset rooms when cart was empty has been removed because:
+    // 1. It created a race condition when loading existing quotes
+    // 2. existingCategoryData arrives delayed (via setTimeout), causing premature reset
+    // 3. Deletions are already handled by handleRemoveRoom calling onRemoveItemFromQuote
+    // 4. This pattern matches TilingCategoryEditor which works correctly
 
     // 🔧 FIX: סנכרן stagedManualItems עם selectedItems - הסר פריטים שנמחקו מהעגלה
     useEffect(() => {
@@ -3464,14 +3445,17 @@ const ItemSelector = React.forwardRef(({
   // ✅ FIX: Use ref to track if we've already loaded data from selectedItems
   const hasLoadedFromSelectedItems = useRef(false);
 
+  // ✅ FIX: Reset load flag when navigating away from paint/plaster category
+  useEffect(() => {
+    // Reset flag when leaving paint category to allow reloading when returning
+    if (currentCategoryForItems !== 'cat_paint_plaster' && hasLoadedFromSelectedItems.current) {
+      console.log('🔄 [ItemSelector] Left paint category - resetting load flag');
+      hasLoadedFromSelectedItems.current = false;
+    }
+  }, [currentCategoryForItems]);
+
   // ✅ FIX: Load existing quote data from selectedItems into categoryDataMap on mount
   useEffect(() => {
-    // 🔧 FIX: Don't run useEffect when ItemSelector is hidden to prevent navigation blocking
-    if (!visible) {
-      console.log('⏸️ [ItemSelector] Skipping useEffect - component is hidden');
-      return;
-    }
-
     const paintPlasterItems = selectedItems.filter(item =>
       item.categoryId === 'cat_paint_plaster'
       // Include ALL paint/plaster sources:
@@ -3512,67 +3496,107 @@ const ItemSelector = React.forwardRef(({
       console.log('🔄 [ItemSelector] Initializing categoryDataMap from selectedItems');
 
       if (paintPlasterItems.length > 0) {
-        // Reconstruct rooms from paint items
-        const rooms = paintPlasterItems.map(item => {
-          const isDetailedPaint = (item.wallPaintQuantity > 0 || item.ceilingPaintQuantity > 0);
-
-          console.log('🔄 [ItemSelector] Reconstructing room from item:', {
-            itemId: item.id,
-            itemName: item.name,
-            wallPaintId: item.wallPaintId,
-            ceilingPaintId: item.ceilingPaintId,
-            wallPaintQuantity: item.wallPaintQuantity,
-            ceilingPaintQuantity: item.ceilingPaintQuantity,
-            wallPaintLayers: item.wallPaintLayers,
-            ceilingPaintLayers: item.ceilingPaintLayers,
-            itemId_simple: item.itemId,
-            isDetailedPaint,
-            roomBreakdown: item.roomBreakdown,
-            roomBreakdownLength: item.roomBreakdown?.length || 0,
-            detailedBreakdown: item.detailedBreakdown,
-            fullItem: item
-          });
-
-          return {
-            id: item.id.replace('_paint', '').replace('_plaster', ''),
-            name: item.name || item.roomName,
-            isPaintSelected: true,
-            isPlasterSelected: false,
-            isDetailedPaint: isDetailedPaint,
-            isComplexityOpen: false,
-            // For simple paint (not detailed)
-            paintItemId: !isDetailedPaint && item.itemId ? item.itemId : '',
-            paintQuantity: !isDetailedPaint ? String(item.quantity || 0) : '',
-            paintLayers: !isDetailedPaint ? (item.layers || 0) : 0,
-            // For detailed paint (walls + ceiling)
-            wallPaintId: item.wallPaintId || '',
-            wallPaintLayers: item.wallPaintLayers || 0,
-            wallPaintQuantity: String(item.wallPaintQuantity || ''),
-            ceilingPaintId: item.ceilingPaintId || '',
-            ceilingPaintLayers: item.ceilingPaintLayers || 0,
-            ceilingPaintQuantity: String(item.ceilingPaintQuantity || ''),
-            // Plaster fields (initialize as empty)
-            plasterItemId: '',
-            plasterQuantity: '',
-            plasterLayers: 0,
-            wallPlasterId: '',
-            wallPlasterLayers: 0,
-            wallPlasterQuantity: '',
-            ceilingPlasterId: '',
-            ceilingPlasterLayers: 0,
-            ceilingPlasterQuantity: '',
-            // Calculated metrics and breakdown
-            paintCalculatedMetrics: item,
-            plasterCalculatedMetrics: null,
-            paintComplexity: item.complexity || '',
-            paintCustomComplexityDescription: item.customComplexityDescription || '',
-            plasterComplexity: '',
-            plasterCustomComplexityDescription: '',
-            roomBreakdown: item.roomBreakdown || item.detailedBreakdown || [],
-            calculatedWallArea: Number(item.wallPaintQuantity || 0),
-            calculatedCeilingArea: Number(item.ceilingPaintQuantity || 0),
-          };
+        console.log('🔍 [ItemSelector] Searching for summary item:', {
+          totalItems: paintPlasterItems.length,
+          sources: paintPlasterItems.map(i => ({ id: i.id, source: i.source }))
         });
+
+        // Check if there's a summary item with detailedRoomsData
+        const summaryItem = paintPlasterItems.find(item => {
+          const isSummary = item.source === 'paint_plaster_category_summary';
+          if (isSummary) {
+            console.log('🔍 [ItemSelector] Found summary item:', {
+              id: item.id,
+              source: item.source,
+              hasDetailedRoomsData: !!item.detailedRoomsData,
+              hasDetailedRoomsDataSnake: !!item.detailed_rooms_data,
+              keysWithRoom: Object.keys(item).filter(k => k.toLowerCase().includes('room'))
+            });
+          }
+          return isSummary && (item.detailedRoomsData || item.detailed_rooms_data);
+        });
+
+        console.log('🔍 [ItemSelector] Summary item search result:', {
+          found: !!summaryItem,
+          hasDetailedRoomsData: !!summaryItem?.detailedRoomsData,
+          hasDetailedRoomsDataSnake: !!summaryItem?.detailed_rooms_data,
+          detailedRoomsDataLength: summaryItem?.detailedRoomsData?.length || summaryItem?.detailed_rooms_data?.length || 0
+        });
+
+        let rooms;
+
+        const roomsData = summaryItem?.detailedRoomsData || summaryItem?.detailed_rooms_data;
+        if (summaryItem && roomsData && roomsData.length > 0) {
+          // Use detailedRoomsData directly - this is the original room data!
+          console.log('✅ [ItemSelector] Loading rooms from detailedRoomsData:', {
+            roomsCount: roomsData.length,
+            firstRoom: roomsData[0]
+          });
+          rooms = roomsData;
+        } else {
+          // Fallback: Reconstruct rooms from paint items (existing code)
+          console.log('⚠️ [ItemSelector] No detailedRoomsData found, reconstructing from items');
+          rooms = paintPlasterItems.map(item => {
+            const isDetailedPaint = (item.wallPaintQuantity > 0 || item.ceilingPaintQuantity > 0);
+
+            console.log('🔄 [ItemSelector] Reconstructing room from item:', {
+              itemId: item.id,
+              itemName: item.name,
+              wallPaintId: item.wallPaintId,
+              ceilingPaintId: item.ceilingPaintId,
+              wallPaintQuantity: item.wallPaintQuantity,
+              ceilingPaintQuantity: item.ceilingPaintQuantity,
+              wallPaintLayers: item.wallPaintLayers,
+              ceilingPaintLayers: item.ceilingPaintLayers,
+              itemId_simple: item.itemId,
+              isDetailedPaint,
+              roomBreakdown: item.roomBreakdown,
+              roomBreakdownLength: item.roomBreakdown?.length || 0,
+              detailedBreakdown: item.detailedBreakdown,
+              fullItem: item
+            });
+
+            return {
+              id: item.id.replace('_paint', '').replace('_plaster', ''),
+              name: item.name || item.roomName,
+              isPaintSelected: true,
+              isPlasterSelected: false,
+              isDetailedPaint: isDetailedPaint,
+              isComplexityOpen: false,
+              // For simple paint (not detailed)
+              paintItemId: !isDetailedPaint && item.itemId ? item.itemId : '',
+              paintQuantity: !isDetailedPaint ? String(item.quantity || 0) : '',
+              paintLayers: !isDetailedPaint ? (item.layers || 0) : 0,
+              // For detailed paint (walls + ceiling)
+              wallPaintId: item.wallPaintId || '',
+              wallPaintLayers: item.wallPaintLayers || 0,
+              wallPaintQuantity: String(item.wallPaintQuantity || ''),
+              ceilingPaintId: item.ceilingPaintId || '',
+              ceilingPaintLayers: item.ceilingPaintLayers || 0,
+              ceilingPaintQuantity: String(item.ceilingPaintQuantity || ''),
+              // Plaster fields (initialize as empty)
+              plasterItemId: '',
+              plasterQuantity: '',
+              plasterLayers: 0,
+              wallPlasterId: '',
+              wallPlasterLayers: 0,
+              wallPlasterQuantity: '',
+              ceilingPlasterId: '',
+              ceilingPlasterLayers: 0,
+              ceilingPlasterQuantity: '',
+              // Calculated metrics and breakdown
+              paintCalculatedMetrics: item,
+              plasterCalculatedMetrics: null,
+              paintComplexity: item.complexity || '',
+              paintCustomComplexityDescription: item.customComplexityDescription || '',
+              plasterComplexity: '',
+              plasterCustomComplexityDescription: '',
+              roomBreakdown: item.roomBreakdown || item.detailedBreakdown || [],
+              calculatedWallArea: Number(item.wallPaintQuantity || 0),
+              calculatedCeilingArea: Number(item.ceilingPaintQuantity || 0),
+            };
+          });
+        }
 
         // ✅ Use setTimeout to avoid setState during render warning
         setTimeout(() => {
@@ -3597,7 +3621,7 @@ const ItemSelector = React.forwardRef(({
         hasLoadedFromSelectedItems.current = true;
       }
     }
-  }, [selectedItems]); // ✅ Removed categoryDataMap from dependencies to prevent infinite loop
+  }, [selectedItems, currentCategoryForItems]); // ✅ Added currentCategoryForItems to reload data when switching to paint category
 
   // חישוב סיכום כולל לריצוף - כולל פריטים ידניים
   const tilingCategorySummary = useMemo(() => {
