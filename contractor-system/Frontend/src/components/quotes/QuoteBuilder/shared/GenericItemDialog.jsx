@@ -16,7 +16,7 @@
  * - contractorPricing/ConstructionItemDialog.jsx
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,9 @@ export default function GenericItemDialog({
     clientUnitPriceOverride: '',
   });
 
+  // FIXED: Use ref instead of state to prevent re-renders triggering useEffect
+  const isFirstRender = useRef(true);
+
   // Load item or preset data
   useEffect(() => {
     if (open && (item || preset)) {
@@ -64,6 +67,7 @@ export default function GenericItemDialog({
         materialCostPerUnit: String(source.materialCostPerUnit || ''),
         clientUnitPriceOverride: source.clientPricePerUnit != null ? String(source.clientPricePerUnit) : '',
       });
+      isFirstRender.current = true; // Reset on dialog open
     } else if (open && !item && !preset) {
       setFormData({
         name: '',
@@ -75,8 +79,31 @@ export default function GenericItemDialog({
         materialCostPerUnit: '',
         clientUnitPriceOverride: '',
       });
+      isFirstRender.current = true; // Reset on dialog open
     }
   }, [open, item, preset, initialQuantity, config.defaults.unit]);
+
+  // FIXED: Auto-update client price when contractor cost changes
+  useEffect(() => {
+    // Skip first render after dialog opens to preserve existing values
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    // Only auto-calculate if there's a contractor cost
+    if (formData.contractorCost && open) {
+      const profitPercent = defaults.desiredProfitPercent || defaults.profitPercent || config.defaults.profitPercent || 30;
+      const contractorCostPerUnit = Number(formData.contractorCost) || 0;
+      const suggestedPrice = Math.round(contractorCostPerUnit * (1 + profitPercent / 100));
+
+      // Update client price to match new contractor cost
+      setFormData(prev => ({
+        ...prev,
+        clientUnitPriceOverride: String(suggestedPrice)
+      }));
+    }
+  }, [formData.contractorCost]); // Simplified dependencies - only trigger on contractor cost change
 
   // Calculations
   const getCalculations = () => {
@@ -107,7 +134,8 @@ export default function GenericItemDialog({
       ? Number(formData.clientUnitPriceOverride)
       : suggestedPrice;
 
-    const useQty = config.calculations.useQuantityInTotal ? qty : 1;
+    // FIXED: Check ignoreQuantity first - if true, don't multiply by quantity
+    const useQty = config.calculations.ignoreQuantity ? 1 : (config.calculations.useQuantityInTotal ? qty : 1);
     const totalCost = Math.round(contractorCostPerUnit * useQty);
     const totalPrice = Math.round(clientPricePerUnit * useQty);
     const profit = totalPrice - totalCost;

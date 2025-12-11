@@ -734,9 +734,27 @@ export default function PlumbingCategory({
         initialQuantity={editingItem ? getQty(editingItem.id) : 1}
         onSaved={(updatedItem) => {
           const q = Number(updatedItem.quantity) || 1;
-          setQty(updatedItem.id, q);
-          const patched = { ...editingItem, ...updatedItem, ignoreQuantity: true }; // Force ignoreQuantity for edited items too
-          addItem(patched);
+          setQty(editingItem.id, q);
+
+          // FIXED: Use unit prices directly from dialog, don't multiply by quantity
+          const unitCost = Number(updatedItem.contractorCostPerUnit || 0);
+          const unitPrice = Number(updatedItem.clientPricePerUnit || 0);
+
+          // FIXED: Update the item in the price list so next edit will show updated values
+          setItems(prevItems => prevItems.map(it =>
+            it.id === editingItem.id
+              ? {
+                  ...it,
+                  contractorCostPerUnit: unitCost,
+                  clientPricePerUnit: unitPrice,
+                  description: updatedItem.description || it.description,
+                  name: updatedItem.name || it.name
+                }
+              : it
+          ));
+
+          // FIXED: Don't add to quote when editing - only update the price list
+          // User needs to click "הוסף להצעה" button to add item to cart
           setShowEditDialog(false);
           setEditingItem(null);
         }}
