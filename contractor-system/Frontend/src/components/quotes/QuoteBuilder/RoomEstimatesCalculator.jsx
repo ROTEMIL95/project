@@ -444,9 +444,9 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
 
       const detailedCalculation = {
         totalArea: calculatedArea,
-        wallSqM: totalWallArea, 
+        wallSqM: totalWallArea,
         ceilingSqM: totalCeilingArea,
-        detailedRooms: selectedRooms.map(selectedRoom => { 
+        detailedRooms: selectedRooms.flatMap(selectedRoom => {
           const roomData = roomEstimatesData.find(room => room.id === selectedRoom.id);
           if (roomData) {
             const quantity = selectedRoom.quantity || 1;
@@ -454,37 +454,38 @@ export default function RoomEstimatesCalculator({ isOpen, onClose, onCalculate, 
 
             let wallArea = roomData.wallAreaSqM * complexityFactor;
             let ceilingArea = roomData.ceilingAreaSqM * complexityFactor;
-            
-            // Calculate total area for this room
-            const roomTotalWallArea = wallArea * quantity;
-            const roomTotalCeilingArea = selectedRoom.includeCeiling ? ceilingArea * quantity : 0;
-            const roomTotalArea = roomTotalWallArea + roomTotalCeilingArea;
-            
-            // Calculate price for this room
-            const roomTotalPrice = roomTotalArea * pricePerSqM;
-            const roomTotalCost = roomTotalArea * costPerSqM;
-            const roomProfit = roomTotalPrice - roomTotalCost;
 
-            return {
+            // Calculate area for ONE room (not multiplied by quantity)
+            const singleRoomWallArea = wallArea;
+            const singleRoomCeilingArea = selectedRoom.includeCeiling ? ceilingArea : 0;
+            const singleRoomTotalArea = singleRoomWallArea + singleRoomCeilingArea;
+
+            // Calculate price for ONE room
+            const singleRoomTotalPrice = singleRoomTotalArea * pricePerSqM;
+            const singleRoomTotalCost = singleRoomTotalArea * costPerSqM;
+            const singleRoomProfit = singleRoomTotalPrice - singleRoomTotalCost;
+
+            // Create multiple room items based on quantity
+            return Array.from({ length: quantity }, (_, index) => ({
               id: selectedRoom.id, // Include room ID for restoration
-              name: roomData.roomType, // Always use the actual room type name from roomData
+              name: quantity > 1 ? `${roomData.roomType} - אזור ${index + 1}` : roomData.roomType,
               roomName: roomData.roomType, // Keep the original room type for reference
-              quantity: quantity,
+              quantity: 1, // Each item represents 1 room/area
               includeCeiling: selectedRoom.includeCeiling || false,
               difficultyData: selectedRoom.difficultyData, // Include complexity data
-              wallArea: roomTotalWallArea,
-              ceilingArea: roomTotalCeilingArea,
-              totalArea: roomTotalArea,
-              // Price information
+              wallArea: singleRoomWallArea,
+              ceilingArea: singleRoomCeilingArea,
+              totalArea: singleRoomTotalArea,
+              // Price information (for single room)
               pricePerSqM: pricePerSqM,
               costPerSqM: costPerSqM,
-              totalPrice: Math.round(roomTotalPrice),
-              totalCost: Math.round(roomTotalCost),
-              profit: Math.round(roomProfit)
-            };
+              totalPrice: Math.round(singleRoomTotalPrice),
+              totalCost: Math.round(singleRoomTotalCost),
+              profit: Math.round(singleRoomProfit)
+            }));
           }
-          return null;
-        }).filter(Boolean)
+          return [];
+        })
       };
       onCalculate(detailedCalculation);
     }
