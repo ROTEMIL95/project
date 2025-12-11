@@ -104,11 +104,11 @@ const PageLayout = ({ children, currentPageName }) => {
   const menuItems = [
     { name: 'דשבורד', icon: <LayoutDashboard className="h-5 w-5" />, path: 'Dashboard', color: 'indigo' },
     { name: 'הצעת מחיר חדשה', icon: <FilePlus2 className="h-5 w-5" />, path: 'QuoteCreate', color: 'blue' },
-    { name: 'ניהול פרויקטים', icon: <Briefcase className="h-5 w-5" />, path: 'ProjectManagement', color: 'purple' },
     { name: 'הזנת נתונים', icon: <Calculator className="h-5 w-5" />, path: 'CostCalculator', color: 'green' },
     { name: 'מחירון קבלן', icon: <Settings2 className="h-5 w-5" />, path: 'ContractorPricing', color: 'teal' },
     { name: 'הצעות שנשלחו', icon: <Send className="h-5 w-5" />, path: 'SentQuotes', color: 'sky' },
     { name: 'פרטי קבלן', icon: <Contact className="h-5 w-5" />, path: 'ContractAgreement', color: 'pink' },
+    { name: 'ניהול פרויקטים', icon: <Briefcase className="h-5 w-5" />, path: 'ProjectManagement', color: 'purple', disabled: true, badge: 'בקרוב!' },
     { name: 'הזמנת חומרים', icon: <Package className="h-5 w-5" />, path: 'MaterialOrdering', color: 'orange', disabled: true, badge: 'בקרוב!' },
     { name: 'ניהול פיננסי', icon: <Coins className="h-5 w-5" />, path: 'Finance', color: 'amber', disabled: true, badge: 'בקרוב!' }
   ];
