@@ -495,9 +495,23 @@ export default function ElectricalCategory({
           const q = Number(updatedItem.quantity) || 1;
           setQty(editingItem.id, q);
 
-          // Add the updated item to the quote
-          const patched = { ...editingItem, ...updatedItem, ignoreQuantity: true };
-          addItem(patched);
+          // FIXED: Get values from dialog
+          const unitCost = Number(updatedItem.contractorCostPerUnit || 0);
+          const unitPrice = Number(updatedItem.clientPricePerUnit || 0);
+
+          // FIXED: Update the item in the pricebook (don't add to cart)
+          setItems(prevItems => prevItems.map(it =>
+            it.id === editingItem.id
+              ? {
+                  ...it,
+                  contractorCostPerUnit: unitCost,
+                  clientPricePerUnit: unitPrice,
+                  description: updatedItem.description || it.description,
+                }
+              : it
+          ));
+
+          // FIXED: Don't add to cart - user needs to click "הוסף להצעה"
           setShowEdit(false);
           setEditingItem(null);
         }}

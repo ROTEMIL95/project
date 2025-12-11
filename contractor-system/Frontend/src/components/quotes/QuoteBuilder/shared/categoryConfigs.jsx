@@ -66,6 +66,7 @@ export const electricalConfig = {
   calculations: {
     useQuantityInTotal: true,
     roundToInteger: true,
+    ignoreQuantity: true,  // FIXED: Quantity doesn't affect prices in dialog
   },
 
   // Summary Card Order & Labels

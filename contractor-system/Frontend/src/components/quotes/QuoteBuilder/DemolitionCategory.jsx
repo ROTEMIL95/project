@@ -711,9 +711,24 @@ export default function DemolitionCategory({
           initialQuantity={editingItem ? getQty(editingItem.id) : 1}
           onSaved={(updatedItem) => {
             const q = Number(updatedItem.quantity) || 1;
-            setQty(updatedItem.id, q);
-            const patched = { ...editingItem, ...updatedItem };
-            addItem(patched);
+            setQty(editingItem.id, q);
+
+            // ✅ קבל את הערכים מהדיאלוג
+            const hoursPerUnit = Number(updatedItem.hoursPerUnit || 0);
+
+            // ✅ עדכן את הפריט במחירון
+            setItems(prevItems => prevItems.map(it =>
+              it.id === editingItem.id
+                ? {
+                    ...it,
+                    hoursPerUnit: hoursPerUnit,
+                    name: updatedItem.name || it.name,
+                    description: updatedItem.description || it.description,
+                  }
+                : it
+            ));
+
+            // ✅ לא מוסיף לעגלה - המשתמש צריך ללחוץ "הוסף להצעה"
             setShowEdit(false);
             setEditingItem(null);
           }}
