@@ -126,9 +126,9 @@ export default function ConstructionCategory({
   // NEW: State to track which items are expanded (show cost breakdown)
   const [expandedItems, setExpandedItems] = React.useState({});
 
-  // NEW: State to control if work days are displayed as rounded or exact
-  // Default is TRUE = show rounded days
-  const [showRoundedDays, setShowRoundedDays] = React.useState(true);
+  // NEW: State to control precise work days calculation
+  // Default is FALSE = use rounded days (same as TilingCategoryEditor)
+  const [preciseWorkDays, setPreciseWorkDays] = React.useState(false);
 
   // NEW: Toggle function for expanding/collapsing item details
   const toggleItemExpanded = (itemId) => {
@@ -392,21 +392,72 @@ export default function ConstructionCategory({
 
 
   const constructionItems = selectedItems.filter((it) => it.categoryId === "cat_construction");
-  const summary = constructionItems.reduce(
-    (acc, it) => {
-      acc.material += Number(it.materialCost) || 0;
-      acc.labor += Number(it.laborCost) || 0;
-      acc.cost += Number(it.totalCost) || 0;
-      acc.price += Number(it.totalPrice) || 0;
-      acc.profit += Number(it.profit) || 0;
-      acc.days += Number(it.workDuration) || 0;
-      return acc;
-    },
-    { material: 0, labor: 0, cost: 0, price: 0, profit: 0, days: 0 }
-  );
 
-  const currentDays = Number(summary.days) || 0;
-  const roundedDays = Math.ceil(currentDays);
+  // Calculate summary with precise work days logic (same as TilingCategoryEditor)
+  const summary = React.useMemo(() => {
+    // Sum all unadjusted values
+    let totalMaterialCost = 0;
+    let totalLaborCostUnadjusted = 0;
+    let totalWorkDaysUnrounded = 0;
+    let totalCostUnadjusted = 0;
+    let totalPriceUnadjusted = 0;
+    let totalProfitUnadjusted = 0;
+
+    constructionItems.forEach((it) => {
+      totalMaterialCost += Number(it.materialCost) || 0;
+      totalLaborCostUnadjusted += Number(it.laborCost) || 0;
+      totalWorkDaysUnrounded += Number(it.workDuration) || 0;
+      totalCostUnadjusted += Number(it.totalCost) || 0;
+      totalPriceUnadjusted += Number(it.totalPrice) || 0;
+      totalProfitUnadjusted += Number(it.profit) || 0;
+    });
+
+    // Determine final values based on preciseWorkDays toggle
+    let finalWorkDays, finalLaborCost, finalCost, finalPrice, finalProfit;
+
+    if (preciseWorkDays) {
+      // Precise mode - use unadjusted values
+      finalWorkDays = totalWorkDaysUnrounded;
+      finalLaborCost = totalLaborCostUnadjusted;
+      finalCost = totalCostUnadjusted;
+      finalPrice = totalPriceUnadjusted;
+      finalProfit = totalProfitUnadjusted;
+    } else {
+      // Rounded mode - recalculate everything
+      finalWorkDays = Math.ceil(totalWorkDaysUnrounded);
+
+      const dayRate = totalWorkDaysUnrounded > 0
+        ? totalLaborCostUnadjusted / totalWorkDaysUnrounded
+        : 0;
+      finalLaborCost = finalWorkDays * dayRate;
+
+      const laborCostDifference = finalLaborCost - totalLaborCostUnadjusted;
+
+      if (Math.abs(laborCostDifference) > 0.01) {
+        finalCost = totalCostUnadjusted + laborCostDifference;
+
+        const initialProfitRatio = totalCostUnadjusted > 0
+          ? totalProfitUnadjusted / totalCostUnadjusted * 100
+          : 0;
+        finalProfit = finalCost * (initialProfitRatio / 100);
+        finalPrice = finalCost + finalProfit;
+      } else {
+        finalCost = totalCostUnadjusted;
+        finalPrice = totalPriceUnadjusted;
+        finalProfit = totalProfitUnadjusted;
+      }
+    }
+
+    return {
+      material: totalMaterialCost,
+      labor: finalLaborCost,
+      cost: finalCost,
+      price: finalPrice,
+      profit: finalProfit,
+      days: finalWorkDays,
+      unroundedDays: totalWorkDaysUnrounded
+    };
+  }, [constructionItems, preciseWorkDays]);
 
   const dateBtnBase = "justify-start h-10 w-full";
   const startBtnClasses = startDate
@@ -971,7 +1022,10 @@ export default function ConstructionCategory({
                 <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 text-center">
                   <div className="text-[11px] text-purple-800">ימי עבודה (סה״כ)</div>
                   <div className="text-xl font-bold text-purple-700">
-                    {showRoundedDays ? roundedDays.toFixed(1) : currentDays.toFixed(1)}
+                    {preciseWorkDays
+                      ? summary.unroundedDays.toFixed(1)
+                      : Math.ceil(summary.unroundedDays).toFixed(0)
+                    }
                   </div>
                 </div>
               </div>
@@ -979,11 +1033,11 @@ export default function ConstructionCategory({
               <div className="mt-4 flex justify-start items-center gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => setShowRoundedDays(!showRoundedDays)}
+                  onClick={() => setPreciseWorkDays(!preciseWorkDays)}
                   className="text-sm"
                 >
                   <Clock className="w-4 h-4 ml-2" />
-                  {showRoundedDays ? "הצג ימים מדויקים" : "הצג ימים מעוגלים"}
+                  {preciseWorkDays ? "עבור לימים מעוגלים" : "עבור לימים מדויקים"}
                 </Button>
               </div>
             </div>
