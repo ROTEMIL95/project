@@ -3673,8 +3673,61 @@ const ItemSelector = React.forwardRef(({
       itemCount: 0
     });
 
-    return summary;
-  }, [selectedItems, stagedManualItems, categoryDataMap]);
+    // ✅ Apply preciseWorkDays logic (same as TilingCategoryEditor)
+    let finalWorkDays;
+    let finalLaborCost;
+    let finalContractorCost;
+    let finalClientPrice;
+    let finalProfit;
+
+    const totalWorkDaysUnrounded = summary.totalWorkDays;
+    const totalLaborCostUnadjusted = summary.totalLaborCost;
+    const totalContractorCostUnadjusted = summary.totalContractorCost;
+    const totalClientPriceUnadjusted = summary.totalClientPrice;
+    const totalProfitUnadjusted = summary.totalProfit;
+
+    if (tilingPreciseWorkDays) {
+      // Precise mode - use unadjusted values
+      finalWorkDays = totalWorkDaysUnrounded;
+      finalLaborCost = totalLaborCostUnadjusted;
+      finalContractorCost = totalContractorCostUnadjusted;
+      finalClientPrice = totalClientPriceUnadjusted;
+      finalProfit = totalProfitUnadjusted;
+    } else {
+      // Rounded mode - recalculate everything
+      finalWorkDays = Math.ceil(totalWorkDaysUnrounded);
+
+      const dayRate = totalWorkDaysUnrounded > 0
+        ? totalLaborCostUnadjusted / totalWorkDaysUnrounded
+        : 0;
+      finalLaborCost = finalWorkDays * dayRate;
+
+      const laborCostDifference = finalLaborCost - totalLaborCostUnadjusted;
+
+      if (Math.abs(laborCostDifference) > 0.01) {
+        finalContractorCost = totalContractorCostUnadjusted + laborCostDifference;
+        const initialProfitRatio = totalContractorCostUnadjusted > 0
+          ? totalProfitUnadjusted / totalContractorCostUnadjusted * 100
+          : 0;
+        finalProfit = finalContractorCost * (initialProfitRatio / 100);
+        finalClientPrice = finalContractorCost + finalProfit;
+      } else {
+        finalContractorCost = totalContractorCostUnadjusted;
+        finalClientPrice = totalClientPriceUnadjusted;
+        finalProfit = totalProfitUnadjusted;
+      }
+    }
+
+    return {
+      ...summary,
+      totalWorkDays: finalWorkDays,
+      unroundedWorkDays: totalWorkDaysUnrounded, // Keep the unrounded value for display
+      totalLaborCost: finalLaborCost,
+      totalContractorCost: finalContractorCost,
+      totalClientPrice: finalClientPrice,
+      totalProfit: finalProfit
+    };
+  }, [selectedItems, stagedManualItems, categoryDataMap, tilingPreciseWorkDays]);
 
 
   const normalizeRoomsForBreakdown = useCallback((raw) => {
@@ -4441,7 +4494,7 @@ const ItemSelector = React.forwardRef(({
           </div>
 
           {/* סיכום קטגוריה לריצוף - בתחתית הדף */}
-          {currentCategoryForItems === 'cat_tiling' && tilingCategorySummary.itemCount > 0 && (
+          {currentCategoryForItems === 'cat_tiling' && (
             <div className="mt-6 p-0">
               <Collapsible open={isTilingSummaryOpen} onOpenChange={setIsTilingSummaryOpen}>
                 <CollapsibleTrigger asChild>
@@ -4515,8 +4568,8 @@ const ItemSelector = React.forwardRef(({
                           <div className="bg-gray-100 p-2 rounded-lg">
                             <div className="text-base font-bold text-gray-800">
                               {tilingPreciseWorkDays
-                                ? (tilingCategorySummary.totalWorkDays || 0).toFixed(1)
-                                : Math.ceil(tilingCategorySummary.totalWorkDays || 0).toFixed(0)
+                                ? (tilingCategorySummary.unroundedWorkDays || 0).toFixed(1)
+                                : Math.ceil(tilingCategorySummary.unroundedWorkDays || 0).toFixed(0)
                               }
                             </div>
                             <div className="text-xs text-gray-500">ימי עבודה</div>
