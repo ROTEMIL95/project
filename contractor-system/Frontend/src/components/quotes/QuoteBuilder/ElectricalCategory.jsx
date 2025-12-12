@@ -491,27 +491,17 @@ export default function ElectricalCategory({
         hideUnit
         initialQuantity={editingItem ? getQty(editingItem.id) : 1}
         onSaved={(updatedItem) => {
-          // Update the quantity in the qtyMap
           const q = Number(updatedItem.quantity) || 1;
-          setQty(editingItem.id, q);
 
-          // FIXED: Get values from dialog
-          const unitCost = Number(updatedItem.contractorCostPerUnit || 0);
-          const unitPrice = Number(updatedItem.clientPricePerUnit || 0);
+          // Add to cart with ignoreQuantity flag so price doesn't multiply by quantity
+          addItem({
+            ...editingItem,        // Original item from pricebook
+            ...updatedItem,        // Updated values from dialog
+            quantity: q,           // Quantity from dialog
+            ignoreQuantity: true   // Price won't be multiplied by quantity
+          });
 
-          // FIXED: Update the item in the pricebook (don't add to cart)
-          setItems(prevItems => prevItems.map(it =>
-            it.id === editingItem.id
-              ? {
-                  ...it,
-                  contractorCostPerUnit: unitCost,
-                  clientPricePerUnit: unitPrice,
-                  description: updatedItem.description || it.description,
-                }
-              : it
-          ));
-
-          // FIXED: Don't add to cart - user needs to click "הוסף להצעה"
+          // Don't update the pricebook - keep original item unchanged
           setShowEdit(false);
           setEditingItem(null);
         }}

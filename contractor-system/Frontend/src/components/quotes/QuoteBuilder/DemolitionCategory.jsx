@@ -711,24 +711,16 @@ export default function DemolitionCategory({
           initialQuantity={editingItem ? getQty(editingItem.id) : 1}
           onSaved={(updatedItem) => {
             const q = Number(updatedItem.quantity) || 1;
-            setQty(editingItem.id, q);
 
-            // ✅ קבל את הערכים מהדיאלוג
-            const hoursPerUnit = Number(updatedItem.hoursPerUnit || 0);
+            // Add to cart with ignoreQuantity flag so price doesn't multiply by quantity
+            addItem({
+              ...editingItem,        // Original item from pricebook
+              ...updatedItem,        // Updated values from dialog
+              quantity: q,           // Quantity from dialog
+              ignoreQuantity: true   // Price won't be multiplied by quantity
+            });
 
-            // ✅ עדכן את הפריט במחירון
-            setItems(prevItems => prevItems.map(it =>
-              it.id === editingItem.id
-                ? {
-                    ...it,
-                    hoursPerUnit: hoursPerUnit,
-                    name: updatedItem.name || it.name,
-                    description: updatedItem.description || it.description,
-                  }
-                : it
-            ));
-
-            // ✅ לא מוסיף לעגלה - המשתמש צריך ללחוץ "הוסף להצעה"
+            // Don't update the pricebook - keep original item unchanged
             setShowEdit(false);
             setEditingItem(null);
           }}
