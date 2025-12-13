@@ -133,12 +133,12 @@ export default function QuoteToHTML({ quote }) {
 
   const styles = `
     <style>
-      * {
+      .quote-container * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
-      
+
       body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
         direction: rtl;
@@ -147,7 +147,7 @@ export default function QuoteToHTML({ quote }) {
         line-height: 1.7;
         color: #374151;
       }
-      
+
       .quote-container {
         max-width: 1000px;
         margin: 0 auto;
@@ -776,6 +776,255 @@ export default function QuoteToHTML({ quote }) {
 
       .quote-footer strong {
         color: #374151; /* text-gray-700 */
+      }
+
+      /* ===== RESPONSIVE MOBILE STYLES ===== */
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+          font-size: 14px;
+        }
+
+        .quote-container {
+          max-width: 100%;
+          border-radius: 8px;
+        }
+
+        .quote-header {
+          padding: 24px 20px;
+        }
+
+        .quote-header h1 {
+          font-size: 24px;
+        }
+
+        .quote-date {
+          font-size: 13px;
+        }
+
+        .info-section {
+          padding: 20px 16px;
+        }
+
+        .info-section-title {
+          font-size: 16px;
+          margin-bottom: 16px;
+        }
+
+        .info-grid {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+
+        .info-item {
+          padding: 12px;
+        }
+
+        .timeline-section {
+          padding: 16px 20px;
+          margin: 20px 16px;
+        }
+
+        .timeline-content {
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .timeline-arrow {
+          transform: rotate(90deg);
+          font-size: 14px;
+        }
+
+        .timeline-item {
+          min-width: 100%;
+        }
+
+        .category-block {
+          margin: 24px 16px;
+        }
+
+        .category-header {
+          padding: 16px 20px;
+          flex-wrap: wrap;
+        }
+
+        .category-icon {
+          font-size: 24px;
+        }
+
+        .category-title {
+          font-size: 18px;
+        }
+
+        .items-table {
+          font-size: 11px;
+          width: 100%;
+          overflow-x: auto;
+          display: block;
+        }
+
+        .items-table thead th {
+          font-size: 10px;
+          padding: 10px 6px;
+        }
+
+        .items-table td {
+          font-size: 11px;
+          padding: 10px 6px;
+        }
+
+        .items-table tbody {
+          display: table;
+          width: 100%;
+        }
+
+        .items-table tr {
+          display: table-row;
+        }
+
+        .category-summary {
+          padding: 16px;
+        }
+
+        .summary-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+        }
+
+        .summary-item {
+          padding: 12px;
+        }
+
+        .summary-value {
+          font-size: 16px;
+        }
+
+        .commitments-section {
+          padding: 16px;
+        }
+
+        .commitments-title {
+          font-size: 14px;
+        }
+
+        .commitments-content {
+          font-size: 13px;
+          padding: 12px;
+        }
+
+        .variable-costs-section {
+          margin: 24px 16px;
+        }
+
+        .variable-costs-header h2 {
+          font-size: 20px;
+        }
+
+        .variable-cost-item {
+          flex-direction: column;
+          align-items: flex-start;
+          padding: 12px;
+          gap: 8px;
+        }
+
+        .variable-cost-item-desc {
+          font-size: 15px;
+        }
+
+        .variable-cost-item-value {
+          font-size: 20px;
+          align-self: flex-end;
+        }
+
+        .final-summary {
+          margin: 24px 16px;
+          padding: 20px;
+        }
+
+        .final-summary h2 {
+          font-size: 20px;
+          margin-bottom: 16px;
+        }
+
+        .final-grid {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+
+        .final-item {
+          padding: 16px;
+        }
+
+        .final-value {
+          font-size: 22px;
+        }
+
+        .payment-terms {
+          margin: 24px 16px;
+        }
+
+        .payment-terms-header {
+          padding: 16px 20px;
+        }
+
+        .payment-terms-title {
+          font-size: 16px;
+        }
+
+        .payment-terms-content {
+          padding: 16px;
+        }
+
+        .payment-term {
+          flex-direction: column;
+          align-items: flex-start;
+          padding: 12px;
+          gap: 8px;
+        }
+
+        .term-details {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+          width: 100%;
+        }
+
+        .term-percentage,
+        .term-amount,
+        .term-date {
+          min-width: auto;
+          text-align: right;
+        }
+
+        .commitments-wrapper {
+          margin: 24px 16px;
+        }
+
+        .commitments-grid {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+
+        .commitment-card {
+          padding: 16px;
+        }
+
+        .commitment-title {
+          font-size: 16px;
+        }
+
+        .commitment-content {
+          font-size: 13px;
+        }
+
+        .quote-footer {
+          margin: 24px 16px 16px 16px;
+          padding: 16px;
+        }
+
+        .quote-footer p {
+          font-size: 13px;
+        }
       }
 
       /* ===== PRINT STYLES - Optimized for PDF/Print Output ===== */

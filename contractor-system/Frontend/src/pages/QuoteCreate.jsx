@@ -62,7 +62,37 @@ import QuotePreviewSnapshot from '@/components/quotes/QuoteBuilder/QuotePreviewS
 import ContractorCostBreakdown from '@/components/quotes/QuoteBuilder/ContractorCostBreakdown';
 import { useToast } from "@/components/ui/use-toast";
 import CategoryFloatingAddButton from '@/components/quotes/QuoteBuilder/CategoryFloatingAddButton';
+import { createRoot } from 'react-dom/client';
 
+// קומפוננט עוטף ל-QuoteToHTML עם iframe לבידוד סטיילים
+const QuotePreviewIframe = ({ quote }) => {
+  const iframeRef = useRef(null);
+
+  useEffect(() => {
+    if (iframeRef.current && quote) {
+      const iframe = iframeRef.current;
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+      // נקה את ה-iframe
+      iframeDoc.open();
+      iframeDoc.write('<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><div id="root"></div></body></html>');
+      iframeDoc.close();
+
+      // רנדר את QuoteToHTML בתוך ה-iframe
+      const root = createRoot(iframeDoc.getElementById('root'));
+      root.render(<QuoteToHTML quote={quote} />);
+    }
+  }, [quote]);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      className="w-full h-full border-0"
+      style={{ minHeight: '100%' }}
+      title="Quote Preview"
+    />
+  );
+};
 
 // קטגוריות זמינות לבחירה - אפשר לטעון אותן גם מהשרת בעתיד
 const AVAILABLE_CATEGORIES = [
@@ -2796,7 +2826,7 @@ export default function QuoteCreate() {
                     <h3 className="text-lg font-medium">תצוגה מקדימה של הצעת המחיר</h3>
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                    <QuoteToHTML quote={getQuoteDataForPreview()} />
+                    <QuotePreviewIframe quote={getQuoteDataForPreview()} />
                 </div>
                 <div className="p-4 border-t flex justify-end">
                     <Button onClick={() => setShowPreview(false)}>סגור</Button>

@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
 import QuoteToHTML from '@/components/quotes/QuoteToHTML';
 
 export default function QuotePreviewSnapshot({ projectInfo, totals, selectedItems, companyInfo }) {
+  const iframeRef = useRef(null);
+
   // בניית אובייקט quote מלא לצורך התצוגה המקדימה
   const previewQuote = {
     projectName: projectInfo.projectName,
@@ -20,10 +23,26 @@ export default function QuotePreviewSnapshot({ projectInfo, totals, selectedItem
     generalEndDate: projectInfo.generalEndDate,
   };
 
+  useEffect(() => {
+    if (iframeRef.current) {
+      const iframe = iframeRef.current;
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+      // נקה את ה-iframe
+      iframeDoc.open();
+      iframeDoc.write('<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><div id="root"></div></body></html>');
+      iframeDoc.close();
+
+      // רנדר את QuoteToHTML בתוך ה-iframe
+      const root = createRoot(iframeDoc.getElementById('root'));
+      root.render(<QuoteToHTML quote={previewQuote} />);
+    }
+  }, [selectedItems, totals, projectInfo, companyInfo]);
+
   return (
     <div className="relative w-full max-w-full overflow-hidden">
       {/* מסגרת חיצונית אלגנטית */}
-      <div className="bg-gray-50 p-3 sm:p-4 md:p-6 lg:p-8 rounded-lg sm:rounded-xl md:rounded-2xl border border-gray-300 sm:border-2 shadow-lg sm:shadow-xl md:shadow-2xl">
+      <div className="bg-gray-50 p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl md:rounded-2xl border border-gray-300 sm:border-2 shadow-lg sm:shadow-xl md:shadow-2xl w-full max-w-full">
 
         {/* המסמך עצמו - גובה מוגדל */}
         <div
@@ -32,15 +51,18 @@ export default function QuotePreviewSnapshot({ projectInfo, totals, selectedItem
             maxHeight: '400px'
           }}
         >
-          {/* השתמש ב-QuoteToHTML הממשי */}
+          {/* השתמש ב-iframe לבידוד מלא */}
           <div style={{
             overflow: 'hidden',
             maxHeight: '400px',
             position: 'relative'
           }} className="w-full max-w-full">
-            <div className="w-full max-w-full overflow-x-auto">
-              <QuoteToHTML quote={previewQuote} />
-            </div>
+            <iframe
+              ref={iframeRef}
+              className="w-full h-full border-0"
+              style={{ minHeight: '400px', transform: 'scale(0.7)', transformOrigin: 'top left', width: '142.86%', height: '571px' }}
+              title="Quote Preview"
+            />
 
             {/* Gradient fade בתחתית */}
             <div
