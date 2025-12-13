@@ -377,15 +377,19 @@ export default function QuoteSummary({
     // ✅ FIX: Filter out summary items to prevent double counting
     const realItems = selectedItems.filter(item => item.source !== 'paint_plaster_category_summary');
 
-    const subtotalItems = realItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+    // ✅ FIX: Use basePrice instead of totalPrice to avoid double calculation
+    // basePrice is the original price before any discount/priceIncrease adjustments
+    const subtotalItems = realItems.reduce((sum, item) => sum + ((item.basePrice ?? item.totalPrice) || 0), 0);
     const projectAdditionalCosts = (projectComplexities?.additionalCostDetails || []).reduce((sum, cost) => sum + (cost.cost || 0), 0);
     const finalSubtotal = subtotalItems + projectAdditionalCosts;
 
+    // ✅ Apply priceIncrease and discount ONLY ONCE (not on items, only on totals)
     const subtotalAfterIncrease = finalSubtotal + (finalSubtotal * priceIncrease) / 100;
     const discountAmount = (subtotalAfterIncrease * discount) / 100;
     const total = subtotalAfterIncrease - discountAmount;
 
-    const totalItemsCost = realItems.reduce((sum, item) => sum + (item.totalCost || 0), 0);
+    // ✅ Use baseCost for accurate profit calculation
+    const totalItemsCost = realItems.reduce((sum, item) => sum + ((item.baseCost ?? item.totalCost) || 0), 0);
     const totalContractorAdditionalCosts = (projectComplexities?.additionalCostDetails || []).reduce((sum, cost) => sum + (cost.contractorCost || cost.cost || 0), 0);
     const contractorComplexitySum = realItems.reduce((sum, it) => {
         return sum + (Number(it.complexityLaborAddedCost) || 0);

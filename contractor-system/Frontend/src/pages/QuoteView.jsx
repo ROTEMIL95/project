@@ -58,6 +58,11 @@ export default function QuoteView() {
     navigate(createPageUrl(`QuoteCreate?id=${quote.id}`));
   };
 
+  const handlePrintDownload = () => {
+    const url = createPageUrl(`ClientQuoteView?id=${quote.id}`);
+    window.open(url, '_blank');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -109,7 +114,7 @@ export default function QuoteView() {
                     <Edit className="mr-2 h-4 w-4" />
                     ערוך הצעה
                  </Button>
-                 <Button variant="outline" onClick={() => navigate(createPageUrl(`ClientQuoteView?id=${quote.id}`))}>
+                 <Button variant="outline" onClick={handlePrintDownload}>
                     <Download className="mr-2 h-4 w-4" />
                     הורדה/הדפסה
                  </Button>

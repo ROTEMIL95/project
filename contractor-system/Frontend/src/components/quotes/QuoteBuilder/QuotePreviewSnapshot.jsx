@@ -2,42 +2,50 @@ import React, { useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import QuoteToHTML from '@/components/quotes/QuoteToHTML';
 
-export default function QuotePreviewSnapshot({ projectInfo, totals, selectedItems, companyInfo }) {
+export default function QuotePreviewSnapshot({ projectInfo, totals, selectedItems, companyInfo, discountPercent = 0, priceIncrease = 0 }) {
   const iframeRef = useRef(null);
-
-  // בניית אובייקט quote מלא לצורך התצוגה המקדימה
-  const previewQuote = {
-    projectName: projectInfo.projectName,
-    clientName: projectInfo.clientName,
-    clientEmail: projectInfo.clientEmail,
-    clientPhone: projectInfo.clientPhone,
-    projectAddress: projectInfo.projectAddress,
-    projectType: projectInfo.projectType,
-    items: selectedItems,
-    totalAmount: totals.baseAmount,
-    finalAmount: totals.total,
-    companyInfo: companyInfo,
-    created_date: new Date().toISOString(),
-    generalStartDate: projectInfo.generalStartDate,
-    workDays: projectInfo.workDays,
-    generalEndDate: projectInfo.generalEndDate,
-  };
+  const rootRef = useRef(null); // ✅ שמירת root כדי לא ליצור אותו מחדש
 
   useEffect(() => {
     if (iframeRef.current) {
       const iframe = iframeRef.current;
       const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
 
-      // נקה את ה-iframe
-      iframeDoc.open();
-      iframeDoc.write('<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><div id="root"></div></body></html>');
-      iframeDoc.close();
+      // בניית אובייקט quote מלא לצורך התצוגה המקדימה
+      const previewQuote = {
+        projectName: projectInfo.projectName,
+        clientName: projectInfo.clientName,
+        clientEmail: projectInfo.clientEmail,
+        clientPhone: projectInfo.clientPhone,
+        projectAddress: projectInfo.projectAddress,
+        projectType: projectInfo.projectType,
+        items: selectedItems,
+        totalAmount: totals.baseAmount,
+        finalAmount: totals.total,
+        discount: discountPercent, // QuoteToHTML expects 'discount'
+        discountPercent: discountPercent, // Also include for consistency
+        priceIncrease: priceIncrease,
+        companyInfo: companyInfo,
+        created_date: new Date().toISOString(),
+        generalStartDate: projectInfo.generalStartDate,
+        workDays: projectInfo.workDays,
+        generalEndDate: projectInfo.generalEndDate,
+      };
 
-      // רנדר את QuoteToHTML בתוך ה-iframe
-      const root = createRoot(iframeDoc.getElementById('root'));
-      root.render(<QuoteToHTML quote={previewQuote} />);
+      // ✅ צור root רק פעם אחת, אחר כך רק עדכן
+      if (!rootRef.current) {
+        // נקה את ה-iframe רק בפעם הראשונה
+        iframeDoc.open();
+        iframeDoc.write('<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><div id="root"></div></body></html>');
+        iframeDoc.close();
+
+        rootRef.current = createRoot(iframeDoc.getElementById('root'));
+      }
+
+      // רנדר את QuoteToHTML (יעדכן את התצוגה אם root כבר קיים)
+      rootRef.current.render(<QuoteToHTML quote={previewQuote} />);
     }
-  }, [selectedItems, totals, projectInfo, companyInfo]);
+  }, [selectedItems, totals, projectInfo, companyInfo, discountPercent, priceIncrease]);
 
   return (
     <div className="relative w-full max-w-full overflow-hidden">

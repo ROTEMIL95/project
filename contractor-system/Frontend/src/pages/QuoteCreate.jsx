@@ -1134,38 +1134,10 @@ export default function QuoteCreate() {
     }
   }, [projectInfo.generalStartDate, projectInfo.workDays, projectInfo.generalEndDate, calculateEndDate]);
 
-  // useEffect חדש - החלת הנחה/העלאת מחיר על כל הפריטים
-  useEffect(() => {
-    if (selectedItems.length === 0) return;
-
-    // חישוב מקדם ההתאמה: (1 + העלאה%) * (1 - הנחה%)
-    const adjustmentFactor = (1 + priceIncrease / 100) * (1 - discountPercent / 100); // Using discountPercent
-
-    // עדכון מחירי הפריטים בהתאם למקדם
-    setSelectedItems(prevItems =>
-      prevItems.map(item => {
-        const itemBasePrice = item.basePrice ?? item.totalPrice ?? 0;
-        const itemBaseCost = item.baseCost ?? item.totalCost ?? 0;
-
-        const newTotalPrice = Math.round(itemBasePrice * adjustmentFactor);
-
-        const newProfit = newTotalPrice - itemBaseCost;
-        const newProfitPercent = itemBaseCost > 0 ? ((newProfit / itemBaseCost) * 100) : 0;
-
-        const quantity = Number(item.quantity) || 1;
-        const newUnitPrice = quantity > 0 ? Math.round(newTotalPrice / quantity) : (item.unitPrice ?? newTotalPrice);
-
-        return {
-          ...item,
-          totalPrice: newTotalPrice,
-          unitPrice: newUnitPrice,
-          profit: newProfit,
-          profitPercent: newProfitPercent
-        };
-      })
-    );
-  }, [discountPercent, priceIncrease]); // Dependency: discountPercent
-
+  // ✅ REMOVED: useEffect that modified item prices based on discount/priceIncrease
+  // This caused double calculation - once on items, once on totals
+  // Now all discount/priceIncrease calculations happen ONLY in totals calculation (useMemo)
+  // Items keep their original basePrice and totalPrice unchanged
 
   // פונקציה לאיפוס נתוני ההצעה
   const resetQuoteData = useCallback((defaultPaymentTerms = []) => {
@@ -1275,10 +1247,11 @@ export default function QuoteCreate() {
               return updatedItem;
           });
 
+          // ✅ FIX: Preserve existing basePrice/baseCost if they exist, otherwise initialize from totalPrice/totalCost
           const itemsWithBasePrices = loadedItems.map(item => ({
             ...item,
-            basePrice: item.totalPrice ?? 0,
-            baseCost: item.totalCost ?? 0,
+            basePrice: item.basePrice ?? item.totalPrice ?? 0,
+            baseCost: item.baseCost ?? item.totalCost ?? 0,
           }));
 
           setSelectedItems(itemsWithBasePrices);
@@ -1519,17 +1492,20 @@ export default function QuoteCreate() {
     // ✅ FIX: Filter out summary items to prevent double counting
     const realItems = selectedItems.filter(item => item.source !== 'paint_plaster_category_summary');
 
-    const subtotalItems = realItems.reduce((accumulator, item) => accumulator + (item.totalPrice || 0), 0);
+    // ✅ FIX: Use basePrice instead of totalPrice to avoid double calculation
+    // basePrice is the original price before any discount/priceIncrease adjustments
+    const subtotalItems = realItems.reduce((accumulator, item) => accumulator + ((item.basePrice ?? item.totalPrice) || 0), 0);
     const projectAdditionalCosts = (projectComplexities?.additionalCostDetails || []).reduce((accumulator, cost) => accumulator + (cost.cost || 0), 0);
 
     const finalSubtotal = subtotalItems + projectAdditionalCosts;
 
-    // ✅ FIX: Apply priceIncrease and discount to calculate final amount
+    // ✅ Apply priceIncrease and discount ONLY ONCE (not on items, only on totals)
     const subtotalAfterIncrease = finalSubtotal + (finalSubtotal * priceIncrease) / 100;
     const discountAmount = (subtotalAfterIncrease * discountPercent) / 100;
     const total = subtotalAfterIncrease - discountAmount;
 
-    const totalItemsCost = realItems.reduce((accumulator, item) => accumulator + (item.totalCost || 0), 0);
+    // ✅ Use baseCost for accurate profit calculation
+    const totalItemsCost = realItems.reduce((accumulator, item) => accumulator + ((item.baseCost ?? item.totalCost) || 0), 0);
     const totalContractorAdditionalCosts = (projectComplexities?.additionalCostDetails || []).reduce(
       (accumulator, cost) => accumulator + (cost.contractorCost || 0), 0
     );
@@ -2236,7 +2212,7 @@ export default function QuoteCreate() {
             <CardHeader className="bg-gray-50/50 border-b">
               <CardTitle className="text-xl font-semibold text-gray-800">בחירת קטגוריות לפי סדר העבודה</CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-4 pt-2">
               <CategorySelector
                 categories={userCategories}
                 selectedCategories={selectedCategories}
@@ -2406,6 +2382,8 @@ export default function QuoteCreate() {
                 projectInfo={projectInfo}
                 totals={totals}
                 selectedItems={selectedItems}
+                discountPercent={discountPercent}
+                priceIncrease={priceIncrease}
                 companyInfo={{
                   ...(user?.user_metadata?.companyInfo || {}),
                   contractorCommitments: user?.user_metadata?.contractorCommitments || '',
@@ -2711,8 +2689,8 @@ export default function QuoteCreate() {
         </div>
       </div>
 
-      <div className="container mx-auto p-4 md:p-8 max-w-7xl relative pb-24 mt-[195px] sm:mt-[315px]">
-        <div className="h-1 md:h-2"></div>
+      <div className="container mx-auto p-4 md:p-8 max-w-7xl relative pb-24 mt-[170px] sm:mt-[280px]">
+        <div className="h-3"></div>
 
         {currentStep === 2 && selectedCategories.length > 0 && (
           <div className="sticky top-[195px] sm:top-[315px] z-30 bg-white/95 backdrop-blur-sm shadow-md rounded-xl border border-gray-200 p-4 mb-6">

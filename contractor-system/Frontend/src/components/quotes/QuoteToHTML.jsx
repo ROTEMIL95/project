@@ -2098,14 +2098,14 @@ export default function QuoteToHTML({ quote }) {
             <div class="final-summary">
               <h2>סיכום כולל</h2>
               <div class="final-grid">
-                ${quote.discount > 0 ? `
+                ${(quote.discount || quote.discountPercent) > 0 ? `
                   <div class="final-item">
                     <div class="final-label">סה"כ לפני הנחה</div>
                     <div class="final-value">₪${formatPrice(quote.totalAmount || 0)}</div>
                   </div>
                   <div class="final-item">
-                    <div class="final-label">הנחה (${quote.discount}%)</div>
-                    <div class="final-value">-₪${formatPrice((quote.totalAmount || 0) * (quote.discount / 100))}</div>
+                    <div class="final-label">הנחה (${quote.discount || quote.discountPercent}%)</div>
+                    <div class="final-value">₪${formatPrice((quote.totalAmount || 0) * ((quote.discount || quote.discountPercent) / 100))}</div>
                   </div>
                 ` : ''}
                 <div class="final-item">
