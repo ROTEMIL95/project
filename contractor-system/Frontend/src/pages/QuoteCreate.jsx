@@ -2326,16 +2326,20 @@ export default function QuoteCreate() {
               {(missingProjectDates || hasMissingCategoryDates) && (
                 <div className="space-y-4">
                   {missingProjectDates && (
-                    <div className="bg-gray-50 border-2 border-gray-900 rounded-lg p-5">
-                      <div className="flex items-start gap-4">
-                        <AlertCircle className="h-6 w-6 text-gray-900 mt-0.5 flex-shrink-0" />
+                    <div className="bg-gray-50 border-2 border-gray-900 rounded-lg p-3 sm:p-4 md:p-5">
+                      <div className="flex items-start gap-2 sm:gap-3 md:gap-4">
+                        <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-gray-900 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
-                          <h4 className="text-lg font-bold text-gray-900 mb-2">
+                          <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-1 sm:mb-2">
                             חסרים תאריכי פרויקט כלליים
                           </h4>
-                          <p className="text-sm text-gray-700 mb-3">
-                            לא נבחרו תאריך התחלה וסיום כלליים לפרויקט.
-                            <strong className="font-semibold"> לכן, תחזית התשלומים בגרף התזרים לא תהיה זמינה או מדויקת.</strong>
+                          <p className="text-xs sm:text-sm text-gray-700 mb-2 sm:mb-3">
+                            <span className="hidden sm:inline">לא נבחרו תאריך התחלה וסיום כלליים לפרויקט.</span>
+                            <span className="sm:hidden">חסרים תאריכי התחלה וסיום.</span>
+                            <strong className="font-semibold">
+                              <span className="hidden sm:inline"> לכן, תחזית התשלומים בגרף התזרים לא תהיה זמינה או מדויקת.</span>
+                              <span className="sm:hidden"> תחזית התזרים לא תהיה מדויקת.</span>
+                            </strong>
                           </p>
                           <Button
                             variant="outline"
@@ -2353,26 +2357,29 @@ export default function QuoteCreate() {
                   )}
 
                   {hasMissingCategoryDates && (
-                    <div className="bg-gray-50 border-2 border-gray-900 rounded-lg p-5">
-                      <div className="flex items-start gap-4">
-                        <AlertCircle className="h-6 w-6 text-gray-900 mt-0.5 flex-shrink-0" />
+                    <div className="bg-gray-50 border-2 border-gray-900 rounded-lg p-3 sm:p-4 md:p-5">
+                      <div className="flex items-start gap-2 sm:gap-3 md:gap-4">
+                        <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-gray-900 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
-                          <h4 className="text-lg font-bold text-gray-900 mb-2">
+                          <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-1 sm:mb-2">
                             חסרים תאריכי עבודה לקטגוריות
                           </h4>
-                          <p className="text-sm text-gray-700 mb-3">
+                          <p className="text-xs sm:text-sm text-gray-700 mb-2 sm:mb-3">
                             {categoriesWithoutDates.length === 1
-                              ? 'קטגוריה אחת חסרה תאריכי התחלה/סיום עבודה.'
-                              : `${categoriesWithoutDates.length} קטגוריות חסרות תאריכי התחלה/סיום עבודה.`
+                              ? <><span className="hidden sm:inline">קטגוריה אחת חסרה תאריכי התחלה/סיום עבודה.</span><span className="sm:hidden">קטגוריה חסרה תאריכים.</span></>
+                              : <><span className="hidden sm:inline">{categoriesWithoutDates.length} קטגוריות חסרות תאריכי התחלה/סיום עבודה.</span><span className="sm:hidden">{categoriesWithoutDates.length} קטגוריות חסרות תאריכים.</span></>
                             }
                             {' '}
-                            <strong className="font-semibold">הדבר ישפיע על דיוק תחזית ההוצאות בגרף התזרים.</strong>
+                            <strong className="font-semibold">
+                              <span className="hidden sm:inline">הדבר ישפיע על דיוק תחזית ההוצאות בגרף התזרים.</span>
+                              <span className="sm:hidden">תחזית התזרים לא תהיה מדויקת.</span>
+                            </strong>
                           </p>
-                          <div className="flex flex-wrap gap-2 mb-4">
+                          <div className="flex flex-wrap gap-1 sm:gap-2 mb-3 sm:mb-4">
                             {categoriesWithoutDates.map(catId => {
                               const cat = (userCategories.length ? userCategories : AVAILABLE_CATEGORIES).find(c => c.id === catId);
                               return cat ? (
-                                <Badge key={catId} variant="outline" className="bg-gray-100 text-gray-900 border-gray-400 font-medium">
+                                <Badge key={catId} variant="outline" className="bg-gray-100 text-gray-900 border-gray-400 font-medium text-xs sm:text-sm">
                                   {cat.name}
                                 </Badge>
                               ) : null;
@@ -2604,14 +2611,17 @@ export default function QuoteCreate() {
 
       <div className="fixed top-28 left-4 right-4 z-40">
         <div className="container mx-auto max-w-7xl">
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-2xl rounded-2xl p-6 border border-gray-700">
-            <h1 className="text-3xl font-bold tracking-tight">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-2xl rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 border border-gray-700">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
               {existingQuoteId ? 'עריכת הצעת מחיר' : 'יצירת הצעת מחיר חדשה'} {/* Renamed from editingQuoteId */}
             </h1>
-            <p className="text-gray-300 text-lg mt-2">
+            <p className="text-gray-300 text-sm sm:text-base md:text-lg mt-1 sm:mt-2">
               {existingQuoteId
                 ? 'עדכן את פרטי ההצעה הקיימת לפי הצורך.'
-                : 'עבור על השלבים כדי להרכיב הצעת מחיר מפורטת ומקצועית ללקוח שלך.'
+                : <>
+                    <span className="hidden sm:inline">עבור על השלבים כדי להרכיב הצעת מחיר מפורטת ומקצועית ללקוח שלך.</span>
+                    <span className="sm:hidden">הרכב הצעת מחיר מקצועית ללקוח.</span>
+                  </>
               }
             </p>
           </div>

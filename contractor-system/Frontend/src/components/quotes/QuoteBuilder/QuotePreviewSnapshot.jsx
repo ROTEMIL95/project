@@ -48,30 +48,35 @@ export default function QuotePreviewSnapshot({ projectInfo, totals, selectedItem
         <div
           className="bg-white rounded-lg sm:rounded-xl shadow-xl sm:shadow-2xl overflow-hidden relative border border-gray-200 w-full max-w-full"
           style={{
-            maxHeight: '400px'
+            height: '400px'
           }}
         >
           {/* השתמש ב-iframe לבידוד מלא */}
           <div style={{
+            height: '571px',
+            width: '142.86%',
+            transform: 'scale(0.7)',
+            transformOrigin: 'top right',
             overflow: 'hidden',
-            maxHeight: '400px',
-            position: 'relative'
-          }} className="w-full max-w-full">
+            position: 'absolute',
+            right: 0,
+            top: 0
+          }}>
             <iframe
               ref={iframeRef}
-              className="w-full h-full border-0"
-              style={{ minHeight: '400px', transform: 'scale(0.7)', transformOrigin: 'top left', width: '142.86%', height: '571px' }}
+              className="w-full border-0"
+              style={{ minHeight: '100%', height: '100%' }}
               title="Quote Preview"
             />
-
-            {/* Gradient fade בתחתית */}
-            <div
-              className="absolute bottom-0 left-0 right-0 h-24 sm:h-32 pointer-events-none"
-              style={{
-                background: 'linear-gradient(to bottom, transparent, white)'
-              }}
-            />
           </div>
+
+          {/* Gradient fade בתחתית */}
+          <div
+            className="absolute bottom-0 left-0 right-0 h-24 sm:h-32 pointer-events-none z-10"
+            style={{
+              background: 'linear-gradient(to bottom, transparent, white)'
+            }}
+          />
         </div>
 
         {/* אפקט "המסמך ממשיך" */}

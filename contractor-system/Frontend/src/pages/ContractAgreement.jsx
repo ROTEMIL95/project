@@ -558,14 +558,17 @@ export default function ContractAgreementPage() {
 
   return (
     <Card className="shadow-lg">
-      <CardHeader className="bg-slate-50 border-b">
-        <div className="flex items-center gap-4">
-          <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-3 rounded-lg shadow-md">
-            <FileSignature className="h-8 w-8 text-white" />
+      <CardHeader className="bg-slate-50 border-b p-3 sm:p-4 md:p-6">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-2 sm:p-3 rounded-lg shadow-md">
+            <FileSignature className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-white" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-gray-800">הגדרות חברה וחוזה</CardTitle>
-            <CardDescription>כאן מגדירים את פרטי החברה, תנאי התשלום, התחייבויות לחוזה ותבנית החוזה.</CardDescription>
+            <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">הגדרות חברה וחוזה</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">כאן מגדירים את פרטי החברה, תנאי התשלום, התחייבויות לחוזה ותבנית החוזה.</span>
+              <span className="sm:hidden">פרטי חברה, תשלום והתחייבויות.</span>
+            </CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -576,39 +579,42 @@ export default function ContractAgreementPage() {
           <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-emerald-400/20 to-green-500/20 rounded-full blur-xl"></div>
           <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-gradient-to-tr from-teal-400/15 to-emerald-500/15 rounded-full blur-2xl"></div>
           
-          <div className="relative z-10 p-8">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <div 
-                  className="relative group w-24 h-24 flex-shrink-0 flex items-center justify-center bg-white/50 rounded-2xl shadow-lg cursor-pointer hover:bg-white/80 transition-all border-2 border-dashed border-emerald-200 hover:border-emerald-300"
+          <div className="relative z-10 p-3 sm:p-4 md:p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8">
+              <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full sm:w-auto">
+                <div
+                  className="relative group w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 flex-shrink-0 flex items-center justify-center bg-white/50 rounded-xl sm:rounded-2xl shadow-lg cursor-pointer hover:bg-white/80 transition-all border-2 border-dashed border-emerald-200 hover:border-emerald-300"
                   onClick={() => fileInputRef.current.click()}
                 >
                   {isUploadingLogo ? (
-                      <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+                      <Loader2 className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 animate-spin text-emerald-600" />
                   ) : companyInfo.logoUrl ? (
                       <img src={companyInfo.logoUrl} alt="לוגו חברה" className="h-full w-full object-contain rounded-xl p-1" />
                   ) : (
                       <div className="text-center text-emerald-700">
-                          <ImageIcon className="h-8 w-8 mx-auto" />
-                          <span className="text-xs font-semibold mt-1 block">העלה לוגו</span>
+                          <ImageIcon className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 mx-auto" />
+                          <span className="text-[10px] sm:text-xs font-semibold mt-0.5 sm:mt-1 block">העלה לוגו</span>
                       </div>
                   )}
                    <div className="absolute inset-0 bg-black/30 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                       <Upload className="h-6 w-6 text-white" />
+                       <Upload className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                    </div>
                 </div>
                 <input type="file" ref={fileInputRef} onChange={handleLogoUpload} className="hidden" accept="image/png, image/jpeg, image/gif" />
 
                 <div>
-                  <h3 className="text-3xl font-bold bg-gradient-to-r from-emerald-700 to-green-700 bg-clip-text text-transparent">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-700 to-green-700 bg-clip-text text-transparent">
                     פרטי החברה
                   </h3>
-                  <p className="text-emerald-600 font-medium mt-1">המידע שיופיע בכל הצעות המחיר שלך</p>
+                  <p className="text-emerald-600 font-medium mt-0.5 sm:mt-1 text-xs sm:text-sm md:text-base">
+                    <span className="hidden sm:inline">המידע שיופיע בכל הצעות המחיר שלך</span>
+                    <span className="sm:hidden">יופיע בהצעות המחיר</span>
+                  </p>
                 </div>
               </div>
-              <div className="hidden md:flex items-center gap-2 bg-white/70 backdrop-blur-sm px-4 py-2 rounded-full border border-emerald-200">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-emerald-700 font-medium">פעיל</span>
+              <div className="hidden md:flex items-center gap-2 bg-white/70 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-emerald-200">
+                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-xs sm:text-sm text-emerald-700 font-medium">פעיל</span>
               </div>
             </div>
 
@@ -782,14 +788,20 @@ export default function ContractAgreementPage() {
         <Separator className="my-8" />
 
         {/* Payment Terms Section */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200 mb-8">
-            <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-blue-600 rounded-lg">
-                    <DollarSign className="h-6 w-6 text-white" />
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 sm:p-4 md:p-6 border border-blue-200 mb-6 sm:mb-8">
+            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <div className="p-1.5 sm:p-2 bg-blue-600 rounded-lg">
+                    <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
                 <div>
-                    <h3 className="text-2xl font-bold text-gray-800">ניהול תנאי תשלום (ברירת מחדל)</h3>
-                    <p className="text-gray-600">הגדר כאן את אבני הדרך הסטנדרטיות לתשלום. תוכל לשנות אותן עבור כל הצעת מחיר בנפרד.</p>
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
+                      <span className="hidden sm:inline">ניהול תנאי תשלום (ברירת מחדל)</span>
+                      <span className="sm:hidden">תנאי תשלום</span>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      <span className="hidden sm:inline">הגדר כאן את אבני הדרך הסטנדרטיות לתשלום. תוכל לשנות אותן עבור כל הצעת מחיר בנפרד.</span>
+                      <span className="sm:hidden">הגדר אבני דרך לתשלום.</span>
+                    </p>
                 </div>
             </div>
             
@@ -939,14 +951,20 @@ export default function ContractAgreementPage() {
         <Separator className="my-8" />
 
         {/* Contractor Commitments Section */}
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200 mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-amber-600 rounded-lg">
-              <FileSignature className="h-6 w-6 text-white" />
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-3 sm:p-4 md:p-6 border border-amber-200 mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="p-1.5 sm:p-2 bg-amber-600 rounded-lg">
+              <FileSignature className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-gray-800">התחייבויות קבלן לפי קטגוריות</h3>
-              <p className="text-gray-600">טקסט חופשי שיופיע בחוזה עבור כל קטגוריה. התחייבויות, תקנים, אחריות וכו'.</p>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
+                <span className="hidden sm:inline">התחייבויות קבלן לפי קטגוריות</span>
+                <span className="sm:hidden">התחייבויות קבלן</span>
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-600">
+                <span className="hidden sm:inline">טקסט חופשי שיופיע בחוזה עבור כל קטגוריה. התחייבויות, תקנים, אחריות וכו'.</span>
+                <span className="sm:hidden">טקסט שיופיע בחוזה.</span>
+              </p>
             </div>
           </div>
 
@@ -1059,13 +1077,16 @@ export default function ContractAgreementPage() {
 
         {/* Contract Template Section - רק ההתחייבויות */}
         <div>
-            <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-indigo-600 rounded-lg">
-                    <FileText className="h-6 w-6 text-white" />
+            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                <div className="p-1.5 sm:p-2 bg-indigo-600 rounded-lg">
+                    <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
                 <div>
-                    <h3 className="text-2xl font-bold text-gray-800">תבנית החוזה</h3>
-                    <p className="text-gray-600">ערוך את תוכן החוזה הסטנדרטי וההתחייבויות של שני הצדדים</p>
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">תבנית החוזה</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      <span className="hidden sm:inline">ערוך את תוכן החוזה הסטנדרטי וההתחייבויות של שני הצדדים</span>
+                      <span className="sm:hidden">החוזה וההתחייבויות</span>
+                    </p>
                 </div>
             </div>
             
@@ -1148,14 +1169,14 @@ export default function ContractAgreementPage() {
         <Separator className="my-8" />
 
         {/* Danger Zone - Delete Account Section */}
-        <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-xl p-6 border-2 border-red-300 mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-red-600 rounded-lg">
-              <AlertTriangle className="h-6 w-6 text-white" />
+        <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-xl p-3 sm:p-4 md:p-6 border-2 border-red-300 mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="p-1.5 sm:p-2 bg-red-600 rounded-lg">
+              <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-red-800">אזור מסוכן</h3>
-              <p className="text-red-600 font-medium">פעולות בלתי הפיכות</p>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-red-800">אזור מסוכן</h3>
+              <p className="text-red-600 font-medium text-xs sm:text-sm">פעולות בלתי הפיכות</p>
             </div>
           </div>
 
