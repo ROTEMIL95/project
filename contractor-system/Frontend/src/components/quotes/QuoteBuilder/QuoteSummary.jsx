@@ -192,40 +192,40 @@ const ProjectCashFlowChart = ({ paymentTerms = [], finalAmount = 0, selectedItem
             </CardHeader>
             <CardContent>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 text-center">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                            <Banknote className="h-5 w-5 text-blue-600" />
-                            <span className="text-sm font-medium text-blue-700">סה״כ הכנסות צפויות</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 sm:p-4 text-center">
+                        <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                            <Banknote className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                            <span className="text-xs sm:text-sm font-medium text-blue-700">סה״כ הכנסות צפויות</span>
                         </div>
-                        <div className="text-2xl font-bold text-blue-800">
+                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-blue-800">
                             {formatPrice(totalIncome)} ₪
                         </div>
                     </div>
-                    
-                    <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 text-center">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                            <TrendingDown className="h-5 w-5 text-red-600" />
-                            <span className="text-sm font-medium text-red-700">סה״כ הוצאות צפויות</span>
+
+                    <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3 sm:p-4 text-center">
+                        <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                            <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+                            <span className="text-xs sm:text-sm font-medium text-red-700">סה״כ הוצאות צפויות</span>
                         </div>
-                        <div className="text-2xl font-bold text-red-800">
+                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-red-800">
                             {formatPrice(totalExpenses)} ₪
                         </div>
                     </div>
-                    
-                    <div className={`${netFlow >= 0 ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'} border-2 rounded-lg p-4 text-center`}>
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                            <DollarSign className={`h-5 w-5 ${netFlow >= 0 ? 'text-green-600' : 'text-orange-600'}`} />
-                            <span className={`text-sm font-medium ${netFlow >= 0 ? 'text-green-700' : 'text-orange-700'}`}>תזרים נטו</span>
+
+                    <div className={`${netFlow >= 0 ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'} border-2 rounded-lg p-3 sm:p-4 text-center`}>
+                        <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                            <DollarSign className={`h-4 w-4 sm:h-5 sm:w-5 ${netFlow >= 0 ? 'text-green-600' : 'text-orange-600'}`} />
+                            <span className={`text-xs sm:text-sm font-medium ${netFlow >= 0 ? 'text-green-700' : 'text-orange-700'}`}>תזרים נטו</span>
                         </div>
-                        <div className={`text-2xl font-bold ${netFlow >= 0 ? 'text-green-800' : 'text-orange-800'}`}>
+                        <div className={`text-lg sm:text-xl md:text-2xl font-bold ${netFlow >= 0 ? 'text-green-800' : 'text-orange-800'}`}>
                             {formatPrice(netFlow)} ₪
                         </div>
                     </div>
                 </div>
-                
+
                 {/* Chart */}
-                <div className="h-80">
+                <div className="h-64 sm:h-72 md:h-80">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -519,50 +519,50 @@ export default function QuoteSummary({
                         <DataRow label="סהכ לפני התאמות" value={`${formatPrice(finalSubtotal)} ₪`} className="font-bold" />
                         
                         {/* העלאת מחיר */}
-                        <div className="flex justify-between items-center py-3">
-                            <Label htmlFor="priceIncrease" className="text-sm text-gray-600 flex items-center gap-2">
-                                <TrendingUp className="h-4 w-4 text-gray-500" />
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-2 sm:py-3 gap-2">
+                            <Label htmlFor="priceIncrease" className="text-xs sm:text-sm text-gray-600 flex items-center gap-1 sm:gap-2">
+                                <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
                                 העלאת מחיר (%)
                             </Label>
-                            <div className="flex items-center gap-2 w-1/2">
+                            <div className="flex items-center gap-2 w-full sm:w-1/2">
                                 <Input
                                     id="priceIncrease"
                                     type="number"
                                     value={priceIncrease}
                                     onChange={(e) => onUpdatePriceIncrease && onUpdatePriceIncrease(Number(e.target.value))}
-                                    className="w-20 text-center font-medium"
+                                    className="w-16 sm:w-20 text-center font-medium text-sm"
                                     placeholder="0"
                                 />
-                                <span className="text-sm text-green-600 w-24 text-right">
+                                <span className="text-xs sm:text-sm text-green-600 flex-1 text-right">
                                     (+{formatPrice((finalSubtotal * priceIncrease) / 100)} ₪)
                                 </span>
                             </div>
                         </div>
 
                         {/* הנחה */}
-                        <div className="flex justify-between items-center py-3">
-                            <Label htmlFor="discount" className="text-sm text-gray-600 flex items-center gap-2">
-                                <Percent className="h-4 w-4 text-gray-500" />
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-2 sm:py-3 gap-2">
+                            <Label htmlFor="discount" className="text-xs sm:text-sm text-gray-600 flex items-center gap-1 sm:gap-2">
+                                <Percent className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
                                 הנחה (%)
                             </Label>
-                            <div className="flex items-center gap-2 w-1/2">
+                            <div className="flex items-center gap-2 w-full sm:w-1/2">
                                 <Input
                                     id="discount"
                                     type="number"
                                     value={discount}
                                     onChange={(e) => onUpdateDiscount(Number(e.target.value))}
-                                    className="w-20 text-center font-medium"
+                                    className="w-16 sm:w-20 text-center font-medium text-sm"
                                     placeholder="0"
                                 />
-                                <span className="text-sm text-red-600 w-24 text-right">(-{formatPrice(discountAmount)} ₪)</span>
+                                <span className="text-xs sm:text-sm text-red-600 flex-1 text-right">(-{formatPrice(discountAmount)} ₪)</span>
                             </div>
                         </div>
 
                         <Separator className="my-2" />
 
-                        <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                            <span className="text-base font-bold text-blue-800">סה"כ לתשלום</span>
-                            <span className="text-xl font-bold text-blue-700">{formatPrice(total)} ₪</span>
+                        <div className="flex justify-between items-center p-2 sm:p-3 bg-blue-50 rounded-lg">
+                            <span className="text-sm sm:text-base font-bold text-blue-800">סה"כ לתשלום</span>
+                            <span className="text-lg sm:text-xl font-bold text-blue-700">{formatPrice(total)} ₪</span>
                         </div>
 
                         {/* Low Profit Warning */}
@@ -582,30 +582,30 @@ export default function QuoteSummary({
             </div>
 
             {/* Big Numbers Footer */}
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center pt-6 border-t">
+             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-center pt-4 sm:pt-6 border-t">
                 <Card className="bg-red-50 border-red-200 shadow-sm">
-                    <CardHeader className="p-4">
-                        <CardTitle className="text-base font-semibold text-red-800">עלות כוללת לקבלן</CardTitle>
+                    <CardHeader className="p-3 sm:p-4">
+                        <CardTitle className="text-xs sm:text-sm md:text-base font-semibold text-red-800">עלות כוללת לקבלן</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                        <p className="text-4xl font-bold text-red-700 tracking-tight">{formatPrice(totalContractorCost)} ₪</p>
+                    <CardContent className="p-3 sm:p-4 pt-0">
+                        <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-red-700 tracking-tight">{formatPrice(totalContractorCost)} ₪</p>
                     </CardContent>
                 </Card>
                 <Card className="bg-green-50 border-green-200 shadow-sm">
-                    <CardHeader className="p-4">
-                        <CardTitle className="text-base font-semibold text-green-800">רווח צפוי (קבלן)</CardTitle>
+                    <CardHeader className="p-3 sm:p-4">
+                        <CardTitle className="text-xs sm:text-sm md:text-base font-semibold text-green-800">רווח צפוי (קבלן)</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                        <p className="text-4xl font-bold text-green-700 tracking-tight">{formatPrice(profit)} ₪</p>
-                        <p className="text-sm font-semibold text-green-600 mt-1">({profitPercent.toFixed(1)}%)</p>
+                    <CardContent className="p-3 sm:p-4 pt-0">
+                        <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-700 tracking-tight">{formatPrice(profit)} ₪</p>
+                        <p className="text-xs sm:text-sm font-semibold text-green-600 mt-1">({profitPercent.toFixed(1)}%)</p>
                     </CardContent>
                 </Card>
                  <Card className="bg-blue-50 border-blue-200 shadow-sm">
-                    <CardHeader className="p-4">
-                        <CardTitle className="text-base font-semibold text-blue-800">מחיר סופי ללקוח</CardTitle>
+                    <CardHeader className="p-3 sm:p-4">
+                        <CardTitle className="text-xs sm:text-sm md:text-base font-semibold text-blue-800">מחיר סופי ללקוח</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                        <p className="text-4xl font-bold text-blue-700 tracking-tight">{formatPrice(total)} ₪</p>
+                    <CardContent className="p-3 sm:p-4 pt-0">
+                        <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-700 tracking-tight">{formatPrice(total)} ₪</p>
                     </CardContent>
                 </Card>
             </div>

@@ -107,9 +107,9 @@ export default function CategorySelector({ categories, selectedCategories, onTog
   const sortedCategories = categories;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* All categories grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-4 lg:gap-5 xl:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
         {sortedCategories.map((category, index) => {
           const isSelected = selectedCategories.includes(category.id);
           const isBlocked = BLOCKED_CATEGORIES.includes(category.id);
@@ -138,50 +138,50 @@ export default function CategorySelector({ categories, selectedCategories, onTog
               >
                 {/* Order Number Badge - bottom left */}
                 {isSelected && !isBlocked && orderNumber && (
-                  <div className="absolute bottom-3 left-3 z-20">
+                  <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 z-20">
                     <div className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center shadow-lg",
+                      "w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-lg",
                       colors.numberBg
                     )}>
-                      <span className="text-white font-bold text-lg">{orderNumber}</span>
+                      <span className="text-white font-bold text-sm sm:text-base md:text-lg">{orderNumber}</span>
                     </div>
                   </div>
                 )}
 
                 {/* Lock Icon for Blocked Categories */}
                 {isBlocked && (
-                  <div className="absolute top-3 left-3 z-20">
-                    <div className="p-1.5 bg-gray-400/20 backdrop-blur-sm rounded-lg">
-                      <Lock className="w-3 h-3 text-gray-500" />
+                  <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-20">
+                    <div className="p-1 sm:p-1.5 bg-gray-400/20 backdrop-blur-sm rounded-lg">
+                      <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-500" />
                     </div>
                   </div>
                 )}
 
-                <div className="relative z-10 p-4 lg:p-5 xl:p-6">
+                <div className="relative z-10 p-3 sm:p-4 md:p-5">
                   {/* Header with Icon and Selection State */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       {/* Icon Container */}
                       <div className={cn(
-                        "p-2.5 rounded-xl transition-all duration-300 shadow-sm",
-                        isSelected && !isBlocked ? colors.iconSelected : 
+                        "p-1.5 sm:p-2 md:p-2.5 rounded-lg sm:rounded-xl transition-all duration-300 shadow-sm",
+                        isSelected && !isBlocked ? colors.iconSelected :
                         isBlocked ? `bg-gray-200` :
                         colors.icon
                       )}>
                         {IconComponent && (
                           <IconComponent className={cn(
-                            "w-5 h-5",
-                            isSelected && !isBlocked ? 'text-white' : 
+                            "w-4 h-4 sm:w-5 sm:h-5",
+                            isSelected && !isBlocked ? 'text-white' :
                             isBlocked ? 'text-gray-400' :
                             'text-white'
                           )} />
                         )}
                       </div>
-                      
+
                       {/* Category Title */}
                       <div>
                         <h3 className={cn(
-                          "font-bold text-lg transition-colors duration-300",
+                          "font-bold text-sm sm:text-base md:text-lg transition-colors duration-300",
                           isSelected && !isBlocked ? colors.textSelected :
                           isBlocked ? "text-gray-500" :
                           colors.text
@@ -198,9 +198,9 @@ export default function CategorySelector({ categories, selectedCategories, onTog
                         isSelected ? "scale-110" : "scale-100 group-hover:scale-105"
                       )}>
                         {isSelected ? (
-                          <CheckCircle2 className={cn("h-6 w-6", colors.textSelected)} />
+                          <CheckCircle2 className={cn("h-5 w-5 sm:h-6 sm:w-6", colors.textSelected)} />
                         ) : (
-                          <Circle className={cn("h-6 w-6 opacity-40 group-hover:opacity-70", colors.text)} />
+                          <Circle className={cn("h-5 w-5 sm:h-6 sm:w-6 opacity-40 group-hover:opacity-70", colors.text)} />
                         )}
                       </div>
                     )}
@@ -208,7 +208,7 @@ export default function CategorySelector({ categories, selectedCategories, onTog
 
                   {/* Description */}
                   <p className={cn(
-                    "text-sm mb-3 leading-relaxed transition-colors duration-300 min-h-[36px]",
+                    "text-xs sm:text-sm mb-2 sm:mb-3 leading-relaxed transition-colors duration-300 min-h-[30px] sm:min-h-[36px]",
                     isSelected && !isBlocked ? `${colors.textSelected} opacity-90` :
                     isBlocked ? "text-gray-400" :
                     `${colors.text} opacity-80`
@@ -218,12 +218,12 @@ export default function CategorySelector({ categories, selectedCategories, onTog
 
                   {/* Sub-categories Tags */}
                   {category.subCategories && category.subCategories.length > 0 && !isBlocked && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {category.subCategories.slice(0, 2).map(sub => (
-                        <Badge 
+                        <Badge
                           key={sub.id}
                           className={cn(
-                            "text-xs px-2.5 py-1 transition-all duration-300 border",
+                            "text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1 transition-all duration-300 border",
                             isSelected ? `${colors.bgSelected} ${colors.textSelected} border-transparent` :
                             `bg-white/60 ${colors.text} ${colors.border} border-opacity-50 hover:${colors.bgSelected}`
                           )}
@@ -237,7 +237,7 @@ export default function CategorySelector({ categories, selectedCategories, onTog
                   {/* Coming Soon Tag for Blocked */}
                   {isBlocked && (
                     <div className="flex justify-start">
-                      <Badge className="bg-gray-200 text-gray-500 text-xs px-3 py-1">
+                      <Badge className="bg-gray-200 text-gray-500 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1">
                         בקרוב
                       </Badge>
                     </div>

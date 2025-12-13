@@ -1028,16 +1028,16 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
     return (
         <>
             {/* כפתור העגלה הצף */}
-            <div className="fixed bottom-6 left-6 z-50">
+            <div className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-50">
                 <Button
                     onClick={() => setIsOpen(true)}
-                    className="h-16 w-16 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg hover:scale-110 transition-transform duration-300"
+                    className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg hover:scale-110 transition-transform duration-300"
                     aria-label="פתח סיכום הצעה"
                 >
-                    <ShoppingCart className="h-7 w-7" />
+                    <ShoppingCart className="h-6 w-6 sm:h-7 sm:w-7" />
                     {hasItems && (
                         <Badge
-                            className="absolute -top-1 -right-1 h-6 w-6 flex items-center justify-center rounded-full bg-red-500 text-white border-2 border-white"
+                            className="absolute -top-1 -right-1 h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center rounded-full bg-red-500 text-white border-2 border-white text-xs"
                         >
                             {badgeCount}
                         </Badge>
@@ -1063,13 +1063,13 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                            className="fixed top-[80px] right-4 bottom-4 w-[420px] bg-white rounded-2xl shadow-2xl z-[52] flex flex-col border"
+                            className="fixed top-[70px] right-0 left-0 bottom-0 sm:top-[80px] sm:right-4 sm:left-auto sm:bottom-4 w-full sm:w-[420px] md:w-[480px] bg-white sm:rounded-2xl shadow-2xl z-[52] flex flex-col border"
                             style={{ direction: 'rtl' }}
                         >
                             {/* כותרת עם כפתור סגירה */}
-                            <header className="flex items-center justify-between p-6 border-b bg-gradient-to-l from-indigo-50 to-purple-50 rounded-t-2xl">
-                                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                    <ShoppingCart className="h-6 w-6 text-indigo-600" />
+                            <header className="flex items-center justify-between p-4 sm:p-6 border-b bg-gradient-to-l from-indigo-50 to-purple-50 sm:rounded-t-2xl">
+                                <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
+                                    <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
                                     סיכום הצעה
                                 </h2>
                                 <Button 
@@ -1083,7 +1083,7 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
                             </header>
 
                             {/* תוכן העגלה עם גלילה */}
-                            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
                                 {hasItems ? (
                                     categoriesOrder.map((catKey) => {
                                         const group = categoriesMap[catKey];
@@ -1193,7 +1193,7 @@ export default function FloatingCart({ items = [], totals, onRemoveItem, onGoToS
 
                             {/* סיכום כספי בתחתית */}
                             {hasItems && (
-                                <footer className="border-t bg-gray-50 p-6 rounded-b-2xl space-y-4">
+                                <footer className="border-t bg-gray-50 p-4 sm:p-6 sm:rounded-b-2xl space-y-3 sm:space-y-4">
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-gray-600">מחיר ללקוח:</span>

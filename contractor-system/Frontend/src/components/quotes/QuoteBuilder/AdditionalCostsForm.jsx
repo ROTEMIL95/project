@@ -336,10 +336,10 @@ export default function AdditionalCostsForm({ projectComplexities = {}, onUpdate
                 </div>
             </CardContent>
             
-            <CardFooter className="flex justify-between border-t p-4">
-                <div className="flex gap-3">
-                    <Button variant="outline" onClick={onBack} className="text-base px-6 py-2.5">
-                        <ArrowRight className="ml-2 h-4 w-4" />
+            <CardFooter className="flex flex-col sm:flex-row justify-between border-t p-3 sm:p-4 md:p-6 flex-wrap gap-2 sm:gap-3 md:gap-4">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                    <Button variant="outline" onClick={onBack} className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto">
+                        <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                         הקודם
                     </Button>
                     {onSaveDraft && (
@@ -347,16 +347,18 @@ export default function AdditionalCostsForm({ projectComplexities = {}, onUpdate
                             variant="outline"
                             onClick={onSaveDraft}
                             disabled={isSaving}
-                            className="text-base px-6 py-2.5"
+                            className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto"
                         >
-                            {isSaving ? <Loader2 className="animate-spin ml-2" /> : <Save className="ml-2 h-4 w-4" />}
-                            שמור כטיוטה
+                            {isSaving ? <Loader2 className="animate-spin ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" /> : <Save className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />}
+                            <span className="hidden sm:inline">שמור כטיוטה</span>
+                            <span className="sm:hidden">טיוטה</span>
                         </Button>
                     )}
                 </div>
-                <Button onClick={onNext} className="text-base px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700">
-                    הבא: סיכום סופי
-                    <ArrowLeft className="mr-2 h-4 w-4" />
+                <Button onClick={onNext} className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">
+                    <span className="hidden md:inline">הבא: סיכום סופי</span>
+                    <span className="md:hidden">סיכום סופי</span>
+                    <ArrowLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
             </CardFooter>
         </Card>

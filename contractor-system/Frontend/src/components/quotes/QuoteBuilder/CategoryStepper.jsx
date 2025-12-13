@@ -36,8 +36,8 @@ const COLOR_MAP = {
 
 export default function CategoryStepper({ categories = [], currentId, onSelect }) {
   return (
-    <div className="w-full">
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+    <div className="w-full max-w-full overflow-hidden">
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1 px-1">
         {categories.map((cat) => {
           const colors = COLOR_MAP[cat.id] || COLOR_MAP.cat_construction;
           const isActive = cat.id === currentId;
@@ -47,7 +47,7 @@ export default function CategoryStepper({ categories = [], currentId, onSelect }
               key={cat.id}
               onClick={() => onSelect && onSelect(cat.id)}
               className={cn(
-                "shrink-0 rounded-full px-3.5 py-1.5 text-sm border transition-colors",
+                "shrink-0 rounded-full px-2 sm:px-3 md:px-3.5 py-1 sm:py-1.5 text-xs sm:text-sm border transition-colors",
                 isActive ? colors.active : colors.chip,
                 "whitespace-nowrap"
               )}

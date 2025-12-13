@@ -75,28 +75,28 @@ export default function PaymentTermsEditor({ terms, onUpdateTerms }) {
   const dateOrderCheck = checkDateOrder();
 
   return (
-    <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div className="border rounded-lg bg-white shadow-sm overflow-hidden w-full max-w-full">
       {/* Header - Always Visible */}
-      <div 
-        className="flex items-center justify-between p-4 bg-gray-50/80 hover:bg-gray-100/80 cursor-pointer transition-colors border-b select-none"
+      <div
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-gray-50/80 hover:bg-gray-100/80 cursor-pointer transition-colors border-b select-none gap-2 sm:gap-3"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-100 rounded-lg">
-            <Settings className="h-5 w-5 text-indigo-600" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-1.5 sm:p-2 bg-indigo-100 rounded-lg">
+            <Settings className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-800">תנאי תשלום</h3>
-            <p className="text-sm text-gray-600">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800">תנאי תשלום</h3>
+            <p className="text-xs sm:text-sm text-gray-600">
               {isOpen ? 'לחץ כדי לסגור' : 'תנאי התשלום נטענו מהמחירון - לחץ לעריכה ידנית'}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
           {!isOpen && (
-            <div className="flex items-center gap-2 bg-green-100 px-3 py-1.5 rounded-full">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-sm font-medium text-green-700">
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-green-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
+              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full"></div>
+              <span className="text-xs sm:text-sm font-medium text-green-700">
                 {localTerms.length} שלבים ({totalPercentage}%)
               </span>
             </div>
@@ -109,7 +109,7 @@ export default function PaymentTermsEditor({ terms, onUpdateTerms }) {
             </div>
           )}
           <div className="text-gray-500">
-            {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {isOpen ? <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />}
           </div>
         </div>
       </div>
@@ -138,19 +138,19 @@ export default function PaymentTermsEditor({ terms, onUpdateTerms }) {
             const previousTermDate = index > 0 ? localTerms[index - 1].paymentDate : null;
 
             return (
-              <div key={term.id || index} className="grid grid-cols-12 gap-x-3 items-center p-3 rounded-md bg-gray-50/50 hover:bg-gray-100/50 transition-colors">
-                <div className="col-span-5">
-                  <Label htmlFor={`milestone-${index}`} className="sr-only">אבן דרך</Label>
+              <div key={term.id || index} className="flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:gap-x-3 items-stretch sm:items-center p-2 sm:p-3 rounded-md bg-gray-50/50 hover:bg-gray-100/50 transition-colors">
+                <div className="sm:col-span-5">
+                  <Label htmlFor={`milestone-${index}`} className="text-xs sm:sr-only mb-1 block sm:hidden">אבן דרך</Label>
                   <Input
                     id={`milestone-${index}`}
                     placeholder="תיאור אבן הדרך"
                     value={term.milestone}
                     onChange={(e) => handleUpdate(index, 'milestone', e.target.value)}
-                    className="text-sm bg-white"
+                    className="text-xs sm:text-sm bg-white"
                   />
                 </div>
-                <div className="col-span-2">
-                  <Label htmlFor={`percentage-${index}`} className="sr-only">אחוז</Label>
+                <div className="sm:col-span-2">
+                  <Label htmlFor={`percentage-${index}`} className="text-xs sm:sr-only mb-1 block sm:hidden">אחוז</Label>
                   <div className="relative">
                     <Input
                       id={`percentage-${index}`}
@@ -158,18 +158,19 @@ export default function PaymentTermsEditor({ terms, onUpdateTerms }) {
                       placeholder="%"
                       value={term.percentage}
                       onChange={(e) => handleUpdate(index, 'percentage', e.target.value)}
-                      className="text-sm text-center bg-white"
+                      className="text-xs sm:text-sm text-center bg-white"
                     />
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs sm:text-sm">%</span>
                   </div>
                 </div>
-                <div className="col-span-4">
+                <div className="sm:col-span-4">
+                  <Label className="text-xs sm:sr-only mb-1 block sm:hidden">תאריך תשלום</Label>
                    <Popover>
                       <PopoverTrigger asChild>
                           <Button
                               variant={"outline"}
                               className={cn(
-                                  "w-full justify-start text-right font-normal text-sm transition-colors duration-200 bg-white",
+                                  "w-full justify-start text-right font-normal text-xs sm:text-sm transition-colors duration-200 bg-white",
                                   !term.paymentDate
                                       ? "border-red-200 text-red-700 hover:bg-red-50"
                                       : hasConflict
@@ -177,7 +178,7 @@ export default function PaymentTermsEditor({ terms, onUpdateTerms }) {
                                       : "border-green-300 text-green-800 hover:bg-green-50"
                               )}
                           >
-                              <CalendarIcon className="ml-2 h-4 w-4" />
+                              <CalendarIcon className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                               {hasConflict && <AlertCircle className="ml-1 h-3 w-3 text-amber-600" />}
                               {term.paymentDate ? format(new Date(term.paymentDate), "d MMMM, yyyy", { locale: he }) : <span>בחר תאריך</span>}
                           </Button>
@@ -196,22 +197,22 @@ export default function PaymentTermsEditor({ terms, onUpdateTerms }) {
                       </PopoverContent>
                   </Popover>
                 </div>
-                <div className="col-span-1 flex justify-end">
-                  <Button variant="ghost" size="icon" onClick={() => handleRemoveTerm(index)} className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100">
-                    <Trash2 className="h-4 w-4" />
+                <div className="sm:col-span-1 flex justify-end">
+                  <Button variant="ghost" size="icon" onClick={() => handleRemoveTerm(index)} className="h-7 w-7 sm:h-8 sm:w-8 text-red-500 hover:text-red-700 hover:bg-red-100">
+                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
               </div>
             );
           })}
 
-          <div className="flex justify-between items-center pt-3 border-t">
-            <Button variant="outline" onClick={handleAddTerm} className="text-sm">
-              <PlusCircle className="ml-2 h-4 w-4" />
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center pt-3 border-t gap-2 sm:gap-3">
+            <Button variant="outline" onClick={handleAddTerm} className="text-xs sm:text-sm w-full sm:w-auto">
+              <PlusCircle className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
               הוסף שלב תשלום
             </Button>
-            <div className={cn("text-sm font-bold flex items-center gap-2", totalPercentage === 100 ? "text-green-600" : "text-red-600")}>
-                {totalPercentage !== 100 && <AlertCircle className="h-4 w-4" />}
+            <div className={cn("text-xs sm:text-sm font-bold flex items-center justify-center sm:justify-end gap-1 sm:gap-2", totalPercentage === 100 ? "text-green-600" : "text-red-600")}>
+                {totalPercentage !== 100 && <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />}
                 <span>סה"כ: {totalPercentage}%</span>
             </div>
           </div>

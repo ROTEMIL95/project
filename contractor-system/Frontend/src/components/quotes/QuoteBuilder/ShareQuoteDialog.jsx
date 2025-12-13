@@ -94,28 +94,28 @@ const ShareQuoteDialog = ({ open, onOpenChange, quoteId, quoteData }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Share2 className="h-5 w-5 text-blue-600" />
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Share2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
             שיתוף הצעת מחיר
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm">
             בחר את הדרך המועדפת עליך לשתף את הצעת המחיר
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-3 py-4">
+        <div className="flex flex-col gap-2 sm:gap-3 py-3 sm:py-4">
           {/* WhatsApp Button */}
           <Button
             onClick={handleWhatsAppShare}
             variant="outline"
-            className="w-full justify-start gap-3 h-14 text-base hover:bg-green-50 hover:border-green-500"
+            className="w-full justify-start gap-2 sm:gap-3 h-12 sm:h-14 text-sm sm:text-base hover:bg-green-50 hover:border-green-500"
           >
-            <MessageCircle className="h-5 w-5 text-green-600" />
+            <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
             <div className="flex flex-col items-start">
-              <span className="font-semibold">שתף ב-WhatsApp</span>
-              <span className="text-xs text-gray-500">שלח הודעה עם פרטי ההצעה</span>
+              <span className="font-semibold text-sm sm:text-base">שתף ב-WhatsApp</span>
+              <span className="text-[10px] sm:text-xs text-gray-500 hidden sm:block">שלח הודעה עם פרטי ההצעה</span>
             </div>
           </Button>
 
@@ -123,12 +123,12 @@ const ShareQuoteDialog = ({ open, onOpenChange, quoteId, quoteData }) => {
           <Button
             onClick={handleEmailShare}
             variant="outline"
-            className="w-full justify-start gap-3 h-14 text-base hover:bg-blue-50 hover:border-blue-500"
+            className="w-full justify-start gap-2 sm:gap-3 h-12 sm:h-14 text-sm sm:text-base hover:bg-blue-50 hover:border-blue-500"
           >
-            <Mail className="h-5 w-5 text-blue-600" />
+            <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
             <div className="flex flex-col items-start">
-              <span className="font-semibold">שלח במייל</span>
-              <span className="text-xs text-gray-500">פתח לקוח מייל עם פרטי ההצעה</span>
+              <span className="font-semibold text-sm sm:text-base">שלח במייל</span>
+              <span className="text-[10px] sm:text-xs text-gray-500 hidden sm:block">פתח לקוח מייל עם פרטי ההצעה</span>
             </div>
           </Button>
 
@@ -136,27 +136,27 @@ const ShareQuoteDialog = ({ open, onOpenChange, quoteId, quoteData }) => {
           <Button
             onClick={handleCopyLink}
             variant="outline"
-            className="w-full justify-start gap-3 h-14 text-base hover:bg-gray-50 hover:border-gray-500"
+            className="w-full justify-start gap-2 sm:gap-3 h-12 sm:h-14 text-sm sm:text-base hover:bg-gray-50 hover:border-gray-500"
           >
             {copiedLink ? (
-              <Check className="h-5 w-5 text-green-600" />
+              <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
             ) : (
-              <Copy className="h-5 w-5 text-gray-600" />
+              <Copy className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
             )}
             <div className="flex flex-col items-start">
-              <span className="font-semibold">
+              <span className="font-semibold text-sm sm:text-base">
                 {copiedLink ? 'הקישור הועתק!' : 'העתק קישור'}
               </span>
-              <span className="text-xs text-gray-500">העתק קישור להצעת המחיר</span>
+              <span className="text-[10px] sm:text-xs text-gray-500 hidden sm:block">העתק קישור להצעת המחיר</span>
             </div>
           </Button>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="pt-2 sm:pt-3">
           <Button
             onClick={() => onOpenChange(false)}
             variant="ghost"
-            className="w-full"
+            className="w-full text-sm sm:text-base"
           >
             סגור
           </Button>

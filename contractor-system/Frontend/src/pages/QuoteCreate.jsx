@@ -2181,19 +2181,21 @@ export default function QuoteCreate() {
               </div>
             </CardContent>
 
-            <CardFooter className="border-t p-4 flex justify-between">
+            <CardFooter className="border-t p-3 sm:p-4 flex flex-col sm:flex-row justify-between gap-2 sm:gap-3">
               <Button
                 variant="outline"
                 onClick={() => handleSaveQuote(true)}
                 disabled={isLoadingUser}
-                className="text-base px-6 py-2.5"
+                className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto"
               >
-                {isLoadingUser ? <Loader2 className="animate-spin ml-2" /> : <Save className="ml-2 h-4 w-4" />}
-                שמור כטיוטה
+                {isLoadingUser ? <Loader2 className="animate-spin ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" /> : <Save className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />}
+                <span className="hidden sm:inline">שמור כטיוטה</span>
+                <span className="sm:hidden">טיוטה</span>
               </Button>
-              <Button onClick={() => setCurrentStep(2)} className="text-base px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700">
-                הבא: בחירת קטגוריות
-                <ArrowLeft className="mr-2 h-4 w-4" />
+              <Button onClick={() => setCurrentStep(2)} className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">
+                <span className="hidden md:inline">הבא: בחירת קטגוריות</span>
+                <span className="md:hidden">הבא</span>
+                <ArrowLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </CardFooter>
           </Card>
@@ -2213,20 +2215,21 @@ export default function QuoteCreate() {
                 onMoveDown={moveCategoryDown}
               />
             </CardContent>
-            <CardFooter className="flex justify-between border-t p-4">
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setCurrentStep(1)} className="text-base px-6 py-2.5">
-                  <ArrowRight className="ml-2 h-4 w-4" />
+            <CardFooter className="flex flex-col sm:flex-row justify-between border-t p-3 sm:p-4 gap-2 sm:gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                <Button variant="outline" onClick={() => setCurrentStep(1)} className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto">
+                  <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                   הקודם
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => handleSaveQuote(true)}
                   disabled={isLoadingUser}
-                  className="text-base px-6 py-2.5"
+                  className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto"
                 >
-                  {isLoadingUser ? <Loader2 className="animate-spin ml-2" /> : <Save className="ml-2 h-4 w-4" />}
-                  שמור כטיוטה
+                  {isLoadingUser ? <Loader2 className="animate-spin ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" /> : <Save className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />}
+                  <span className="hidden sm:inline">שמור כטיוטה</span>
+                  <span className="sm:hidden">טיוטה</span>
                 </Button>
               </div>
               <Button onClick={() => {
@@ -2237,9 +2240,10 @@ export default function QuoteCreate() {
                 } else {
                   alert("אנא בחר לפחות קטגוריה אחת.");
                 }
-              }} className="text-base px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700">
-                הבא: בחירת פריטים
-                <ArrowLeft className="mr-2 h-4 w-4" />
+              }} className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">
+                <span className="hidden md:inline">הבא: בחירת פריטים</span>
+                <span className="md:hidden">הבא</span>
+                <ArrowLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </CardFooter>
           </Card>
@@ -2283,12 +2287,12 @@ export default function QuoteCreate() {
 
         return (
           <Card className="shadow-lg">
-            <CardHeader className="bg-white border-b-2 border-gray-200 py-8">
-              <CardTitle className="text-3xl font-bold text-gray-900 mb-2">סיכום סופי ואישור</CardTitle>
-              <CardDescription className="text-base text-gray-600">בדוק את המסמך, תכנן את התשלומים ושלח ללקוח.</CardDescription>
+            <CardHeader className="bg-white border-b-2 border-gray-200 py-3 sm:py-4 md:py-6 px-3 sm:px-4 md:px-6">
+              <CardTitle className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">סיכום סופי ואישור</CardTitle>
+              <CardDescription className="text-sm sm:text-base text-gray-600">בדוק את המסמך, תכנן את התשלומים ושלח ללקוח.</CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-8 p-8">
+            <CardContent className="space-y-3 sm:space-y-4 md:space-y-6 p-3 sm:p-4 md:p-6">
               {(missingProjectDates || hasMissingCategoryDates) && (
                 <div className="space-y-4">
                   {missingProjectDates && (
@@ -2307,10 +2311,11 @@ export default function QuoteCreate() {
                             variant="outline"
                             size="sm"
                             onClick={() => setCurrentStep(1)}
-                            className="bg-white hover:bg-gray-100 text-gray-900 border-gray-900 font-medium"
+                            className="bg-white hover:bg-gray-100 text-gray-900 border-gray-900 font-medium text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
                           >
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                            חזור לשלב 'פרטי פרויקט' להשלמת תאריכים
+                            <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="hidden md:inline">חזור לשלב 'פרטי פרויקט' להשלמת תאריכים</span>
+                            <span className="md:hidden">השלם תאריכים</span>
                           </Button>
                         </div>
                       </div>
@@ -2347,10 +2352,11 @@ export default function QuoteCreate() {
                             variant="outline"
                             size="sm"
                             onClick={() => setCurrentStep(3)}
-                            className="bg-white hover:bg-gray-100 text-gray-900 border-gray-900 font-medium"
+                            className="bg-white hover:bg-gray-100 text-gray-900 border-gray-900 font-medium text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
                           >
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                            חזור לשלב 'פריטים' להגדרת תאריכי קטגוריות
+                            <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="hidden md:inline">חזור לשלב 'פריטים' להגדרת תאריכי קטגוריות</span>
+                            <span className="md:hidden">הגדר תאריכים</span>
                           </Button>
                         </div>
                       </div>
@@ -2373,39 +2379,39 @@ export default function QuoteCreate() {
               <div className="flex justify-center">
                 <Button
                   onClick={() => setShowPreview(true)}
-                  size="lg"
-                  className="text-lg px-12 py-7 bg-gray-900 hover:bg-gray-800 text-white shadow-xl hover:shadow-2xl transition-all duration-300 font-bold rounded-xl border-2 border-gray-900"
+                  className="text-sm sm:text-base md:text-lg px-4 sm:px-8 md:px-12 py-3 sm:py-5 md:py-7 bg-gray-900 hover:bg-gray-800 text-white shadow-xl hover:shadow-2xl transition-all duration-300 font-bold rounded-xl border-2 border-gray-900 w-full sm:w-auto"
                 >
-                  <svg className="ml-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="ml-2 sm:ml-3 h-5 w-5 sm:h-6 sm:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
-                  הצג את המסמך המלא לפני שליחה
+                  <span className="hidden sm:inline">הצג את המסמך המלא לפני שליחה</span>
+                  <span className="sm:hidden">הצג מסמך מלא</span>
                 </Button>
               </div>
 
-              <Separator className="my-8 h-0.5 bg-gray-300" />
+              <Separator className="my-3 sm:my-4 md:my-6 h-0.5 bg-gray-300" />
 
               {workDaysFromForm > 0 && (
-                <div className="p-6 bg-white border-2 border-gray-300 rounded-xl shadow-md">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-gray-100 rounded-lg">
-                        <CalendarDays className="w-6 h-6 text-gray-900" />
+                <div className="p-3 sm:p-4 md:p-6 bg-white border-2 border-gray-300 rounded-xl shadow-md">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+                      <div className="p-2 sm:p-3 bg-gray-100 rounded-lg">
+                        <CalendarDays className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900" />
                       </div>
                       <div>
-                        <h4 className="text-lg font-bold text-gray-900">רווח יומי ממוצע</h4>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <h4 className="text-base sm:text-lg font-bold text-gray-900">רווח יומי ממוצע</h4>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">
                           {workDaysFromForm} ימי עבודה נטו (ללא שישי-שבת)
                         </p>
                       </div>
                     </div>
 
-                    <div className="text-left">
-                      <div className="text-3xl font-bold text-gray-900">
+                    <div className="text-left w-full sm:w-auto">
+                      <div className="text-2xl sm:text-3xl font-bold text-gray-900">
                         ₪ {dailyProfit.toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">ליום עבודה</div>
+                      <div className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">ליום עבודה</div>
                     </div>
                   </div>
 
@@ -2472,22 +2478,22 @@ export default function QuoteCreate() {
               </div>
             </CardContent>
 
-            <CardFooter className="flex justify-between border-t p-6 flex-wrap gap-4 bg-gray-50/30">
-              <div className="flex items-center gap-3">
-                <Button variant="outline" onClick={() => setCurrentStep(4)} className="text-base px-6 py-2.5">
-                  <ArrowRight className="ml-2 h-4 w-4" />
+            <CardFooter className="flex flex-col sm:flex-row justify-between border-t p-3 sm:p-4 md:p-6 flex-wrap gap-2 sm:gap-3 md:gap-4 bg-gray-50/30">
+              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                <Button variant="outline" onClick={() => setCurrentStep(4)} className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto">
+                  <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                   הקודם
                 </Button>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 {existingQuoteId ? ( // Renamed from editingQuoteId
                   <>
                     <Button
                       variant="outline"
                       onClick={() => navigate(createPageUrl('SentQuotes'))}
                       disabled={isLoadingUser} // Renamed from isSaving
-                      className="text-base px-6 py-2.5"
+                      className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto"
                     >
                       סגור
                     </Button>
@@ -2495,10 +2501,11 @@ export default function QuoteCreate() {
                     <Button
                       onClick={() => handleSaveQuote(false)}
                       disabled={isLoadingUser} // Renamed from isSaving
-                      className="bg-green-600 hover:bg-green-700 text-base px-6 py-2.5"
+                      className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto"
                     >
-                      {isLoadingUser ? <Loader2 className="animate-spin ml-2" /> : <Send className="ml-2 h-4 w-4" />}
-                      עדכן ושלח
+                      {isLoadingUser ? <Loader2 className="animate-spin ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" /> : <Send className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />}
+                      <span className="hidden sm:inline">עדכן ושלח</span>
+                      <span className="sm:hidden">עדכן</span>
                     </Button>
 
                     {quoteData?.status === 'draft' && (
@@ -2506,10 +2513,11 @@ export default function QuoteCreate() {
                         variant="secondary"
                         onClick={() => handleSaveQuote(true)}
                         disabled={isLoadingUser} // Renamed from isSaving
-                        className="text-base px-6 py-2.5"
+                        className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto"
                       >
-                        {isLoadingUser ? <Loader2 className="animate-spin ml-2" /> : <Edit className="ml-2 h-4 w-4" />}
-                        שמור כטיוטה
+                        {isLoadingUser ? <Loader2 className="animate-spin ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" /> : <Edit className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />}
+                        <span className="hidden sm:inline">שמור כטיוטה</span>
+                        <span className="sm:hidden">טיוטה</span>
                       </Button>
                     )}
                   </>
@@ -2519,19 +2527,21 @@ export default function QuoteCreate() {
                       variant="secondary"
                       onClick={() => handleSaveQuote(true)}
                       disabled={isLoadingUser} // Renamed from isSaving
-                      className="text-base px-6 py-2.5"
+                      className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto"
                     >
-                      {isLoadingUser ? <Loader2 className="animate-spin ml-2" /> : <Edit className="ml-2 h-4 w-4" />}
-                      שמור כטיוטה
+                      {isLoadingUser ? <Loader2 className="animate-spin ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" /> : <Edit className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />}
+                      <span className="hidden sm:inline">שמור כטיוטה</span>
+                      <span className="sm:hidden">טיוטה</span>
                     </Button>
 
                     <Button
                       onClick={() => handleSaveQuote(false)}
                       disabled={isLoadingUser} // Renamed from isSaving
-                      className="bg-green-600 hover:bg-green-700 text-white text-base px-6 py-2.5"
+                      className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto"
                     >
-                      {isLoadingUser ? <Loader2 className="animate-spin ml-2" /> : <Send className="ml-2 h-4 w-4" />}
-                      שמור ושלח
+                      {isLoadingUser ? <Loader2 className="animate-spin ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" /> : <Send className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />}
+                      <span className="hidden sm:inline">שמור ושלח</span>
+                      <span className="sm:hidden">שלח</span>
                     </Button>
                   </>
                 )}

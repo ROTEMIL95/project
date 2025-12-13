@@ -138,17 +138,17 @@ const PageLayout = ({ children, currentPageName }) => {
         }
         .page-fade-enter { animation: page-fade-in 180ms ease-out; }
       `}</style>
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 h-16 flex items-center justify-between px-4 lg:px-8 fixed w-full top-0 z-[100]">
-        <div className="flex items-center gap-4">
+      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4 lg:px-8 fixed w-full top-0 z-[100]">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Changed: Menu button is now always visible */}
-          <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} className="mr-2">
-            <Menu className="h-5 w-5" />
+          <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} className="mr-1 sm:mr-2 h-9 w-9 sm:h-10 sm:w-10">
+            <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
-          <div 
-            className="relative overflow-hidden flex items-center cursor-pointer shimmer-element p-2 rounded-lg" 
+          <div
+            className="relative overflow-hidden flex items-center cursor-pointer shimmer-element p-1.5 sm:p-2 rounded-lg"
             onClick={() => navigate(createPageUrl('Dashboard'))}
           >
-            <div className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight">לחשב חכם</div>
+            <div className="text-base sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight">לחשב חכם</div>
           </div>
         </div>
         
@@ -188,35 +188,35 @@ const PageLayout = ({ children, currentPageName }) => {
         {/* --- End of Navigation Buttons --- */}
 
         {user && (
-          <div className="flex items-center gap-3">
-            <span className="hidden md:inline-block text-sm font-medium text-gray-700">{user.full_name}</span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="hidden md:inline-block text-xs sm:text-sm font-medium text-gray-700">{user.full_name}</span>
             <button
               onClick={() => navigate(createPageUrl('ContractAgreement'))}
-              className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-inner hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-inner hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer text-sm sm:text-base"
               title="פרטי קבלן"
             >
-              {user.full_name ? user.full_name.charAt(0).toUpperCase() : <UserIcon className="h-5 w-5" />}
+              {user.full_name ? user.full_name.charAt(0).toUpperCase() : <UserIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
             </button>
           </div>
         )}
       </header>
 
-      <div className="flex pt-16">
-        <aside 
+      <div className="flex pt-14 sm:pt-16 w-full max-w-full overflow-x-hidden">
+        <aside
           className={cn(
-            'fixed top-0 right-0 h-screen w-[85%] sm:w-72 bg-white border-l border-gray-200 transform transition-transform duration-300 ease-in-out flex flex-col z-[110]',
+            'fixed top-0 right-0 h-screen w-[90%] sm:w-80 md:w-96 max-w-full bg-white border-l border-gray-200 transform transition-transform duration-300 ease-in-out flex flex-col z-[110]',
             isSidebarOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full' // Changed: visibility controlled by state
           )}
         >
           {/* Added: Close button and header for sidebar */}
-          <div className="flex justify-between items-center p-4 border-b">
-             <div className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight">תפריט</div>
-            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)}>
-              <X className="h-5 w-5 text-gray-500" />
+          <div className="flex justify-between items-center p-3 sm:p-4 border-b">
+             <div className="text-lg sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight">תפריט</div>
+            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)} className="h-9 w-9">
+              <X className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
             </Button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6">
             <nav className="space-y-2">
               {menuItems.map((item) => {
                 const isActive = currentPageName === item.path;
@@ -226,7 +226,7 @@ const PageLayout = ({ children, currentPageName }) => {
                   <div
                     key={item.name}
                     className={cn(
-                      "group flex items-center justify-between px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300",
+                      "group flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300",
                       isDisabled
                         ? "cursor-not-allowed opacity-50 bg-gray-50"
                         : "cursor-pointer transform hover:-translate-y-0.5 shimmer-element",
@@ -243,13 +243,13 @@ const PageLayout = ({ children, currentPageName }) => {
                   >
                     <div className="flex items-center">
                       <span className={cn(
-                          "ml-4 transition-colors",
+                          "ml-2 sm:ml-4 transition-colors",
                           isActive && !isDisabled ? 'text-white' : isDisabled ? 'text-gray-400' : `text-${item.color}-500`
                       )}>{item.icon}</span>
-                      <span>{item.name}</span>
+                      <span className="text-xs sm:text-sm">{item.name}</span>
                     </div>
                     {item.badge && (
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-400 to-pink-500 text-white">
+                      <span className="text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-400 to-pink-500 text-white">
                         {item.badge}
                       </span>
                     )}
@@ -272,24 +272,24 @@ const PageLayout = ({ children, currentPageName }) => {
               )}
             </nav>
           </div>
-          
-          <div className="border-t border-gray-200 px-4 py-4 space-y-2">
-            <button onClick={() => {navigate(createPageUrl('Support')); setIsSidebarOpen(false);}} className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-100 transition-colors shimmer-element text-right">
-              <HelpCircle className="h-5 w-5 ml-3 text-gray-500" />
+
+          <div className="border-t border-gray-200 px-3 sm:px-4 py-3 sm:py-4 space-y-2">
+            <button onClick={() => {navigate(createPageUrl('Support')); setIsSidebarOpen(false);}} className="w-full flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-100 transition-colors shimmer-element text-right">
+              <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5 ml-2 sm:ml-3 text-gray-500" />
               <span>עזרה ותמיכה</span>
             </button>
-            <button onClick={handleLogout} className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-500 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors shimmer-element">
-              <LogOut className="h-5 w-5 ml-3 text-gray-500" />
+            <button onClick={handleLogout} className="w-full flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-500 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors shimmer-element">
+              <LogOut className="h-4 w-4 sm:h-5 sm:w-5 ml-2 sm:ml-3 text-gray-500" />
               <span>התנתק</span>
             </button>
           </div>
         </aside>
 
         {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-[105]" onClick={() => setIsSidebarOpen(false)} />}
-        <main className="flex-1 p-4 lg:p-8 min-h-screen">
+        <main className="flex-1 p-3 sm:p-4 lg:p-8 min-h-screen w-full max-w-full overflow-x-hidden">
           {/* NEW: don't re-mount on query param change */}
           {/* CHANGED: allow wider content area */}
-          <div key={location.pathname} className="w-full max-w-[1600px] mx-auto page-fade-enter">
+          <div key={location.pathname} className="w-full max-w-full lg:max-w-[1600px] mx-auto page-fade-enter overflow-x-hidden">
             {children}
           </div>
         </main>

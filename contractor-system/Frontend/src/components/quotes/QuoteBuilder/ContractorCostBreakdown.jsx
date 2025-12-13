@@ -90,72 +90,72 @@ export default function ContractorCostBreakdown({ selectedItems = [], projectCom
   if (!hasAnyCosts) return null;
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full max-w-full">
       <CollapsibleTrigger asChild>
         <button
           className={cn(
-            "w-full flex items-center justify-between p-4 rounded-lg border-2 transition-all",
+            "w-full flex items-center justify-between p-3 sm:p-4 rounded-lg border-2 transition-all overflow-hidden",
             isOpen
               ? "bg-indigo-50 border-indigo-300 shadow-sm"
               : "bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300"
           )}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <div className={cn(
-              "p-2 rounded-lg transition-colors",
+              "p-1.5 sm:p-2 rounded-lg transition-colors shrink-0",
               isOpen ? "bg-indigo-100" : "bg-gray-200"
             )}>
-              <Calculator className={cn("w-5 h-5", isOpen ? "text-indigo-600" : "text-gray-600")} />
+              <Calculator className={cn("w-4 h-4 sm:w-5 sm:h-5", isOpen ? "text-indigo-600" : "text-gray-600")} />
             </div>
-            <div className="text-right">
+            <div className="text-right min-w-0">
               <h3 className={cn(
-                "text-base font-bold transition-colors",
+                "text-sm sm:text-base font-bold transition-colors truncate",
                 isOpen ? "text-indigo-900" : "text-gray-800"
               )}>
                 פירוט עלויות קבלן
               </h3>
-              <p className="text-sm text-gray-600">לחץ לצפייה בפירוט המלא לפי קטגוריות</p>
+              <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">לחץ לצפייה בפירוט המלא לפי קטגוריות</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div className="text-left">
-              <div className="text-xs text-gray-500">סה"כ עלויות</div>
-              <div className="text-lg font-bold text-red-600">{formatPrice(breakdown.grandTotal)}</div>
+              <div className="text-[10px] sm:text-xs text-gray-500">סה"כ עלויות</div>
+              <div className="text-sm sm:text-base md:text-lg font-bold text-red-600 whitespace-nowrap">{formatPrice(breakdown.grandTotal)}</div>
             </div>
             <ChevronDown className={cn(
-              "w-5 h-5 transition-transform text-gray-500",
+              "w-4 h-4 sm:w-5 sm:h-5 transition-transform text-gray-500",
               isOpen && "rotate-180"
             )} />
           </div>
         </button>
       </CollapsibleTrigger>
 
-      <CollapsibleContent className="mt-3">
-        <div className="border-2 border-gray-200 rounded-lg overflow-hidden bg-white">
-          <div className="bg-gradient-to-l from-gray-100 to-gray-50 px-4 py-2 border-b border-gray-200">
-            <h4 className="text-sm font-semibold text-gray-700">פירוט עלויות לפי קטגוריות</h4>
+      <CollapsibleContent className="mt-2 sm:mt-3">
+        <div className="border-2 border-gray-200 rounded-lg overflow-x-auto bg-white">
+          <div className="bg-gradient-to-l from-gray-100 to-gray-50 px-3 sm:px-4 py-2 border-b border-gray-200">
+            <h4 className="text-xs sm:text-sm font-semibold text-gray-700">פירוט עלויות לפי קטגוריות</h4>
           </div>
 
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 min-w-0">
             {/* Labor & Material Categories */}
             {Object.entries(breakdown.categories)
               .filter(([catId]) => LABOR_MATERIAL_CATEGORIES.includes(catId))
               .map(([catId, data]) => (
-                <div key={catId} className="p-4 hover:bg-gray-50/50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-gray-500" />
-                      <div>
-                        <div className="font-semibold text-gray-800">{data.name}</div>
-                        <div className="text-xs text-gray-500 mt-1 space-y-0.5">
-                          <div>עבודה: {formatPrice(data.laborCost)}</div>
-                          <div>חומרים: {formatPrice(data.materialCost)}</div>
+                <div key={catId} className="p-3 sm:p-4 hover:bg-gray-50/50 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                      <Users className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-semibold text-gray-800 text-xs sm:text-sm truncate">{data.name}</div>
+                        <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 space-y-0.5">
+                          <div className="whitespace-nowrap">עבודה: {formatPrice(data.laborCost)}</div>
+                          <div className="whitespace-nowrap">חומרים: {formatPrice(data.materialCost)}</div>
                         </div>
                       </div>
                     </div>
-                    <div className="text-left">
-                      <div className="text-xs text-gray-500">סה"כ</div>
-                      <div className="text-base font-bold text-red-600">{formatPrice(data.totalCost)}</div>
+                    <div className="text-left shrink-0">
+                      <div className="text-[10px] sm:text-xs text-gray-500">סה"כ</div>
+                      <div className="text-sm sm:text-base font-bold text-red-600 whitespace-nowrap">{formatPrice(data.totalCost)}</div>
                     </div>
                   </div>
                 </div>
@@ -226,10 +226,10 @@ export default function ContractorCostBreakdown({ selectedItems = [], projectCom
           </div>
 
           {/* Grand Total */}
-          <div className="bg-gradient-to-l from-red-50 to-white px-4 py-3 border-t-2 border-red-200">
-            <div className="flex items-center justify-between">
-              <div className="font-bold text-gray-800">סה"כ עלויות קבלן</div>
-              <div className="text-xl font-bold text-red-700">{formatPrice(breakdown.grandTotal)}</div>
+          <div className="bg-gradient-to-l from-red-50 to-white px-3 sm:px-4 py-2 sm:py-3 border-t-2 border-red-200">
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-bold text-gray-800 text-sm sm:text-base">סה"כ עלויות קבלן</div>
+              <div className="text-lg sm:text-xl font-bold text-red-700 whitespace-nowrap">{formatPrice(breakdown.grandTotal)}</div>
             </div>
           </div>
         </div>

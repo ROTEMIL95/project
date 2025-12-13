@@ -440,21 +440,21 @@ export default function ManualCalcDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-2xl m-6 md:m-8 p-6 md:p-8" dir="rtl">
+      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto p-4 sm:p-6 md:p-8" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">חישוב ידני</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl font-bold">חישוב ידני</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5">
+        <div className="space-y-3 sm:space-y-4 md:space-y-5">
           {/* בחירה בין צבע/שפכטל */}
-          <div className="rounded-md border p-3 bg-gray-50 text-sm text-gray-700">
+          <div className="rounded-md border p-2 sm:p-3 bg-gray-50 text-xs sm:text-sm text-gray-700">
             הגדרות ידניות עבור {form.workType === "plaster" ? "שפכטל" : "צבע"}
           </div>
 
           {/* תיאור כללי - שדרוג ויזואלי עם איקון וכפתור ניקוי */}
           <div className="space-y-1">
-            <Label className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-gray-500" />
+            <Label className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
               תיאור העבודה (אופציונלי)
             </Label>
             <div className="relative">
@@ -462,71 +462,71 @@ export default function ManualCalcDialog() {
                 placeholder="לדוגמה: סלון גדול, קירות איכות X, תקרה Y"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                className="pr-24"
+                className="pr-16 sm:pr-24 text-sm"
               />
               {form.description && (
                 <button
                   type="button"
                   onClick={() => setForm(f => ({ ...f, description: "" }))}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 text-xs sm:text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
                   title="נקה תיאור"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  נקה
+                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">נקה</span>
                 </button>
               )}
             </div>
           </div>
 
           {/* בחירה מהירה: קירות/תקרה – עיצוב משופר */}
-          <div className="grid grid-cols-2 gap-3">
-            <label className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            <label className={`flex items-center justify-between gap-1 sm:gap-2 p-2 sm:p-3 border rounded-lg cursor-pointer transition
                 ${form.wallsEnabled ? "border-emerald-300 bg-emerald-50" : "border-gray-200 hover:bg-gray-50"}`}>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <input
                   type="checkbox"
                   checked={form.wallsEnabled}
                   onChange={(e) => setForm((f) => ({ ...f, wallsEnabled: e.target.checked }))}
                 />
-                <span className="font-medium">קירות</span>
+                <span className="font-medium text-sm sm:text-base">קירות</span>
               </div>
-              {wallsSummary && <Badge variant="outline" className="text-emerald-800 border-emerald-200">{wallsSummary}</Badge>}
+              {wallsSummary && <Badge variant="outline" className="text-emerald-800 border-emerald-200 text-[10px] sm:text-xs hidden sm:inline-block">{wallsSummary}</Badge>}
             </label>
 
-            <label className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition
+            <label className={`flex items-center justify-between gap-1 sm:gap-2 p-2 sm:p-3 border rounded-lg cursor-pointer transition
                 ${form.ceilingEnabled ? "border-sky-300 bg-sky-50" : "border-gray-200 hover:bg-gray-50"}`}>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <input
                   type="checkbox"
                   checked={form.ceilingEnabled}
                   onChange={(e) => setForm((f) => ({ ...f, ceilingEnabled: e.target.checked }))}
                 />
-                <span className="font-medium">תקרה</span>
+                <span className="font-medium text-sm sm:text-base">תקרה</span>
               </div>
-              {ceilingSummary && <Badge variant="outline" className="text-sky-800 border-sky-200">{ceilingSummary}</Badge>}
+              {ceilingSummary && <Badge variant="outline" className="text-sky-800 border-sky-200 text-[10px] sm:text-xs hidden sm:inline-block">{ceilingSummary}</Badge>}
             </label>
           </div>
 
           {/* טופס קירות – עם כותרת, איקונים וכפתור ניקוי */}
           {form.wallsEnabled && (
-            <div className="rounded-lg border-2 border-green-200 bg-green-50/30 p-4 space-y-3">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span className="font-semibold text-green-800">קירות</span>
+            <div className="rounded-lg border-2 border-green-200 bg-green-50/30 p-3 sm:p-4 space-y-2 sm:space-y-3">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500"></div>
+                  <span className="font-semibold text-green-800 text-sm sm:text-base">קירות</span>
                 </div>
                 {(form.wallsType || Number(form.wallsLayers) > 0 || form.wallsArea) && (
                   <button
                     type="button"
                     onClick={clearWalls}
-                    className="text-emerald-800/80 hover:text-emerald-900 text-sm inline-flex items-center gap-1"
+                    className="text-emerald-800/80 hover:text-emerald-900 text-xs sm:text-sm inline-flex items-center gap-1"
                   >
-                    <Trash2 className="w-4 h-4" /> נקה קירות
+                    <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">נקה קירות</span>
                   </button>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="space-y-1 sm:col-span-3">
                   <Label>סוג צבע או שפכטל (קירות)</Label>
                   <Input
@@ -632,14 +632,15 @@ export default function ManualCalcDialog() {
           )}
 
           {/* משותף: עלות חומרים + ימי עבודה */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-1">
-              <Label>עלות חומרים (₪) – משותף</Label>
+              <Label className="text-xs sm:text-sm">עלות חומרים (₪) – משותף</Label>
               <Input
                 type="number"
                 placeholder="לדוגמה: 450"
                 value={form.materialCost}
                 onChange={(e) => setForm((f) => ({ ...f, materialCost: e.target.value }))}
+                className="text-sm"
               />
             </div>
 
@@ -693,28 +694,28 @@ export default function ManualCalcDialog() {
           </div>
 
           {/* תוצאות */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-            <div className="p-3 rounded-lg border bg-blue-50 border-blue-200 text-center">
-              <div className="text-xs text-blue-700 mb-1">מחיר ללקוח</div>
-              <div className="text-2xl font-bold text-blue-800">{clientPrice.toLocaleString('he-IL')} ₪</div>
-              <div className="text-[11px] text-blue-700 mt-1">{qtyTotal > 0 ? `${pricePerSqm.toLocaleString('he-IL')} ₪ למ״ר` : ''}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 pt-2">
+            <div className="p-2 sm:p-3 rounded-lg border bg-blue-50 border-blue-200 text-center">
+              <div className="text-[10px] sm:text-xs text-blue-700 mb-1">מחיר ללקוח</div>
+              <div className="text-lg sm:text-xl md:text-2xl font-bold text-blue-800">{clientPrice.toLocaleString('he-IL')} ₪</div>
+              <div className="text-[10px] sm:text-[11px] text-blue-700 mt-1">{qtyTotal > 0 ? `${pricePerSqm.toLocaleString('he-IL')} ₪ למ״ר` : ''}</div>
             </div>
-            <div className="p-3 rounded-lg border bg-red-50 border-red-200 text-center">
-              <div className="text-xs text-red-700 mb-1">עלות קבלן</div>
-              <div className="text-2xl font-bold text-red-800">{contractorRounded.toLocaleString('he-IL')} ₪</div>
+            <div className="p-2 sm:p-3 rounded-lg border bg-red-50 border-red-200 text-center">
+              <div className="text-[10px] sm:text-xs text-red-700 mb-1">עלות קבלן</div>
+              <div className="text-lg sm:text-xl md:text-2xl font-bold text-red-800">{contractorRounded.toLocaleString('he-IL')} ₪</div>
             </div>
-            <div className="p-3 rounded-lg border bg-green-50 border-green-200 text-center">
-              <div className="text-xs text-green-700 mb-1">רווח</div>
-              <div className="text-2xl font-bold text-green-800">{profitAmount.toLocaleString('he-IL')} ₪</div>
+            <div className="p-2 sm:p-3 rounded-lg border bg-green-50 border-green-200 text-center">
+              <div className="text-[10px] sm:text-xs text-green-700 mb-1">רווח</div>
+              <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-800">{profitAmount.toLocaleString('he-IL')} ₪</div>
             </div>
           </div>
-          <p className="text-[11px] text-gray-500">
+          <p className="text-[10px] sm:text-[11px] text-gray-500">
             ימי העבודה ועלות החומרים משותפים לשני הסוגים; חלוקת עלות החומרים בין קירות/תקרה מתועדת באופן יחסי לפי שטח.
           </p>
 
-          <div className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={resetAndClose}>סגור</Button>
-            <Button onClick={handleSave} disabled={!canSave} className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed">
+          <div className="mt-3 sm:mt-4 flex flex-col-reverse sm:flex-row justify-end gap-2">
+            <Button variant="outline" onClick={resetAndClose} className="w-full sm:w-auto">סגור</Button>
+            <Button onClick={handleSave} disabled={!canSave} className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto">
               שמור
             </Button>
           </div>

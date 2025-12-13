@@ -106,22 +106,22 @@ export default function Dashboard() {
         <div className="absolute bottom-20 right-20 w-20 h-20 bg-gradient-to-tl from-blue-300/10 to-teal-300/10 rounded-full blur-lg float-element-1"></div>
         <div className="absolute top-1/3 left-1/4 w-12 h-12 bg-gradient-to-br from-violet-200/20 to-blue-200/20 rounded-lg blur-sm float-element-2"></div>
       </div>
-      <div className="space-y-8 p-6 max-w-7xl mx-auto relative z-10">
-        <section className="relative overflow-hidden max-w-6xl mx-auto rounded-2xl group cursor-pointer shimmer-element">
+      <div className="space-y-6 sm:space-y-8 p-3 sm:p-4 md:p-6 max-w-7xl mx-auto relative z-10">
+        <section className="relative overflow-hidden max-w-6xl mx-auto rounded-xl sm:rounded-2xl group cursor-pointer shimmer-element">
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600"></div>
           <div className="absolute inset-0 bg-black/10"></div>
-          <div className="relative p-6 md:p-10 text-white">
-            <div className="flex items-center gap-3 mb-4">
-              <h1 className="text-4xl md:text-5xl font-bold">לחשב חכם</h1>
+          <div className="relative p-4 sm:p-6 md:p-10 text-white">
+            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold">לחשב חכם</h1>
             </div>
-            <p className="text-xl md:text-2xl text-indigo-100 max-w-4xl leading-relaxed">
+            <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-indigo-100 max-w-4xl leading-relaxed">
               {dynamicSubtitle}
             </p>
-            <div className="mt-8">
+            <div className="mt-4 sm:mt-6 md:mt-8">
               {user && greeting && (
-                <div className="flex items-center gap-3 bg-white/10 px-5 py-3 rounded-full backdrop-blur-sm w-fit">
-                   <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse" />
-                   <span className="text-lg font-medium text-white">
+                <div className="flex items-center gap-2 sm:gap-3 bg-white/10 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full backdrop-blur-sm w-fit">
+                   <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300 animate-pulse" />
+                   <span className="text-sm sm:text-base md:text-lg font-medium text-white">
                      {greeting}, {user.full_name}
                    </span>
                 </div>
@@ -133,10 +133,10 @@ export default function Dashboard() {
         <section className="max-w-6xl mx-auto">
              <Button
                 size="lg"
-                className="w-full h-16 text-xl font-bold bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 shimmer-element"
+                className="w-full h-12 sm:h-14 md:h-16 text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 shimmer-element"
                 onClick={() => navigate(createPageUrl('QuoteCreate'))}
             >
-                <FilePlus2 className="w-6 h-6 ml-3" />
+                <FilePlus2 className="w-5 h-5 sm:w-6 sm:h-6 ml-2 sm:ml-3" />
                 הצעת מחיר חדשה
             </Button>
         </section>
@@ -146,11 +146,11 @@ export default function Dashboard() {
         <section><MonthlyCashFlowChart user={user} /></section>
 
         <section>
-          <div className="flex items-center gap-3 mb-8">
-            <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg"><ListChecks className="w-6 h-6 text-white" /></div>
-            <h2 className="text-3xl font-bold text-gray-800">פעולות נוספות</h2>
+          <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 md:mb-8">
+            <div className="p-1.5 sm:p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg"><ListChecks className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" /></div>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">פעולות נוספות</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             {quickActions.map((action, index) => (
               <Card
                 key={action.title}
@@ -168,19 +168,19 @@ export default function Dashboard() {
                   </Badge>
                 )}
 
-                <CardHeader className="relative pb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`p-4 rounded-2xl bg-gradient-to-br ${action.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                      <div className="text-white">{action.icon}</div>
+                <CardHeader className="relative pb-3 sm:pb-4">
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <div className={`p-2.5 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br ${action.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                      <div className="text-white [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-6 sm:[&>svg]:h-6 md:[&>svg]:w-8 md:[&>svg]:h-8">{action.icon}</div>
                     </div>
                     {!action.comingSoon && (
-                      <ArrowLeft className={`w-5 h-5 text-${action.color}-400 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300`} />
+                      <ArrowLeft className={`w-4 h-4 sm:w-5 sm:h-5 text-${action.color}-400 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300`} />
                     )}
                   </div>
-                  <CardTitle className={`text-xl font-bold text-gray-800 group-hover:text-${action.color}-700 transition-colors duration-300`}>{action.title}</CardTitle>
+                  <CardTitle className={`text-base sm:text-lg md:text-xl font-bold text-gray-800 group-hover:text-${action.color}-700 transition-colors duration-300`}>{action.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="relative">
-                  <CardDescription className="text-gray-600 leading-relaxed">{action.description}</CardDescription>
+                  <CardDescription className="text-xs sm:text-sm text-gray-600 leading-relaxed">{action.description}</CardDescription>
                   {!action.comingSoon && (
                     <div className={`mt-4 h-1 bg-gradient-to-r ${action.gradient} rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-right`}></div>
                   )}

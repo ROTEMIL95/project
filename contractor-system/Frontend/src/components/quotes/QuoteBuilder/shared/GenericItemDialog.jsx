@@ -211,25 +211,25 @@ export default function GenericItemDialog({
   // Demolition uses custom fixed dialog
   if (config.dialog.useCustomDialog) {
     return (
-      <div className={open ? "fixed inset-0 z-[200] flex items-center justify-center bg-black/50" : "hidden"} dir="rtl" onClick={() => onOpenChange(false)}>
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto m-4" onClick={(e) => e.stopPropagation()}>
-          <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between rounded-t-2xl">
-            <h2 className="text-xl font-bold text-gray-900">{config.dialog.title}</h2>
+      <div className={open ? "fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-2 sm:p-4" : "hidden"} dir="rtl" onClick={() => onOpenChange(false)}>
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl sm:rounded-t-2xl">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">{config.dialog.title}</h2>
             <button onClick={() => onOpenChange(false)} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
             </button>
           </div>
-          <div className="px-6 py-4">
+          <div className="px-4 sm:px-6 py-3 sm:py-4">
             {config.dialog.description && (
               <p className="text-sm text-gray-600 mb-4">{config.dialog.description}</p>
             )}
             <DialogFieldsRenderer config={config} formData={formData} setFormData={setFormData} calc={calc} fmt={fmt} />
           </div>
-          <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-end gap-3 rounded-b-2xl">
-            <button onClick={() => onOpenChange(false)} className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <div className="sticky bottom-0 bg-gray-50 border-t px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 rounded-b-xl sm:rounded-b-2xl">
+            <button onClick={() => onOpenChange(false)} className="px-4 sm:px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               ביטול
             </button>
-            <button onClick={handleSave} className={`px-5 py-2 text-sm font-medium text-white rounded-lg transition-all shadow-sm ${getButtonClasses(config)}`}>
+            <button onClick={handleSave} className={`px-4 sm:px-5 py-2 text-sm font-medium text-white rounded-lg transition-all shadow-sm ${getButtonClasses(config)}`}>
               הוסף
             </button>
           </div>
@@ -241,15 +241,15 @@ export default function GenericItemDialog({
   // Standard Dialog component
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${config.dialog.maxWidth} p-6 md:p-8`} dir="rtl">
+      <DialogContent className={`${config.dialog.maxWidth} p-4 sm:p-6 md:p-8 max-h-[95vh] overflow-y-auto`} dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl">{preset ? config.dialog.titlePreset : config.dialog.title}</DialogTitle>
-          <DialogDescription>{config.dialog.description}</DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">{preset ? config.dialog.titlePreset : config.dialog.title}</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">{config.dialog.description}</DialogDescription>
         </DialogHeader>
         <DialogFieldsRenderer config={config} formData={formData} setFormData={setFormData} calc={calc} fmt={fmt} />
-        <DialogFooter className="pt-4 border-t gap-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>ביטול</Button>
-          <Button onClick={handleSave} className={getButtonClasses(config)}>
+        <DialogFooter className="pt-3 sm:pt-4 border-t gap-2 sm:gap-3 flex-col-reverse sm:flex-row">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">ביטול</Button>
+          <Button onClick={handleSave} className={`${getButtonClasses(config)} w-full sm:w-auto`}>
             {item ? 'שמור' : 'הוסף'}
           </Button>
         </DialogFooter>
@@ -280,14 +280,14 @@ function DialogFieldsRenderer({ config, formData, setFormData, calc, fmt }) {
 
       {/* Grid for Quantity and Hours (Demolition style) or separate fields (other categories) */}
       {config.fields.showQuantity && config.fields.showHoursPerUnit && !config.fields.showContractorCost ? (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <Label htmlFor="qty">כמות (לתצוגה)</Label>
-            <Input id="qty" type="number" min={1} step="1" value={formData.quantity} onChange={(e) => updateField('quantity', e.target.value)} />
+            <Label htmlFor="qty" className="text-xs sm:text-sm">כמות (לתצוגה)</Label>
+            <Input id="qty" type="number" min={1} step="1" value={formData.quantity} onChange={(e) => updateField('quantity', e.target.value)} className="text-sm" />
           </div>
           <div>
-            <Label htmlFor="hours">שעות עבודה ליחידה</Label>
-            <Input id="hours" type="number" min={0} step="1" value={formData.hoursPerUnit} onChange={(e) => updateField('hoursPerUnit', e.target.value)} placeholder="1" />
+            <Label htmlFor="hours" className="text-xs sm:text-sm">שעות עבודה ליחידה</Label>
+            <Input id="hours" type="number" min={0} step="1" value={formData.hoursPerUnit} onChange={(e) => updateField('hoursPerUnit', e.target.value)} placeholder="1" className="text-sm" />
           </div>
         </div>
       ) : (
@@ -337,7 +337,7 @@ function DialogFieldsRenderer({ config, formData, setFormData, calc, fmt }) {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-3 mt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-6">
         {config.summary.order.map(type => {
           if (type === 'workDays' && !calc.workDays) return null;
           const value = type === 'client' ? calc.totalPrice :
@@ -355,9 +355,9 @@ function DialogFieldsRenderer({ config, formData, setFormData, calc, fmt }) {
           const colors = colorMap[type] || colorMap.client;
 
           return (
-            <div key={type} className={`${colors.bg} border-2 ${colors.border} rounded-xl p-4 text-center`}>
-              <div className={`text-xs font-medium ${colors.textLabel} mb-1`}>{config.summary.labels[type]}</div>
-              <div className={`text-xl font-bold ${colors.textValue}`}>
+            <div key={type} className={`${colors.bg} border-2 ${colors.border} rounded-lg sm:rounded-xl p-3 sm:p-4 text-center`}>
+              <div className={`text-[10px] sm:text-xs font-medium ${colors.textLabel} mb-1`}>{config.summary.labels[type]}</div>
+              <div className={`text-base sm:text-lg md:text-xl font-bold ${colors.textValue}`}>
                 {type === 'workDays' ? value.toFixed(1) : fmt(value)}
               </div>
             </div>
