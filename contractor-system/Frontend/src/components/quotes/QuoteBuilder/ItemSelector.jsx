@@ -2113,11 +2113,12 @@ const PaintRoomsManager = React.forwardRef(({
             <div className="mt-6 p-0">
                 <Collapsible open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
                     <CollapsibleTrigger asChild>
-                        <button className="w-full bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 rounded-lg border-2 border-blue-300 p-3 hover:shadow-md transition-all duration-300 cursor-pointer">
+                        <button className="w-full bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 rounded-lg border-2 border-blue-300 p-2 sm:p-3 hover:shadow-md transition-all duration-300 cursor-pointer">
                             <div className="flex justify-between items-center">
-                                <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                                    <Paintbrush2 className="w-5 h-5 ml-2 text-indigo-600" />
-                                    סיכום כולל לקטגוריית צבע וטיח
+                                <h3 className="text-base sm:text-lg font-bold text-gray-800 flex items-center">
+                                    <Paintbrush2 className="w-4 h-4 sm:w-5 sm:h-5 ml-2 text-indigo-600" />
+                                    <span className="hidden sm:inline">סיכום כולל לקטגוריית צבע וטיח</span>
+                                    <span className="sm:hidden">סיכום צבע וטיח</span>
                                 </h3>
                                 {isSummaryOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                             </div>
@@ -2125,38 +2126,44 @@ const PaintRoomsManager = React.forwardRef(({
                     </CollapsibleTrigger>
                     <CollapsibleContent className="pt-3">
                         <div className="bg-white rounded-lg border-2 border-blue-300 shadow-sm overflow-hidden">
-                            <div className="p-4 space-y-4">
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200">
-                                        <div className="text-xl font-bold text-blue-800">
+                            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
+                                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-2 sm:p-3 rounded-lg border border-blue-200">
+                                        <div className="text-base sm:text-lg md:text-xl font-bold text-blue-800">
                                             ₪{formatPrice(totalMetrics?.totalPrice || 0)}
                                         </div>
-                                        <div className="text-sm text-blue-600 font-medium">מחיר ללקוח</div>
-                                        <div className="text-xs text-blue-500">
+                                        <div className="text-xs sm:text-sm text-blue-600 font-medium">
+                                            <span className="hidden sm:inline">מחיר ללקוח</span>
+                                            <span className="sm:hidden">מחיר</span>
+                                        </div>
+                                        <div className="text-[10px] sm:text-xs text-blue-500">
                                             ₪{formatPrice(totalMetrics?.pricePerSqM || 0)} למ"ר
                                         </div>
                                                                            </div>
-                                    <div className="bg-gradient-to-br from-orange-50 to-red-100 p-3 rounded-lg border border-orange-200">
-                                        <div className="text-xl font-bold text-orange-800">
+                                    <div className="bg-gradient-to-br from-orange-50 to-red-100 p-2 sm:p-3 rounded-lg border border-orange-200">
+                                        <div className="text-base sm:text-lg md:text-xl font-bold text-orange-800">
                                             ₪{formatPrice(totalMetrics?.totalCost || 0)}
                                         </div>
-                                        <div className="text-sm text-orange-600 font-medium">עלות קבלן</div>
-                                        <div className="text-xs text-orange-500">
+                                        <div className="text-xs sm:text-sm text-orange-600 font-medium">
+                                            <span className="hidden sm:inline">עלות קבלן</span>
+                                            <span className="sm:hidden">עלות</span>
+                                        </div>
+                                        <div className="text-[10px] sm:text-xs text-orange-500">
                                             ₪{formatPrice(totalMetrics?.costPerSqM || 0)} למ"ר
                                         </div>
                                     </div>
-                                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg border border-green-200">
-                                        <div className="text-xl font-bold text-green-800">
+                                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-2 sm:p-3 rounded-lg border border-green-200">
+                                        <div className="text-base sm:text-lg md:text-xl font-bold text-green-800">
                                             ₪{formatPrice((totalMetrics?.totalPrice || 0) - (totalMetrics?.totalCost || 0))}
                                         </div>
-                                        <div className="text-sm text-green-600 font-medium">רווח</div>
-                                        <div className="text-xs text-green-500">
+                                        <div className="text-xs sm:text-sm text-green-600 font-medium">רווח</div>
+                                        <div className="text-[10px] sm:text-xs text-green-500">
                                             {totalMetrics?.profitPercent?.toFixed(1) || '0.0'}% | ₪{formatPrice(totalMetrics?.profitPerSqM || 0)} למ"ר
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="flex gap-4 py-2 px-1">
+                                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 py-2 px-1">
                                     <label className="flex items-center gap-2 cursor-pointer group">
                                         <input
                                             type="checkbox"
@@ -2164,7 +2171,10 @@ const PaintRoomsManager = React.forwardRef(({
                                             onChange={(e) => setPreciseBucketCalculation(e.target.checked)}
                                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                                         />
-                                        <span className="text-sm text-gray-700 group-hover:text-gray-900">חישוב מדויק דליים</span>
+                                        <span className="text-xs sm:text-sm text-gray-700 group-hover:text-gray-900">
+                                            <span className="hidden sm:inline">חישוב מדויק דליים</span>
+                                            <span className="sm:hidden">דליים מדויקים</span>
+                                        </span>
                                     </label>
 
                                     <label className="flex items-center gap-2 cursor-pointer group">
@@ -2174,7 +2184,10 @@ const PaintRoomsManager = React.forwardRef(({
                                             onChange={(e) => setPreciseWorkDays(e.target.checked)}
                                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                                         />
-                                        <span className="text-sm text-gray-700 group-hover:text-gray-900">ימי עבודה מדויקים</span>
+                                        <span className="text-xs sm:text-sm text-gray-700 group-hover:text-gray-900">
+                                            <span className="hidden sm:inline">ימי עבודה מדויקים</span>
+                                            <span className="sm:hidden">ימים מדויקים</span>
+                                        </span>
                                     </label>
                                 </div>
 
@@ -2434,25 +2447,37 @@ const PaintRoomsManager = React.forwardRef(({
 
                                 {/* General Cost Breakdown - Moved to Bottom */}
                                 <div className="border-t pt-3 mt-4">
-                                    <h4 className="font-semibold text-gray-700 mb-3 text-center">פירוט עלויות כללי:</h4>
+                                    <h4 className="text-sm sm:text-base font-semibold text-gray-700 mb-2 sm:mb-3 text-center">
+                                        <span className="hidden sm:inline">פירוט עלויות כללי:</span>
+                                        <span className="sm:hidden">פירוט:</span>
+                                    </h4>
                                     <div className="grid grid-cols-3 gap-2 text-center">
                                         <div className="bg-gray-100 p-2 rounded-lg">
-                                            <div className="text-base font-bold text-gray-800">
+                                            <div className="text-sm sm:text-base font-bold text-gray-800">
                                                 ₪{formatPrice(totalMetrics?.finalMaterialCost || 0)}
                                             </div>
-                                            <div className="text-xs text-gray-500">עלות חומרים</div>
+                                            <div className="text-[10px] sm:text-xs text-gray-500">
+                                                <span className="hidden sm:inline">עלות חומרים</span>
+                                                <span className="sm:hidden">חומרים</span>
+                                            </div>
                                         </div>
                                         <div className="bg-gray-100 p-2 rounded-lg">
-                                            <div className="text-base font-bold text-gray-800">
+                                            <div className="text-sm sm:text-base font-bold text-gray-800">
                                                 ₪{formatPrice(totalMetrics?.totalLaborCost || 0)}
                                             </div>
-                                            <div className="text-xs text-gray-500">עלויות עובדים</div>
+                                            <div className="text-[10px] sm:text-xs text-gray-500">
+                                                <span className="hidden sm:inline">עלויות עובדים</span>
+                                                <span className="sm:hidden">עובדים</span>
+                                            </div>
                                         </div>
                                         <div className="bg-gray-100 p-2 rounded-lg">
-                                            <div className="text-base font-bold text-gray-800">
+                                            <div className="text-sm sm:text-base font-bold text-gray-800">
                                                 {(totalMetrics?.totalWorkDays || 0).toFixed(1)}
                                             </div>
-                                            <div className="text-xs text-gray-500">ימי עבודה</div>
+                                            <div className="text-[10px] sm:text-xs text-gray-500">
+                                                <span className="hidden sm:inline">ימי עבודה</span>
+                                                <span className="sm:hidden">ימים</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -4309,15 +4334,18 @@ const ItemSelector = React.forwardRef(({
   return (
     <>
       <Card className="shadow-lg flex flex-col h-full" dir="rtl">
-        <CardHeader className={`${categoryColors.headerBg} border-b space-y-4`}>
+        <CardHeader className={`${categoryColors.headerBg} border-b space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 ${categoryColors.iconBg} rounded-lg`}>
-                {categoryIcon}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`p-1.5 sm:p-2 ${categoryColors.iconBg} rounded-lg`}>
+                {React.cloneElement(categoryIcon, { className: "w-4 h-4 sm:w-5 sm:h-5" })}
               </div>
               <div>
-                <CardTitle className="text-xl font-semibold text-gray-800">{categoryTitle}</CardTitle>
-                <CardDescription className="text-gray-600">{categoryDescription}</CardDescription>
+                <CardTitle className="text-base sm:text-lg md:text-xl font-semibold text-gray-800">{categoryTitle}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm text-gray-600">
+                  <span className="hidden sm:inline">{categoryDescription}</span>
+                  <span className="sm:hidden">הוסף פריטים מהמחירון.</span>
+                </CardDescription>
               </div>
             </div>
           </div>
@@ -4498,11 +4526,12 @@ const ItemSelector = React.forwardRef(({
             <div className="mt-6 p-0">
               <Collapsible open={isTilingSummaryOpen} onOpenChange={setIsTilingSummaryOpen}>
                 <CollapsibleTrigger asChild>
-                  <button className="w-full bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 rounded-lg border-2 border-orange-300 p-3 hover:shadow-md transition-all duration-300 cursor-pointer">
+                  <button className="w-full bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 rounded-lg border-2 border-orange-300 p-2 sm:p-3 hover:shadow-md transition-all duration-300 cursor-pointer">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                        <Building className="w-5 h-5 ml-2 text-orange-600" />
-                        סיכום כולל לקטגוריית ריצוף וחיפוי
+                      <h3 className="text-base sm:text-lg font-bold text-gray-800 flex items-center">
+                        <Building className="w-4 h-4 sm:w-5 sm:h-5 ml-2 text-orange-600" />
+                        <span className="hidden sm:inline">סיכום כולל לקטגוריית ריצוף וחיפוי</span>
+                        <span className="sm:hidden">סיכום ריצוף וחיפוי</span>
                       </h3>
                       {isTilingSummaryOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </div>
@@ -4510,36 +4539,42 @@ const ItemSelector = React.forwardRef(({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
                   <div className="bg-white rounded-lg border-2 border-orange-300 shadow-sm overflow-hidden">
-                    <div className="p-4 space-y-4">
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200">
-                          <div className="text-xl font-bold text-blue-800">
+                    <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-2 sm:p-3 rounded-lg border border-blue-200">
+                          <div className="text-base sm:text-lg md:text-xl font-bold text-blue-800">
                             ₪{formatPrice(tilingCategorySummary.totalClientPrice || 0)}
                           </div>
-                          <div className="text-sm text-blue-600 font-medium">מחיר ללקוח</div>
-                          <div className="text-xs text-blue-500">
+                          <div className="text-xs sm:text-sm text-blue-600 font-medium">
+                            <span className="hidden sm:inline">מחיר ללקוח</span>
+                            <span className="sm:hidden">מחיר</span>
+                          </div>
+                          <div className="text-[10px] sm:text-xs text-blue-500">
                             {tilingCategorySummary.totalArea > 0
                               ? `₪${formatPrice(tilingCategorySummary.totalClientPrice / tilingCategorySummary.totalArea)} למ"ר`
                               : ''}
                           </div>
                         </div>
-                        <div className="bg-gradient-to-br from-orange-50 to-red-100 p-3 rounded-lg border border-orange-200">
-                          <div className="text-xl font-bold text-orange-800">
+                        <div className="bg-gradient-to-br from-orange-50 to-red-100 p-2 sm:p-3 rounded-lg border border-orange-200">
+                          <div className="text-base sm:text-lg md:text-xl font-bold text-orange-800">
                             ₪{formatPrice(tilingCategorySummary.totalContractorCost || 0)}
                           </div>
-                          <div className="text-sm text-orange-600 font-medium">עלות קבלן</div>
-                          <div className="text-xs text-orange-500">
+                          <div className="text-xs sm:text-sm text-orange-600 font-medium">
+                            <span className="hidden sm:inline">עלות קבלן</span>
+                            <span className="sm:hidden">עלות</span>
+                          </div>
+                          <div className="text-[10px] sm:text-xs text-orange-500">
                             {tilingCategorySummary.totalArea > 0
                               ? `₪${formatPrice(tilingCategorySummary.totalContractorCost / tilingCategorySummary.totalArea)} למ"ר`
                               : ''}
                           </div>
                         </div>
-                        <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg border border-green-200">
-                          <div className="text-xl font-bold text-green-800">
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 p-2 sm:p-3 rounded-lg border border-green-200">
+                          <div className="text-base sm:text-lg md:text-xl font-bold text-green-800">
                             ₪{formatPrice(tilingCategorySummary.totalProfit || 0)}
                           </div>
-                          <div className="text-sm text-green-600 font-medium">רווח</div>
-                          <div className="text-xs text-green-500">
+                          <div className="text-xs sm:text-sm text-green-600 font-medium">רווח</div>
+                          <div className="text-[10px] sm:text-xs text-green-500">
                             {tilingCategorySummary.totalContractorCost > 0
                               ? `${((tilingCategorySummary.totalProfit / tilingCategorySummary.totalContractorCost) * 100).toFixed(1)}%`
                               : '0%'}
@@ -4551,28 +4586,40 @@ const ItemSelector = React.forwardRef(({
                       </div>
 
                       <div className="border-t pt-3">
-                        <h4 className="font-semibold text-gray-700 mb-3 text-center">פירוט עלויות כללי:</h4>
+                        <h4 className="text-sm sm:text-base font-semibold text-gray-700 mb-2 sm:mb-3 text-center">
+                          <span className="hidden sm:inline">פירוט עלויות כללי:</span>
+                          <span className="sm:hidden">פירוט:</span>
+                        </h4>
                         <div className="grid grid-cols-3 gap-2 text-center">
                           <div className="bg-gray-100 p-2 rounded-lg">
-                            <div className="text-base font-bold text-gray-800">
+                            <div className="text-sm sm:text-base font-bold text-gray-800">
                               ₪{formatPrice(tilingCategorySummary.totalMaterialCost || 0)}
                             </div>
-                            <div className="text-xs text-gray-500">עלות חומרים</div>
+                            <div className="text-[10px] sm:text-xs text-gray-500">
+                              <span className="hidden sm:inline">עלות חומרים</span>
+                              <span className="sm:hidden">חומרים</span>
+                            </div>
                           </div>
                           <div className="bg-gray-100 p-2 rounded-lg">
-                            <div className="text-base font-bold text-gray-800">
+                            <div className="text-sm sm:text-base font-bold text-gray-800">
                               ₪{formatPrice(tilingCategorySummary.totalLaborCost || 0)}
                             </div>
-                            <div className="text-xs text-gray-500">עלויות עובדים</div>
+                            <div className="text-[10px] sm:text-xs text-gray-500">
+                              <span className="hidden sm:inline">עלויות עובדים</span>
+                              <span className="sm:hidden">עובדים</span>
+                            </div>
                           </div>
                           <div className="bg-gray-100 p-2 rounded-lg">
-                            <div className="text-base font-bold text-gray-800">
+                            <div className="text-sm sm:text-base font-bold text-gray-800">
                               {tilingPreciseWorkDays
                                 ? (tilingCategorySummary.unroundedWorkDays || 0).toFixed(1)
                                 : Math.ceil(tilingCategorySummary.unroundedWorkDays || 0).toFixed(0)
                               }
                             </div>
-                            <div className="text-xs text-gray-500">ימי עבודה</div>
+                            <div className="text-[10px] sm:text-xs text-gray-500">
+                              <span className="hidden sm:inline">ימי עבודה</span>
+                              <span className="sm:hidden">ימים</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -4586,7 +4633,10 @@ const ItemSelector = React.forwardRef(({
                             onChange={(e) => setTilingPreciseWorkDays(e.target.checked)}
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-700 group-hover:text-gray-900">ימי עבודה מדויקים</span>
+                          <span className="text-xs sm:text-sm text-gray-700 group-hover:text-gray-900">
+                            <span className="hidden sm:inline">ימי עבודה מדויקים</span>
+                            <span className="sm:hidden">ימים מדויקים</span>
+                          </span>
                         </label>
                       </div>
 
@@ -4719,23 +4769,27 @@ const ItemSelector = React.forwardRef(({
           )}
         </CardContent>
 
-        <CardFooter className="flex justify-between border-t p-4 bg-gray-50/50">
-          <Button variant="outline" onClick={handleBack} disabled={!canGoBack} className="text-base px-6 py-2.5">
-            <ArrowRight className="ml-2 h-4 w-4" />
-            הקודם
-          </Button>
-          <div className="flex items-center gap-3">
-            {nextCategory ? (
-              <Button onClick={handleNextCategory} className={cn("text-base px-6 py-2.5", categoryColors.active)}>
-                הבא: {nextCategory.name}
-                <ArrowLeft className="mr-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button onClick={handleSaveAndProceed} className={`text-base px-6 py-2.5 bg-green-600 hover:bg-green-700`}>
-                <Save className="ml-2 h-4 w-4" />
-                שמור והמשך לעלויות נוספות
-              </Button>
-            )}
+        <CardFooter className="border-t p-3 sm:p-4 bg-gray-50/50">
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-3 w-full">
+            <Button variant="outline" onClick={handleBack} disabled={!canGoBack} className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto">
+              <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+              הקודם
+            </Button>
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              {nextCategory ? (
+                <Button onClick={handleNextCategory} className={cn("text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto", categoryColors.active)}>
+                  <span className="hidden md:inline">הבא: {nextCategory.name}</span>
+                  <span className="md:hidden">{nextCategory.name}</span>
+                  <ArrowLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                </Button>
+              ) : (
+                <Button onClick={handleSaveAndProceed} className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 bg-green-600 hover:bg-green-700 w-full sm:w-auto">
+                  <Save className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden md:inline">שמור והמשך לעלויות נוספות</span>
+                  <span className="md:hidden">עלויות נוספות</span>
+                </Button>
+              )}
+            </div>
           </div>
         </CardFooter>
       </Card>

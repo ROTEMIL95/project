@@ -520,16 +520,17 @@ export default function ConstructionCategory({
   return (
     <>
       <Card className={`shadow-lg border ${theme.border} ${theme.bg}`} dir="rtl">
-          <CardHeader className="bg-gray-50/60 border-b space-y-4">
+          <CardHeader className="bg-gray-50/60 border-b space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-purple-500 text-white">
-                  <Hammer className="w-5 h-5" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-purple-500 text-white">
+                  <Hammer className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl font-semibold text-gray-800">בינוי</CardTitle>
-                  <CardDescription className="text-gray-600">
-                    הוסף פריטים וקבע לוח זמנים לקטגוריה.
+                  <CardTitle className="text-base sm:text-lg md:text-xl font-semibold text-gray-800">בינוי</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm text-gray-600">
+                    <span className="hidden sm:inline">הוסף פריטים וקבע לוח זמנים לקטגוריה.</span>
+                    <span className="sm:hidden">הוסף פריטי בינוי מהמחירון.</span>
                   </CardDescription>
                 </div>
               </div>
@@ -998,30 +999,48 @@ export default function ConstructionCategory({
                   סיכום
                 </span>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 text-center">
-                  <div className="text-[11px] text-orange-800">עלות חומרים</div>
-                  <div className="text-xl font-bold text-orange-700">{formatPrice(summary.material)} ₪</div>
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-2 sm:gap-3">
+                <div className="bg-orange-50 border border-orange-100 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-[10px] sm:text-[11px] text-orange-800">
+                    <span className="hidden sm:inline">עלות חומרים</span>
+                    <span className="sm:hidden">חומרים</span>
+                  </div>
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-orange-700">{formatPrice(summary.material)} ₪</div>
                 </div>
-                <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 text-center">
-                  <div className="text-[11px] text-amber-800">עלות עבודה</div>
-                  <div className="text-xl font-bold text-amber-700">{formatPrice(summary.labor)} ₪</div>
+                <div className="bg-amber-50 border border-amber-100 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-[10px] sm:text-[11px] text-amber-800">
+                    <span className="hidden sm:inline">עלות עבודה</span>
+                    <span className="sm:hidden">עבודה</span>
+                  </div>
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-amber-700">{formatPrice(summary.labor)} ₪</div>
                 </div>
-                <div className="bg-red-50 border border-red-100 rounded-lg p-3 text-center">
-                  <div className="text-[11px] text-red-800">עלות קבלן (סה״כ)</div>
-                  <div className="text-xl font-bold text-red-700">{formatPrice(summary.cost)} ₪</div>
+                <div className="bg-red-50 border border-red-100 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-[10px] sm:text-[11px] text-red-800">
+                    <span className="hidden sm:inline">עלות קבלן (סה״כ)</span>
+                    <span className="sm:hidden">עלות</span>
+                  </div>
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-red-700">{formatPrice(summary.cost)} ₪</div>
                 </div>
-                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 text-center">
-                  <div className="text-[11px] text-indigo-800">מחיר ללקוח (סה״כ)</div>
-                  <div className="text-xl font-bold text-indigo-700">{formatPrice(summary.price)} ₪</div>
+                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-[10px] sm:text-[11px] text-indigo-800">
+                    <span className="hidden sm:inline">מחיר ללקוח (סה״כ)</span>
+                    <span className="sm:hidden">מחיר</span>
+                  </div>
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-indigo-700">{formatPrice(summary.price)} ₪</div>
                 </div>
-                <div className="bg-green-50 border border-green-100 rounded-lg p-3 text-center">
-                  <div className="text-[11px] text-green-800">רווח קבלן (סה״כ)</div>
-                  <div className="text-xl font-bold text-green-900 text-lg">{formatPrice(summary.profit)} ₪</div>
+                <div className="bg-green-50 border border-green-100 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-[10px] sm:text-[11px] text-green-800">
+                    <span className="hidden sm:inline">רווח קבלן (סה״כ)</span>
+                    <span className="sm:hidden">רווח</span>
+                  </div>
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-green-900">{formatPrice(summary.profit)} ₪</div>
                 </div>
-                <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 text-center">
-                  <div className="text-[11px] text-purple-800">ימי עבודה (סה״כ)</div>
-                  <div className="text-xl font-bold text-purple-700">
+                <div className="bg-purple-50 border border-purple-100 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-[10px] sm:text-[11px] text-purple-800">
+                    <span className="hidden sm:inline">ימי עבודה (סה״כ)</span>
+                    <span className="sm:hidden">ימים</span>
+                  </div>
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-purple-700">
                     {preciseWorkDays
                       ? summary.unroundedDays.toFixed(1)
                       : Math.ceil(summary.unroundedDays).toFixed(0)
@@ -1043,49 +1062,62 @@ export default function ConstructionCategory({
             </div>
           </CardContent>
 
-        <CardFooter className="flex justify-between border-t p-4 bg-gray-50/30">
-          <div className="flex items-center gap-3">
+        <CardFooter className="border-t p-3 sm:p-4 bg-gray-50/30">
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-3 w-full">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const currentIndex = categoriesNav.findIndex(c => c.id === currentCategoryId);
+                  if (currentIndex > 0) {
+                    onSelectCategory(categoriesNav[currentIndex - 1].id);
+                  }
+                }}
+                disabled={categoriesNav.findIndex(c => c.id === currentCategoryId) === 0}
+                className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto"
+              >
+                <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                הקודם
+              </Button>
+              <Badge variant="outline" className="bg-white text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1.5 justify-center">
+                {selectedItems.filter(it => it.categoryId === categoryId).length} פריטים בעגלה
+              </Badge>
+            </div>
+
             <Button
-              variant="outline"
               onClick={() => {
                 const currentIndex = categoriesNav.findIndex(c => c.id === currentCategoryId);
-                if (currentIndex > 0) {
-                  onSelectCategory(categoriesNav[currentIndex - 1].id);
+                if (currentIndex < categoriesNav.length - 1) {
+                  onSelectCategory(categoriesNav[currentIndex + 1].id);
+                } else {
+                  // זו הקטגוריה האחרונה - מעבר לעלויות נוספות
+                  if (onProceed) onProceed();
                 }
               }}
-              disabled={categoriesNav.findIndex(c => c.id === currentCategoryId) === 0}
-              className="text-base px-6 py-2.5"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto"
             >
-              <ArrowRight className="ml-2 h-4 w-4" />
-              הקודם
+              {(() => {
+                const currentIndex = categoriesNav.findIndex(c => c.id === currentCategoryId);
+                if (currentIndex < categoriesNav.length - 1) {
+                  const nextName = categoriesNav[currentIndex + 1].name;
+                  return (
+                    <>
+                      <span className="hidden md:inline">הבא: {nextName}</span>
+                      <span className="md:hidden">{nextName}</span>
+                    </>
+                  );
+                } else {
+                  return (
+                    <>
+                      <span className="hidden md:inline">הבא: עלויות נוספות</span>
+                      <span className="md:hidden">עלויות נוספות</span>
+                    </>
+                  );
+                }
+              })()}
+              <ArrowLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
-            <Badge variant="outline" className="bg-white">
-              {selectedItems.filter(it => it.categoryId === categoryId).length} פריטים בעגלה
-            </Badge>
           </div>
-
-          <Button 
-            onClick={() => {
-              const currentIndex = categoriesNav.findIndex(c => c.id === currentCategoryId);
-              if (currentIndex < categoriesNav.length - 1) {
-                onSelectCategory(categoriesNav[currentIndex + 1].id);
-              } else {
-                // זו הקטגוריה האחרונה - מעבר לעלויות נוספות
-                if (onProceed) onProceed();
-              }
-            }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
-          >
-            {(() => {
-              const currentIndex = categoriesNav.findIndex(c => c.id === currentCategoryId);
-              if (currentIndex < categoriesNav.length - 1) {
-                return `הבא: ${categoriesNav[currentIndex + 1].name}`;
-              } else {
-                return 'הבא: עלויות נוספות';
-              }
-            })()}
-            <ArrowLeft className="mr-2 h-4 w-4" />
-          </Button>
         </CardFooter>
         </Card>
 

@@ -311,16 +311,17 @@ export default function DemolitionCategory({
   return (
     <> {/* Wrap in a Fragment to allow multiple top-level elements */}
       <Card className={`shadow-lg border ${theme.border} ${theme.bg}`} dir="rtl">
-        <CardHeader className="bg-gray-50/60 border-b space-y-4">
+        <CardHeader className="bg-gray-50/60 border-b space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6">
           {/* Header */}
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-rose-100 rounded-lg">
-              <Trash2 className="w-5 h-5 text-rose-700" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-rose-100 rounded-lg">
+              <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-rose-700" />
             </div>
             <div>
-              <CardTitle className="text-xl font-semibold text-gray-800">הריסה ופינוי</CardTitle>
-              <CardDescription className="text-gray-600">
-                בחר תאריכים לקטגוריה, סנן לפי תת־קטגוריה, הוסף פריטים מנוהלים מהמחירון שלך.
+              <CardTitle className="text-base sm:text-lg md:text-xl font-semibold text-gray-800">הריסה ופינוי</CardTitle>
+              <CardDescription className="text-xs sm:text-sm text-gray-600">
+                <span className="hidden sm:inline">בחר תאריכים לקטגוריה, סנן לפי תת־קטגוריה, הוסף פריטים מנוהלים מהמחירון שלך.</span>
+                <span className="sm:hidden">הוסף פריטי הריסה מהמחירון.</span>
               </CardDescription>
             </div>
           </div>
@@ -564,22 +565,34 @@ export default function DemolitionCategory({
               </span>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              <div className="bg-red-50 border border-red-100 rounded-lg p-3 text-center">
-                <div className="text-[11px] text-red-800">עלות קבלן (סה״כ)</div>
-                <div className="text-xl font-bold text-red-700">{formatNis(summary.cost)}</div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3">
+              <div className="bg-red-50 border border-red-100 rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-[10px] sm:text-[11px] text-red-800">
+                  <span className="hidden sm:inline">עלות קבלן (סה״כ)</span>
+                  <span className="sm:hidden">עלות</span>
+                </div>
+                <div className="text-base sm:text-lg md:text-xl font-bold text-red-700">{formatNis(summary.cost)}</div>
               </div>
-              <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-center">
-                <div className="text-[11px] text-blue-800">מחיר ללקוח (סה״כ)</div>
-                <div className="text-xl font-bold text-blue-700">{formatNis(summary.price)}</div>
+              <div className="bg-blue-50 border border-blue-100 rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-[10px] sm:text-[11px] text-blue-800">
+                  <span className="hidden sm:inline">מחיר ללקוח (סה״כ)</span>
+                  <span className="sm:hidden">מחיר</span>
+                </div>
+                <div className="text-base sm:text-lg md:text-xl font-bold text-blue-700">{formatNis(summary.price)}</div>
               </div>
-              <div className="bg-green-50 border border-green-100 rounded-lg p-3 text-center">
-                <div className="text-[11px] text-green-800">רווח (סה״כ)</div>
-                <div className="text-xl font-bold text-green-700">{formatNis(summary.profit)}</div>
+              <div className="bg-green-50 border border-green-100 rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-[10px] sm:text-[11px] text-green-800">
+                  <span className="hidden sm:inline">רווח (סה״כ)</span>
+                  <span className="sm:hidden">רווח</span>
+                </div>
+                <div className="text-base sm:text-lg md:text-xl font-bold text-green-700">{formatNis(summary.profit)}</div>
               </div>
-              <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 text-center">
-                <div className="text-[11px] text-purple-800">ימי עבודה</div>
-                <div className="text-xl font-bold text-purple-700">{exactWorkDays.toFixed(1)}</div>
+              <div className="bg-purple-50 border border-purple-100 rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-[10px] sm:text-[11px] text-purple-800">
+                  <span className="hidden sm:inline">ימי עבודה</span>
+                  <span className="sm:hidden">ימים</span>
+                </div>
+                <div className="text-base sm:text-lg md:text-xl font-bold text-purple-700">{exactWorkDays.toFixed(1)}</div>
                 {!hasRoundingApplied && roundingDifference > 0.01 && exactWorkDays > 0 && (
                   <div className="text-[9px] text-purple-600 mt-0.5">
                     מעוגל: {roundedWorkDays} ימים
@@ -591,9 +604,12 @@ export default function DemolitionCategory({
                   </div>
                 )}
               </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
-                <div className="text-[11px] text-gray-700">סה״כ פריטים</div>
-                <div className="text-xl font-bold text-gray-800">{itemsCount}</div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-[10px] sm:text-[11px] text-gray-700">
+                  <span className="hidden sm:inline">סה״כ פריטים</span>
+                  <span className="sm:hidden">פריטים</span>
+                </div>
+                <div className="text-base sm:text-lg md:text-xl font-bold text-gray-800">{itemsCount}</div>
               </div>
             </div>
 
@@ -633,8 +649,8 @@ export default function DemolitionCategory({
 
         {/* Footer with Navigation Buttons */}
         {categoriesNav && categoriesNav.length > 0 && (
-          <div className="border-t p-4 bg-gray-50/50">
-            <div className="flex justify-between items-center">
+          <div className="border-t p-3 sm:p-4 bg-gray-50/50">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-3">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -643,9 +659,9 @@ export default function DemolitionCategory({
                   }
                 }}
                 disabled={isFirstCategory}
-                className="text-base px-6 py-2.5"
+                className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 w-full sm:w-auto"
               >
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                 הקודם
               </Button>
               <Button
@@ -657,16 +673,27 @@ export default function DemolitionCategory({
                     if (onProceed) onProceed();
                   }
                 }}
-                className="text-base px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700"
+                className="text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto"
               >
-                {(() => {
-                  if (currentIndex < categoriesNav.length - 1) {
-                    return `הבא: ${categoriesNav[currentIndex + 1].name}`;
-                  } else {
-                    return 'הבא: עלויות נוספות';
-                  }
-                })()}
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <span className="hidden md:inline">
+                  {(() => {
+                    if (currentIndex < categoriesNav.length - 1) {
+                      return `הבא: ${categoriesNav[currentIndex + 1].name}`;
+                    } else {
+                      return 'הבא: עלויות נוספות';
+                    }
+                  })()}
+                </span>
+                <span className="md:hidden">
+                  {(() => {
+                    if (currentIndex < categoriesNav.length - 1) {
+                      return categoriesNav[currentIndex + 1].name;
+                    } else {
+                      return 'עלויות נוספות';
+                    }
+                  })()}
+                </span>
+                <ArrowLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>
