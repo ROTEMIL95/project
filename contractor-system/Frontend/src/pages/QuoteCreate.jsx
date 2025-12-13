@@ -2607,15 +2607,15 @@ export default function QuoteCreate() {
       <ManualCalcInjector containerSelector="#quote-create-root" />
       <ManualCalcDialog />
 
-      <div className="fixed top-16 left-0 right-0 h-72 bg-gray-50 z-30"></div>
+      <div className="fixed top-16 left-0 right-0 h-48 sm:h-72 bg-gray-50 z-30"></div>
 
-      <div className="fixed top-28 left-4 right-4 z-40">
+      <div className="fixed top-16 sm:top-28 left-4 right-4 z-40">
         <div className="container mx-auto max-w-7xl">
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-2xl rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 border border-gray-700">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-2xl rounded-lg sm:rounded-2xl p-2 sm:p-4 md:p-6 border border-gray-700">
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-bold tracking-tight">
               {existingQuoteId ? 'עריכת הצעת מחיר' : 'יצירת הצעת מחיר חדשה'} {/* Renamed from editingQuoteId */}
             </h1>
-            <p className="text-gray-300 text-sm sm:text-base md:text-lg mt-1 sm:mt-2">
+            <p className="text-gray-300 text-xs sm:text-base md:text-lg mt-0.5 sm:mt-2">
               {existingQuoteId
                 ? 'עדכן את פרטי ההצעה הקיימת לפי הצורך.'
                 : <>
@@ -2628,7 +2628,7 @@ export default function QuoteCreate() {
         </div>
       </div>
 
-      <div className="fixed left-4 right-4 z-40" style={{ top: '270px' }}>
+      <div className="fixed left-4 right-4 z-40 top-[135px] sm:top-[270px]">
         <div className="container mx-auto max-w-7xl">
           <div className="p-1 bg-gray-100 rounded-xl flex items-center justify-between gap-1 shadow-inner">
             {steps.map(({ step, title }) => {
@@ -2711,11 +2711,11 @@ export default function QuoteCreate() {
         </div>
       </div>
 
-      <div className="container mx-auto p-4 md:p-8 max-w-7xl relative pb-24" style={{ marginTop: '315px' }}>
+      <div className="container mx-auto p-4 md:p-8 max-w-7xl relative pb-24 mt-[195px] sm:mt-[315px]">
         <div className="h-1 md:h-2"></div>
 
         {currentStep === 2 && selectedCategories.length > 0 && (
-          <div className="sticky top-[315px] z-30 bg-white/95 backdrop-blur-sm shadow-md rounded-xl border border-gray-200 p-4 mb-6">
+          <div className="sticky top-[195px] sm:top-[315px] z-30 bg-white/95 backdrop-blur-sm shadow-md rounded-xl border border-gray-200 p-4 mb-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">קטגוריות שנבחרו:</span>
               <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
