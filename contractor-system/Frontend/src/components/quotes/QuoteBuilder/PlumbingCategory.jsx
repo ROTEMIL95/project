@@ -372,9 +372,9 @@ export default function PlumbingCategory({
     const unitPrice = Number(payload.clientPricePerUnit || 0);
     const contractorUnit = Number(payload.contractorCostPerUnit || 0);
 
-    // UPDATED: סכומים ללא תלות בכמות כשהדיאלוג שולח ignoreQuantity=true
-    const totalPrice = payload.ignoreQuantity ? unitPrice : Math.round(unitPrice * qty);
-    const totalCost = payload.ignoreQuantity ? contractorUnit : Math.round(contractorUnit * qty);
+    // Calculate totals by multiplying unit prices by quantity
+    const totalPrice = Math.round(unitPrice * qty);
+    const totalCost = Math.round(contractorUnit * qty);
     const profit = totalPrice - totalCost;
 
     const newItem = {
@@ -392,7 +392,6 @@ export default function PlumbingCategory({
       profit,
       profitPercent: Number(payload.desiredProfitPercent || 0),
       source: "plumbing_subcontractor",
-      ignoreQuantity: true, // Items from dialog always ignore quantity for their total price
     };
 
     if (onAddItemToQuote) onAddItemToQuote(newItem);
