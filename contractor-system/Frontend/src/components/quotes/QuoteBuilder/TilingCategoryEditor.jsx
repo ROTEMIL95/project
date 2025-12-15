@@ -121,7 +121,7 @@ const calculateTilingMetrics = (item, tilingItemData, userDefaults) => {
   const wastageMultiplier = 1 + wastagePercent / 100;
 
   const costOfTilesWithWastage = materialCostPerMeter * quantity * wastageMultiplier;
-  const costOfBlackMaterial = additionalMaterialCostPerMeter * (quantity + panelQuantity); // ✅ FIX: Include panelQuantity - black material needed for both tiling and parquet
+  const costOfBlackMaterial = additionalMaterialCostPerMeter * quantity; // ✅ FIX: Black material only for regular tiling, NOT for panels (panels have their own calculation)
   const totalMaterialCost = Math.round(costOfTilesWithWastage + costOfBlackMaterial);
 
 
