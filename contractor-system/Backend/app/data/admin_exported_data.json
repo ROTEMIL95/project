@@ -1,0 +1,1862 @@
+{
+  "plumbing_subcontractor_items": [
+    {
+      "id": "pl_default_1",
+      "name": "נקודת מים למטבח",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "הכנה וחיבור נקודת מים קרים/חמים",
+      "subCategory": "infrastructure",
+      "clientPricePerUnit": 126,
+      "contractorCostPerUnit": 90
+    },
+    {
+      "id": "pl_default_2",
+      "name": "נקודת מים לאמבטיה",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "הכנה וחיבור נקודת ממים קרים/חמים לחדר רחצה",
+      "subCategory": "infrastructure",
+      "clientPricePerUnit": 126,
+      "contractorCostPerUnit": 90
+    },
+    {
+      "id": "pl_default_3",
+      "name": "נקודת ביוב 2״",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "הכנת נקודת ביוב לציוד סניטרי (2 אינץ')",
+      "subCategory": "infrastructure",
+      "clientPricePerUnit": 154,
+      "contractorCostPerUnit": 110
+    },
+    {
+      "id": "pl_default_4",
+      "name": "בניית קו מים PEX 16",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "description": "הנחת צנרת מים ראשית PEX בקוטר 16 מ\"מ",
+      "subCategory": "infrastructure",
+      "clientPricePerUnit": 49,
+      "contractorCostPerUnit": 35
+    },
+    {
+      "id": "pl_default_5",
+      "name": "בניית קו ביוב 4״",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "description": "הנחת צנרת ביוב בקוטר 4 אינץ'",
+      "subCategory": "infrastructure",
+      "clientPricePerUnit": 84,
+      "contractorCostPerUnit": 60
+    },
+    {
+      "id": "pl_default_6",
+      "name": "תשתית ניקוז למזגן",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "הכנת צנרת ניקוז למזגן חלון/מיני מרכזי",
+      "subCategory": "infrastructure",
+      "clientPricePerUnit": 168,
+      "contractorCostPerUnit": 120
+    },
+    {
+      "id": "pl_san_1",
+      "name": "התקנת אסלה תלויה",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "כולל חיבור לאסלה ומיכל הדחה",
+      "subCategory": "sanitary",
+      "clientPricePerUnit": 490,
+      "contractorCostPerUnit": 350
+    },
+    {
+      "id": "pl_san_2",
+      "name": "התקנת כיור אמבטיה",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "כולל חיבור סיפון וברז",
+      "subCategory": "sanitary",
+      "clientPricePerUnit": 392,
+      "contractorCostPerUnit": 280
+    },
+    {
+      "id": "pl_san_3",
+      "name": "התקנת אינטרפוץ",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "כולל איזון וחיבורי מים",
+      "subCategory": "sanitary",
+      "clientPricePerUnit": 448,
+      "contractorCostPerUnit": 320
+    },
+    {
+      "id": "pl_con_1",
+      "name": "חיבור מכונת כביסה",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "כולל בדיקת איטום ונזילות",
+      "subCategory": "connections",
+      "clientPricePerUnit": 252,
+      "contractorCostPerUnit": 180
+    },
+    {
+      "id": "pl_con_2",
+      "name": "חיבור מדיח כלים",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "כולל חיבור למים וניקוז",
+      "subCategory": "connections",
+      "clientPricePerUnit": 280,
+      "contractorCostPerUnit": 200
+    },
+    {
+      "id": "pl_con_3",
+      "name": "נקודת מים למקרר",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "כולל ברז ניל וחיבור מהקו הקרוב",
+      "subCategory": "connections",
+      "clientPricePerUnit": 308,
+      "contractorCostPerUnit": 220
+    },
+    {
+      "id": "pl_rep_1",
+      "name": "איתור נזילה",
+      "unit": "שירות",
+      "isActive": true,
+      "description": "כולל בדיקה וזיהוי מקור הנזילה",
+      "subCategory": "repairs",
+      "clientPricePerUnit": 350,
+      "contractorCostPerUnit": 250
+    },
+    {
+      "id": "pl_rep_2",
+      "name": "שחרור סתימה מקומית",
+      "unit": "שירות",
+      "isActive": true,
+      "description": "באמצעים ידניים/מכניים קלים",
+      "subCategory": "repairs",
+      "clientPricePerUnit": 308,
+      "contractorCostPerUnit": 220
+    },
+    {
+      "id": "pl_rep_3",
+      "name": "החלפת סיפון",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "כולל הסיפון והתקנה",
+      "subCategory": "repairs",
+      "clientPricePerUnit": 196,
+      "contractorCostPerUnit": 140
+    },
+    {
+      "id": "pl_wat_1",
+      "name": "איטום נקודתי בצנרת",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "תיקון איטום מקומי במעבר צנרת",
+      "subCategory": "waterproofing",
+      "clientPricePerUnit": 364,
+      "contractorCostPerUnit": 260
+    },
+    {
+      "id": "pl_wat_2",
+      "name": "איטום רצפת חדר רחצה",
+      "unit": "קומפלט",
+      "isActive": true,
+      "description": "עד 4 מ\"ר, כולל חומרי איטום",
+      "subCategory": "waterproofing",
+      "clientPricePerUnit": 1190,
+      "contractorCostPerUnit": 850
+    },
+    {
+      "id": "pl_wat_3",
+      "name": "הכנת תשתית ניקוז מיוחד",
+      "unit": "שירות",
+      "isActive": true,
+      "description": "פתרונות מיוחדים לאזורים בעייתיים",
+      "subCategory": "waterproofing",
+      "clientPricePerUnit": 560,
+      "contractorCostPerUnit": 400
+    }
+  ],
+  "plumbing_defaults": {
+    "expenseTiming": {
+      "payment": {
+        "type": "category_start"
+      }
+    },
+    "desiredProfitPercent": 30
+  },
+  "electrical_subcontractor_items": [
+    {
+      "id": "el_pt_1",
+      "name": "נקודת חשמל רגילה",
+      "unit": "נקודה",
+      "isActive": true,
+      "description": "כולל קופסה ומפסק/שקע רגיל",
+      "subCategory": "points",
+      "clientPricePerUnit": 168,
+      "contractorCostPerUnit": 120
+    },
+    {
+      "id": "el_pt_2",
+      "name": "נקודת שקע כוח",
+      "unit": "נקודה",
+      "isActive": true,
+      "description": "שקע כוח 16A",
+      "subCategory": "points",
+      "clientPricePerUnit": 252,
+      "contractorCostPerUnit": 180
+    },
+    {
+      "id": "el_pt_3",
+      "name": "שקע יחיד",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 490,
+      "contractorCostPerUnit": 350
+    },
+    {
+      "id": "el_pt_4",
+      "name": "שקע כפול",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 630,
+      "contractorCostPerUnit": 450
+    },
+    {
+      "id": "el_pt_5",
+      "name": "שקע משולש",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 770,
+      "contractorCostPerUnit": 550
+    },
+    {
+      "id": "el_pt_6",
+      "name": "שקע יחיד כוח",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 770,
+      "contractorCostPerUnit": 550
+    },
+    {
+      "id": "el_pt_7",
+      "name": "שקע כפול כוח",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 910,
+      "contractorCostPerUnit": 650
+    },
+    {
+      "id": "el_pt_8",
+      "name": "שקע משולש כוח",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 1050,
+      "contractorCostPerUnit": 750
+    },
+    {
+      "id": "el_pt_9",
+      "name": "שקע יחיד כוח למזגן 1×16A",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 770,
+      "contractorCostPerUnit": 550
+    },
+    {
+      "id": "el_pt_10",
+      "name": "תוספת מוגן מים",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "תוספת לשקע/נקודה בסביבה רטובה",
+      "subCategory": "points",
+      "clientPricePerUnit": 168,
+      "contractorCostPerUnit": 120
+    },
+    {
+      "id": "el_pt_11",
+      "name": "שקע תלת פאזי 3×16A",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 1820,
+      "contractorCostPerUnit": 1300
+    },
+    {
+      "id": "el_pt_12",
+      "name": "שקע יחיד ממותג",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 770,
+      "contractorCostPerUnit": 550
+    },
+    {
+      "id": "el_pt_13",
+      "name": "צינור 25 מ״מ + חוט משיכה",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 490,
+      "contractorCostPerUnit": 350
+    },
+    {
+      "id": "el_pt_14",
+      "name": "נק למסך חשמלי (שקע יחיד)",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 770,
+      "contractorCostPerUnit": 550
+    },
+    {
+      "id": "el_pt_15",
+      "name": "נק לתנור אמבטיה",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 910,
+      "contractorCostPerUnit": 650
+    },
+    {
+      "id": "el_pt_16",
+      "name": "נק לונטה",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 630,
+      "contractorCostPerUnit": 450
+    },
+    {
+      "id": "el_pt_17",
+      "name": "נק לדוד חשמלי (עד 15 מ׳)",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "points",
+      "clientPricePerUnit": 1050,
+      "contractorCostPerUnit": 750
+    },
+    {
+      "id": "el_lgt_1",
+      "name": "התקנת גוף תאורה",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "התקנה וחיבור",
+      "subCategory": "lighting",
+      "clientPricePerUnit": 210,
+      "contractorCostPerUnit": 150
+    },
+    {
+      "id": "el_lgt_2",
+      "name": "התקנת ספוט",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "כולל חיבור",
+      "subCategory": "lighting",
+      "clientPricePerUnit": 126,
+      "contractorCostPerUnit": 90
+    },
+    {
+      "id": "el_lgt_3",
+      "name": "נק מאור",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "lighting",
+      "clientPricePerUnit": 532,
+      "contractorCostPerUnit": 380
+    },
+    {
+      "id": "el_lgt_4",
+      "name": "נק מאור חרום",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "lighting",
+      "clientPricePerUnit": 490,
+      "contractorCostPerUnit": 350
+    },
+    {
+      "id": "el_lgt_5",
+      "name": "מפסק מחלף",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "lighting",
+      "clientPricePerUnit": 490,
+      "contractorCostPerUnit": 350
+    },
+    {
+      "id": "el_lgt_6",
+      "name": "מפסק צלב",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "lighting",
+      "clientPricePerUnit": 630,
+      "contractorCostPerUnit": 450
+    },
+    {
+      "id": "el_lgt_7",
+      "name": "התקנת גוף קיר",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "lighting",
+      "clientPricePerUnit": 168,
+      "contractorCostPerUnit": 120
+    },
+    {
+      "id": "el_lgt_8",
+      "name": "התקנת גוף תקרה",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "lighting",
+      "clientPricePerUnit": 168,
+      "contractorCostPerUnit": 120
+    },
+    {
+      "id": "el_lgt_9",
+      "name": "התקנת פס תאורה",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "description": "לפי מטר רץ",
+      "subCategory": "lighting",
+      "clientPricePerUnit": 182,
+      "contractorCostPerUnit": 130
+    },
+    {
+      "id": "el_lgt_10",
+      "name": "התקנת מאוורר תקרה",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "lighting",
+      "clientPricePerUnit": 560,
+      "contractorCostPerUnit": 400
+    },
+    {
+      "id": "el_lgt_11",
+      "name": "התקנת גוף תלוי",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "lighting",
+      "clientPricePerUnit": 210,
+      "contractorCostPerUnit": 150
+    },
+    {
+      "id": "el_pnl_1",
+      "name": "שדרוג לוח חשמל",
+      "unit": "קומפלט",
+      "isActive": true,
+      "description": "החלפה/שדרוג לוח קיים",
+      "subCategory": "panels",
+      "clientPricePerUnit": 2100,
+      "contractorCostPerUnit": 1500
+    },
+    {
+      "id": "el_pnl_2",
+      "name": "לוח חשמל תלת פאזי עד 48 מקום",
+      "unit": "קומפלט",
+      "isActive": true,
+      "subCategory": "panels",
+      "clientPricePerUnit": 8400,
+      "contractorCostPerUnit": 6000
+    },
+    {
+      "id": "el_pnl_3",
+      "name": "הזנה ללוח חשמל עד 10 מ׳",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "subCategory": "panels",
+      "clientPricePerUnit": 2520,
+      "contractorCostPerUnit": 1800
+    },
+    {
+      "id": "el_com_1",
+      "name": "נקודת תקשורת RJ45",
+      "unit": "נקודה",
+      "isActive": true,
+      "description": "כולל גמר ושקעים",
+      "subCategory": "communications",
+      "clientPricePerUnit": 182,
+      "contractorCostPerUnit": 130
+    },
+    {
+      "id": "el_com_2",
+      "name": "נק לגלאי אש (לא כולל הגלאי)",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "communications",
+      "clientPricePerUnit": 490,
+      "contractorCostPerUnit": 350
+    },
+    {
+      "id": "el_com_3",
+      "name": "נק תקשורת (3 מקום + צינור 25 מ״מ + חוט משיכה ללוח)",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "communications",
+      "clientPricePerUnit": 770,
+      "contractorCostPerUnit": 550
+    },
+    {
+      "id": "el_com_4",
+      "name": "נק לפעמון כניסה",
+      "unit": "נקודה",
+      "isActive": true,
+      "subCategory": "communications",
+      "clientPricePerUnit": 630,
+      "contractorCostPerUnit": 450
+    },
+    {
+      "id": "el_com_5",
+      "name": "התקנת פעמון (לא כולל הפעמון)",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "communications",
+      "clientPricePerUnit": 140,
+      "contractorCostPerUnit": 100
+    },
+    {
+      "id": "el_com_6",
+      "name": "לוח לריכוז תקשורת 24 מקום",
+      "unit": "קומפלט",
+      "isActive": true,
+      "subCategory": "communications",
+      "clientPricePerUnit": 1680,
+      "contractorCostPerUnit": 1200
+    },
+    {
+      "id": "el_rep_1",
+      "name": "איתור ותיקון קצר",
+      "unit": "שירות",
+      "isActive": true,
+      "description": "שעת עבודה לחשמלאי",
+      "subCategory": "repairs",
+      "clientPricePerUnit": 308,
+      "contractorCostPerUnit": 220
+    },
+    {
+      "id": "el_rep_2",
+      "name": "החלפת שקע קיים (כולל אביזר)",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "repairs",
+      "clientPricePerUnit": 196,
+      "contractorCostPerUnit": 140
+    },
+    {
+      "id": "el_rep_3",
+      "name": "החלפת מפסק קיים",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "repairs",
+      "clientPricePerUnit": 168,
+      "contractorCostPerUnit": 120
+    },
+    {
+      "id": "el_rep_4",
+      "name": "החלפת מא\"ז בלוח",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "repairs",
+      "clientPricePerUnit": 252,
+      "contractorCostPerUnit": 180
+    },
+    {
+      "id": "el_rep_5",
+      "name": "החלפת מפסק פחת (RCD)",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "repairs",
+      "clientPricePerUnit": 532,
+      "contractorCostPerUnit": 380
+    },
+    {
+      "id": "el_rep_6",
+      "name": "בדיקת הארקה ומדידה",
+      "unit": "שירות",
+      "isActive": true,
+      "subCategory": "repairs",
+      "clientPricePerUnit": 392,
+      "contractorCostPerUnit": 280
+    },
+    {
+      "id": "el_rep_7",
+      "name": "הידוק וחידוש חיבורים בלוח",
+      "unit": "שירות",
+      "isActive": true,
+      "subCategory": "repairs",
+      "clientPricePerUnit": 308,
+      "contractorCostPerUnit": 220
+    },
+    {
+      "id": "el_rep_8",
+      "name": "קריאת שירות (עד שעה)",
+      "unit": "שירות",
+      "isActive": true,
+      "subCategory": "repairs",
+      "clientPricePerUnit": 350,
+      "contractorCostPerUnit": 250
+    },
+    {
+      "id": "el_rep_9",
+      "name": "קריאת חירום (אחרי שעות)",
+      "unit": "שירות",
+      "isActive": true,
+      "subCategory": "repairs",
+      "clientPricePerUnit": 630,
+      "contractorCostPerUnit": 450
+    },
+    {
+      "id": "el_rep_10",
+      "name": "תיקון חיווט / החלפת קטע קו עד 5 מ׳",
+      "unit": "קומפלט",
+      "isActive": true,
+      "subCategory": "repairs",
+      "clientPricePerUnit": 420,
+      "contractorCostPerUnit": 300
+    },
+    {
+      "id": "el_inst_1",
+      "name": "התקנת פעמון לדלת כניסה (לא כולל הפעמון)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "התקנת פעמון מנגנון",
+      "subCategory": "installations",
+      "clientPricePerUnit": 252,
+      "contractorCostPerUnit": 180
+    },
+    {
+      "id": "el_inst_2",
+      "name": "התקנת גוף חימום לדוד (לא כולל גוף חימום)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "החלפת גוף חימום לדוד חשמל",
+      "subCategory": "installations",
+      "clientPricePerUnit": 350,
+      "contractorCostPerUnit": 250
+    },
+    {
+      "id": "el_inst_3",
+      "name": "התקנת קולט אדים (לא כולל קולט)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "התקנת קולט אדים מעל כיריים",
+      "subCategory": "installations",
+      "clientPricePerUnit": 420,
+      "contractorCostPerUnit": 300
+    },
+    {
+      "id": "el_inst_4",
+      "name": "התקנת כיריים חשמליות (אינדוקציה/קרמיות)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "התקנת כיריים בחיבור תלת פאזי",
+      "subCategory": "installations",
+      "clientPricePerUnit": 490,
+      "contractorCostPerUnit": 350
+    },
+    {
+      "id": "el_inst_5",
+      "name": "התקנת שעון שבת לדוד (כולל השעון)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "התקנת שעון לדוד חשמל",
+      "subCategory": "installations",
+      "clientPricePerUnit": 392,
+      "contractorCostPerUnit": 280
+    },
+    {
+      "id": "el_inst_6",
+      "name": "התקנת מאוורר תקרה",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "התקנת מאוורר במקום נקודת מאור קיימת",
+      "subCategory": "installations",
+      "clientPricePerUnit": 560,
+      "contractorCostPerUnit": 400
+    }
+  ],
+  "electrical_defaults": {
+    "expenseTiming": {
+      "payment": {
+        "type": "category_end"
+      }
+    },
+    "desiredProfitPercent": 150
+  },
+  "construction_subcontractor_items": [
+    {
+      "id": "cn_walls_1",
+      "name": "קיר בלוקים 10 ס\"מ (מחיצה פנימית)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "walls",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 85,
+      "materialCostPerUnit": 35,
+      "contractorCostPerUnit": 65
+    },
+    {
+      "id": "cn_walls_2",
+      "name": "קיר בלוקים 20 ס\"מ (קיר נושא)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "walls",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 85,
+      "materialCostPerUnit": 35,
+      "contractorCostPerUnit": 65
+    },
+    {
+      "id": "cn_walls_3",
+      "name": "קיר איטונג (בלוק קל)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "walls",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 85,
+      "materialCostPerUnit": 35,
+      "contractorCostPerUnit": 65
+    },
+    {
+      "id": "cn_walls_4",
+      "name": "קיר בטון יצוק במקום",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "walls",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 85,
+      "materialCostPerUnit": 35,
+      "contractorCostPerUnit": 65
+    },
+    {
+      "id": "cn_walls_5",
+      "name": "קיר גבס סטנדרטי חד-צדדי",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "walls",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 85,
+      "materialCostPerUnit": 35,
+      "contractorCostPerUnit": 65
+    },
+    {
+      "id": "cn_walls_6",
+      "name": "קיר גבס דו-צדדי",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "walls",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 85,
+      "materialCostPerUnit": 35,
+      "contractorCostPerUnit": 65
+    },
+    {
+      "id": "cn_walls_7",
+      "name": "קיר גבס בידוד כפול (אקוסטי/תרמי)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "walls",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 85,
+      "materialCostPerUnit": 35,
+      "contractorCostPerUnit": 65
+    },
+    {
+      "id": "cn_walls_8",
+      "name": "קיר גבס ירוק (עמיד רטיבות)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "walls",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 85,
+      "materialCostPerUnit": 35,
+      "contractorCostPerUnit": 65
+    },
+    {
+      "id": "cn_walls_9",
+      "name": "קיר גבס אדום (עמיד אש)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "walls",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 85,
+      "materialCostPerUnit": 35,
+      "contractorCostPerUnit": 65
+    },
+    {
+      "id": "cn_walls_10",
+      "name": "קיר לבנים אדומות (מלא/חצי בלוק)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "walls",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 85,
+      "materialCostPerUnit": 35,
+      "contractorCostPerUnit": 65
+    },
+    {
+      "id": "cn_ceil_1",
+      "name": "תקרת גבס סטנדרטית חלקה",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "ceilings",
+      "laborHoursPerUnit": 0.7,
+      "clientPricePerUnit": 82,
+      "materialCostPerUnit": 28,
+      "contractorCostPerUnit": 63
+    },
+    {
+      "id": "cn_ceil_2",
+      "name": "תקרת גבס אקוסטית (לוחות מחוררים/אקוסטיים)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "ceilings",
+      "laborHoursPerUnit": 0.7,
+      "clientPricePerUnit": 82,
+      "materialCostPerUnit": 28,
+      "contractorCostPerUnit": 63
+    },
+    {
+      "id": "cn_ceil_3",
+      "name": "תקרת גבס מעוצבת (מדרגות/נישות/תקרה צפה)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "ceilings",
+      "laborHoursPerUnit": 0.7,
+      "clientPricePerUnit": 82,
+      "materialCostPerUnit": 28,
+      "contractorCostPerUnit": 63
+    },
+    {
+      "id": "cn_ceil_4",
+      "name": "תקרת גבס ירוק (עמיד רטיבות – חדרי אמבטיה/מטבח)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "ceilings",
+      "laborHoursPerUnit": 0.7,
+      "clientPricePerUnit": 82,
+      "materialCostPerUnit": 28,
+      "contractorCostPerUnit": 63
+    },
+    {
+      "id": "cn_ceil_5",
+      "name": "תקרת עץ (קורות/לוחות)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "ceilings",
+      "laborHoursPerUnit": 0.7,
+      "clientPricePerUnit": 82,
+      "materialCostPerUnit": 28,
+      "contractorCostPerUnit": 63
+    },
+    {
+      "id": "cn_ceil_6",
+      "name": "תקרת מתיחה PVC",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "ceilings",
+      "laborHoursPerUnit": 0.7,
+      "clientPricePerUnit": 82,
+      "materialCostPerUnit": 28,
+      "contractorCostPerUnit": 63
+    },
+    {
+      "id": "cn_flvl_1",
+      "name": "מדה מתפלסת עד 5 מ\"מ (יישור קל)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "floor_leveling",
+      "laborHoursPerUnit": 0.5,
+      "clientPricePerUnit": 65,
+      "materialCostPerUnit": 25,
+      "contractorCostPerUnit": 50
+    },
+    {
+      "id": "cn_flvl_2",
+      "name": "מדה מתפלסת 6–10 מ\"מ (עובי בינוני)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "floor_leveling",
+      "laborHoursPerUnit": 0.5,
+      "clientPricePerUnit": 65,
+      "materialCostPerUnit": 25,
+      "contractorCostPerUnit": 50
+    },
+    {
+      "id": "cn_flvl_3",
+      "name": "מדה מתפלסת 11–20 מ\"מ (תיקון עומק/שיפועים)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "floor_leveling",
+      "laborHoursPerUnit": 0.5,
+      "clientPricePerUnit": 65,
+      "materialCostPerUnit": 25,
+      "contractorCostPerUnit": 50
+    },
+    {
+      "id": "cn_flvl_4",
+      "name": "מדה מתפלסת מעל 20 מ\"מ (מילוי עבה במיוחד)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "floor_leveling",
+      "laborHoursPerUnit": 0.5,
+      "clientPricePerUnit": 65,
+      "materialCostPerUnit": 25,
+      "contractorCostPerUnit": 50
+    },
+    {
+      "id": "cn_flvl_5",
+      "name": "יישור בטון מוחלק (הליקופטר)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "floor_leveling",
+      "laborHoursPerUnit": 0.5,
+      "clientPricePerUnit": 65,
+      "materialCostPerUnit": 25,
+      "contractorCostPerUnit": 50
+    },
+    {
+      "id": "cn_flvl_6",
+      "name": "יישור עם טיט/מלט ידני (תיקוני נקודות/שיפועים קטנים)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "subCategory": "floor_leveling",
+      "laborHoursPerUnit": 0.5,
+      "clientPricePerUnit": 65,
+      "materialCostPerUnit": 25,
+      "contractorCostPerUnit": 50
+    },
+    {
+      "id": "cn_ch_elec_1",
+      "name": "חציבה לקופסה יחידה",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "chasing_electric",
+      "laborHoursPerUnit": 0.3,
+      "clientPricePerUnit": 35,
+      "materialCostPerUnit": 12,
+      "contractorCostPerUnit": 27
+    },
+    {
+      "id": "cn_ch_elec_2",
+      "name": "חציבה לקופסה כפולה",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "chasing_electric",
+      "laborHoursPerUnit": 0.3,
+      "clientPricePerUnit": 35,
+      "materialCostPerUnit": 12,
+      "contractorCostPerUnit": 27
+    },
+    {
+      "id": "cn_ch_elec_3",
+      "name": "חציבה לתעלה אנכית (עד התקרה/הרצפה)",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "subCategory": "chasing_electric",
+      "laborHoursPerUnit": 0.3,
+      "clientPricePerUnit": 35,
+      "materialCostPerUnit": 12,
+      "contractorCostPerUnit": 27
+    },
+    {
+      "id": "cn_ch_elec_4",
+      "name": "חציבה לתעלה אופקית (מעבר בין שקעים)",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "subCategory": "chasing_electric",
+      "laborHoursPerUnit": 0.3,
+      "clientPricePerUnit": 35,
+      "materialCostPerUnit": 12,
+      "contractorCostPerUnit": 27
+    },
+    {
+      "id": "cn_ch_elec_5",
+      "name": "חציבה בלוח בטון",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "subCategory": "chasing_electric",
+      "laborHoursPerUnit": 0.3,
+      "clientPricePerUnit": 35,
+      "materialCostPerUnit": 12,
+      "contractorCostPerUnit": 27
+    },
+    {
+      "id": "cn_ch_elec_6",
+      "name": "חציבה בקיר בלוקים",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "subCategory": "chasing_electric",
+      "laborHoursPerUnit": 0.3,
+      "clientPricePerUnit": 35,
+      "materialCostPerUnit": 12,
+      "contractorCostPerUnit": 27
+    },
+    {
+      "id": "cn_ch_elec_7",
+      "name": "חציבה בקיר גבס (חיתוך/פתיחה – לא בדיוק חציבה)",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "subCategory": "chasing_electric",
+      "laborHoursPerUnit": 0.3,
+      "clientPricePerUnit": 35,
+      "materialCostPerUnit": 12,
+      "contractorCostPerUnit": 27
+    },
+    {
+      "id": "cn_ch_plum_1",
+      "name": "חציבה לצינור ממים (קרה/חמה)",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "subCategory": "chasing_plumbing",
+      "laborHoursPerUnit": 0.4,
+      "clientPricePerUnit": 46,
+      "materialCostPerUnit": 15,
+      "contractorCostPerUnit": 35
+    },
+    {
+      "id": "cn_ch_plum_2",
+      "name": "חציבה לצינור ניקוז קטן (32 מ\"מ)",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "subCategory": "chasing_plumbing",
+      "laborHoursPerUnit": 0.4,
+      "clientPricePerUnit": 46,
+      "materialCostPerUnit": 15,
+      "contractorCostPerUnit": 35
+    },
+    {
+      "id": "cn_ch_plum_3",
+      "name": "חציבה לצינור ניקוז גדול (50–110 מ\"מ)",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "subCategory": "chasing_plumbing",
+      "laborHoursPerUnit": 0.4,
+      "clientPricePerUnit": 46,
+      "materialCostPerUnit": 15,
+      "contractorCostPerUnit": 35
+    },
+    {
+      "id": "cn_ch_plum_4",
+      "name": "חציבה לברז אינטרפוץ/קופסת פינוק",
+      "unit": "יחידה",
+      "isActive": true,
+      "subCategory": "chasing_plumbing",
+      "laborHoursPerUnit": 0.4,
+      "clientPricePerUnit": 46,
+      "materialCostPerUnit": 15,
+      "contractorCostPerUnit": 35
+    },
+    {
+      "id": "cn_ch_plum_5",
+      "name": "חציבה לצנרת גז",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "subCategory": "chasing_plumbing",
+      "laborHoursPerUnit": 0.4,
+      "clientPricePerUnit": 46,
+      "materialCostPerUnit": 15,
+      "contractorCostPerUnit": 35
+    },
+    {
+      "id": "cn_ch_plum_6",
+      "name": "חציבה למערכות מיוחדות (תקשורת, אינטרקום, כיבוי אש)",
+      "unit": "מטר רץ",
+      "isActive": true,
+      "subCategory": "chasing_plumbing",
+      "laborHoursPerUnit": 0.4,
+      "clientPricePerUnit": 46,
+      "materialCostPerUnit": 15,
+      "contractorCostPerUnit": 35
+    },
+    {
+      "id": "cn_conc_1",
+      "name": "יציקת בטון ב30 (רצפה/משטח) – עובי 10 ס\"מ",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "description": "יציקה, פילוס והחלקה בסיסית של בטון מוכן.",
+      "subCategory": "concrete",
+      "laborHoursPerUnit": 1.2,
+      "clientPricePerUnit": 182,
+      "materialCostPerUnit": 80,
+      "contractorCostPerUnit": 140
+    },
+    {
+      "id": "cn_conc_2",
+      "name": "יציקת עמוד/קורה בבטון ב30",
+      "unit": "מ\"ק",
+      "isActive": true,
+      "description": "בניית טפסות, קשירת ברזל (אם נדרש), יציקה וריטוט.",
+      "subCategory": "concrete",
+      "laborHoursPerUnit": 1,
+      "clientPricePerUnit": 455,
+      "materialCostPerUnit": 300,
+      "contractorCostPerUnit": 350
+    },
+    {
+      "id": "cn_wat_1",
+      "name": "איטום גג ביריעות ביטומניות 5 מ\"מ",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "description": "כולל ניקוי יסודי, שכבת פריימר, הנחת יריעות 5 מ\"מ (כולל ריתוכים וחפיפות).",
+      "subCategory": "waterproofing",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 98,
+      "materialCostPerUnit": 45,
+      "contractorCostPerUnit": 75
+    },
+    {
+      "id": "cn_wat_2",
+      "name": "איטום חדר רטוב בחומר צימנטי גמיש",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "description": "שתי שכבות איטום צימנטי, כולל יישום בפינות (בנדרול).",
+      "subCategory": "waterproofing",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 98,
+      "materialCostPerUnit": 45,
+      "contractorCostPerUnit": 75
+    },
+    {
+      "id": "cn_wat_3",
+      "name": "איטום קירות חיצוניים שלילי/חיובי",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "description": "איטום קירות חיצוניים בחומר מתאים (אקרילי/פולימרי).",
+      "subCategory": "waterproofing",
+      "laborHoursPerUnit": 0.6,
+      "clientPricePerUnit": 98,
+      "materialCostPerUnit": 45,
+      "contractorCostPerUnit": 75
+    },
+    {
+      "id": "cn_plst_1",
+      "name": "טיח פנים תקני (שתי שכבות)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "description": "שכבת רשת, שכבת מיישרת ושכבת גמר שליכט, כולל פינות (רגליות).",
+      "subCategory": "plaster",
+      "laborHoursPerUnit": 0.8,
+      "clientPricePerUnit": 91,
+      "materialCostPerUnit": 30,
+      "contractorCostPerUnit": 70
+    },
+    {
+      "id": "cn_plst_2",
+      "name": "טיח חוץ שליכט צבעוני (על בסיס סיליקון)",
+      "unit": "מ\"ר",
+      "isActive": true,
+      "description": "הכנת תשתית ויישום שליכט צבעוני (עלות החומר בנפרד/לכלול).",
+      "subCategory": "plaster",
+      "laborHoursPerUnit": 1,
+      "clientPricePerUnit": 111,
+      "materialCostPerUnit": 35,
+      "contractorCostPerUnit": 85
+    },
+    {
+      "id": "sys_ac_prep_split",
+      "name": "הכנה למזגן עילי (תעלות + חציבות + צנרת)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 3,
+      "clientPricePerUnit": 351,
+      "materialCostPerUnit": 120,
+      "contractorCostPerUnit": 270
+    },
+    {
+      "id": "sys_ac_prep_mini",
+      "name": "הכנה למזגן מיני מרכזי (תעלות + הנמכות גבס)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 7,
+      "clientPricePerUnit": 910,
+      "materialCostPerUnit": 350,
+      "contractorCostPerUnit": 700
+    },
+    {
+      "id": "sys_ac_install_split",
+      "name": "התקנת מזגן עילי (יחידה)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 2.5,
+      "clientPricePerUnit": 267,
+      "materialCostPerUnit": 80,
+      "contractorCostPerUnit": 205
+    },
+    {
+      "id": "sys_ac_install_mini",
+      "name": "התקנת מזגן מיני מרכזי (יחידה)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 8,
+      "clientPricePerUnit": 1040,
+      "materialCostPerUnit": 400,
+      "contractorCostPerUnit": 800
+    },
+    {
+      "id": "sys_ac_core_drill",
+      "name": "קדח יהלום למזגן (Ø50–Ø65)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 0.8,
+      "clientPricePerUnit": 52,
+      "contractorCostPerUnit": 40
+    },
+    {
+      "id": "sys_vent_wc",
+      "name": "התקנת ונטה / מפוח שירותים",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 1.5,
+      "clientPricePerUnit": 137,
+      "materialCostPerUnit": 30,
+      "contractorCostPerUnit": 105
+    },
+    {
+      "id": "sys_vent_kitchen",
+      "name": "התקנת מפוח מטבח + ארובה",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 3,
+      "clientPricePerUnit": 390,
+      "materialCostPerUnit": 150,
+      "contractorCostPerUnit": 300
+    },
+    {
+      "id": "sys_vent_openings",
+      "name": "פתחים לאוורור טבעי (גומחות, גריל אוורור)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 1,
+      "clientPricePerUnit": 91,
+      "materialCostPerUnit": 20,
+      "contractorCostPerUnit": 70
+    },
+    {
+      "id": "sys_boiler_install",
+      "name": "התקנת דוד חשמל / שמש",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 2.5,
+      "clientPricePerUnit": 293,
+      "materialCostPerUnit": 100,
+      "contractorCostPerUnit": 225
+    },
+    {
+      "id": "sys_boiler_pipes",
+      "name": "התקנת צנרת לדוד (מים חמים)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 2,
+      "clientPricePerUnit": 325,
+      "materialCostPerUnit": 150,
+      "contractorCostPerUnit": 250
+    },
+    {
+      "id": "sys_prep_wm_dw",
+      "name": "הכנה למכונת כביסה / מדיח כלים (ניקוז + חשמל)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 1.5,
+      "clientPricePerUnit": 176,
+      "materialCostPerUnit": 60,
+      "contractorCostPerUnit": 135
+    },
+    {
+      "id": "sys_prep_dryer_vent",
+      "name": "הכנה לייבוש כביסה (קדח אוורור יבשני)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 1.5,
+      "clientPricePerUnit": 202,
+      "materialCostPerUnit": 80,
+      "contractorCostPerUnit": 155
+    },
+    {
+      "id": "sys_special_faucets",
+      "name": "התקנת כיור/ברזים מיוחדים (ברים, מרפסות)",
+      "unit": "יחידה",
+      "isActive": true,
+      "description": "",
+      "subCategory": "systems_devices",
+      "laborHoursPerUnit": 1.5,
+      "clientPricePerUnit": 163,
+      "materialCostPerUnit": 50,
+      "contractorCostPerUnit": 125
+    }
+  ],
+  "construction_defaults": {
+    "expenseTiming": {
+      "labor": {
+        "type": "fixed_day_of_month",
+        "dayOfMonth": 1
+      },
+      "materials": {
+        "type": "days_before_start",
+        "daysBefore": 5
+      }
+    },
+    "workerCostPerUnit": 500,
+    "desiredProfitPercent": 30
+  },
+  "demolition_items": [
+    {
+      "id": "default_demo_1",
+      "name": "פירוק קיר גבס",
+      "unit": "מ'ר",
+      "description": "פירוק קיר גבס רגיל כולל סילוק פסולת",
+      "hoursPerUnit": 0.5
+    },
+    {
+      "id": "default_demo_2",
+      "name": "פירוק ריצוף קרמיקה",
+      "unit": "מ'ר",
+      "description": "פירוק ריצוף קרמיקה/גרניט כולל פסולת",
+      "hoursPerUnit": 1.2
+    },
+    {
+      "id": "default_demo_3",
+      "name": "פירוק חיפוי קירות",
+      "unit": "מ'ר",
+      "description": "פירוק חיפוי קרמיקה מקירות כולל פסולת",
+      "hoursPerUnit": 1.5
+    },
+    {
+      "id": "default_demo_4",
+      "name": "פירוק דלת פנים",
+      "unit": "יחידה",
+      "description": "פירוק דלת פנים כולל משקוף",
+      "hoursPerUnit": 1
+    },
+    {
+      "id": "default_demo_5",
+      "name": "פירוק ארון מטבח",
+      "unit": "מטר רץ",
+      "description": "פירוק ארון מטבח כולל משטח עבודה",
+      "hoursPerUnit": 2
+    }
+  ],
+  "demolition_defaults": {
+    "expenseTiming": {
+      "labor": {
+        "type": "category_end",
+        "dayOfMonth": 1
+      }
+    },
+    "profitPercent": 40,
+    "laborCostPerDay": 140
+  },
+  "paint_items": [
+    {
+      "id": "pnt_1763839002171_y3mjxwzv4",
+      "category": "paint_plaster",
+      "coverage": 40,
+      "isActive": true,
+      "itemName": "צבע אקרילי לקירות פנים",
+      "laborCost": 700,
+      "paintName": "אקרילי סטנדרט",
+      "paintType": "acrylic",
+      "bucketPrice": 180,
+      "dailyOutput": 60,
+      "workCategory": "paint",
+      "equipmentCost": 5,
+      "pricingMethod": "percentage",
+      "workerDailyCost": 700,
+      "averageCostPerMeter": 16,
+      "averageCustomerPrice": 22,
+      "averageProfitPercent": 40,
+      "desiredProfitPercent": 40,
+      "averageProfitPerMeter": 6
+    },
+    {
+      "id": "pnt_1763839002171_0qowpc3bj",
+      "type": "supercryl",
+      "layers": 3,
+      "category": "paint_plaster",
+      "coverage": 25,
+      "itemName": "עבודת צבע סופרקריל",
+      "laborCost": 700,
+      "paintName": "עבודת צבע סופרקריל",
+      "paintType": "supercryl",
+      "priceTiers": [
+        {
+          "profit": "40.0",
+          "details": {
+            "workDays": 20,
+            "laborCostPerSqm": 80,
+            "materialCostPerSqm": 30.8,
+            "equipmentCostPerSqm": 0.05
+          },
+          "costPerSqm": "110.8",
+          "profitPerSqm": 44.34,
+          "squareMeters": 100,
+          "pricesByLayer": {
+            "3": 15519
+          },
+          "selectedLayers": 3
+        }
+      ],
+      "bucketPrice": 220,
+      "dailyOutput": 10,
+      "limitations": "",
+      "plasterType": "",
+      "bucketLiters": 18,
+      "materialCost": 220,
+      "workCategory": "paint",
+      "customerPrice": 155.19,
+      "equipmentCost": 5,
+      "layerSettings": [
+        {
+          "name": "שכבה 1",
+          "layer": 1,
+          "coverage": 25,
+          "dailyOutput": 10,
+          "_isConverted": true,
+          "discountPercent": 0
+        },
+        {
+          "name": "שכבה 2",
+          "layer": 2,
+          "coverage": 20,
+          "dailyOutput": 0,
+          "_isConverted": true,
+          "discountPercent": 20
+        },
+        {
+          "name": "שכבה 3",
+          "layer": 3,
+          "coverage": 20,
+          "dailyOutput": 0,
+          "_isConverted": true,
+          "discountPercent": 20
+        }
+      ],
+      "pricingMethod": "quick",
+      "additionalCost": 5,
+      "executionNotes": "",
+      "workerDailyCost": 700,
+      "difficultyFactors": {
+        "hard": {
+          "label": "קשה",
+          "value": 1.5
+        },
+        "normal": {
+          "label": "רגיל",
+          "value": 1
+        },
+        "complex": {
+          "label": "מורכב",
+          "value": 1.3
+        }
+      },
+      "selectedDifficulty": "normal",
+      "averageCostPerMeter": 79,
+      "averageCustomerPrice": 111,
+      "averageProfitPercent": 40,
+      "cleaningCostPerMeter": 0,
+      "desiredProfitPercent": 40,
+      "averageProfitPerMeter": 32,
+      "preparationCostPerMeter": 0
+    },
+    {
+      "id": "pnt_1763839002171_pc42ii2dd",
+      "category": "paint_plaster",
+      "coverage": 20,
+      "isActive": true,
+      "itemName": "טיח גמר חיצוני",
+      "laborCost": 700,
+      "paintName": "טיח אקרילי",
+      "bucketPrice": 250,
+      "dailyOutput": 30,
+      "plasterType": "אקרילי",
+      "workCategory": "plaster",
+      "equipmentCost": 10,
+      "pricingMethod": "percentage",
+      "workerDailyCost": 700,
+      "averageCostPerMeter": 36,
+      "averageCustomerPrice": 50,
+      "averageProfitPercent": 40,
+      "desiredProfitPercent": 40,
+      "averageProfitPerMeter": 14
+    },
+    {
+      "id": "paint_1763907870817",
+      "type": "custom_1763844422790",
+      "layers": 3,
+      "category": "paint_plaster",
+      "coverage": 15,
+      "itemName": "עבודת צבע טסט",
+      "laborCost": 700,
+      "paintName": "עבודת צבע טסט",
+      "paintType": "custom_1763844422790",
+      "priceTiers": [
+        {
+          "profit": "40.0",
+          "details": {
+            "workDays": 6,
+            "laborCostPerSqm": 216,
+            "materialCostPerSqm": 24,
+            "equipmentCostPerSqm": 0
+          },
+          "costPerSqm": "240.0",
+          "profitPerSqm": 96,
+          "squareMeters": 25,
+          "pricesByLayer": {
+            "3": 8400
+          },
+          "selectedLayers": 3
+        }
+      ],
+      "bucketPrice": 100,
+      "dailyOutput": 15,
+      "limitations": "",
+      "plasterType": "",
+      "bucketLiters": 18,
+      "materialCost": 100,
+      "workCategory": "walls",
+      "customerPrice": 336,
+      "equipmentCost": 0,
+      "layerSettings": [
+        {
+          "name": "שכבה 1",
+          "layer": 1,
+          "coverage": 15,
+          "dailyOutput": 15,
+          "_isConverted": true,
+          "discountPercent": 0
+        },
+        {
+          "name": "שכבה 2",
+          "layer": 2,
+          "coverage": 20,
+          "dailyOutput": 20,
+          "_isConverted": true,
+          "discountPercent": 20
+        },
+        {
+          "name": "שכבה 3",
+          "layer": 3,
+          "coverage": 10,
+          "dailyOutput": 10,
+          "_isConverted": true,
+          "discountPercent": 10
+        }
+      ],
+      "pricingMethod": "quick",
+      "additionalCost": 0,
+      "executionNotes": "",
+      "workerDailyCost": 700,
+      "difficultyFactors": {
+        "hard": {
+          "label": "קשה",
+          "value": 1.5
+        },
+        "normal": {
+          "label": "רגיל",
+          "value": 1
+        },
+        "complex": {
+          "label": "מורכב",
+          "value": 1.3
+        }
+      },
+      "selectedDifficulty": "normal",
+      "averageCostPerMeter": 53,
+      "averageCustomerPrice": 74,
+      "averageProfitPercent": 40,
+      "cleaningCostPerMeter": 0,
+      "desiredProfitPercent": 40,
+      "averageProfitPerMeter": 21,
+      "preparationCostPerMeter": 0
+    },
+    {
+      "id": "paint_1763938246339",
+      "type": "poksi",
+      "layers": 3,
+      "category": "paint_plaster",
+      "coverage": 20,
+      "itemName": "עבודת צבע פוקסי",
+      "laborCost": 700,
+      "paintName": "עבודת צבע פוקסי",
+      "paintType": "poksi",
+      "priceTiers": [
+        {
+          "profit": "40.0",
+          "details": {
+            "workDays": 5,
+            "laborCostPerSqm": 217.3913043478261,
+            "materialCostPerSqm": 108.69565217391305,
+            "equipmentCostPerSqm": 0
+          },
+          "costPerSqm": "326.1",
+          "squareMeters": 23,
+          "pricesByLayer": {
+            "3": 10500
+          },
+          "selectedLayers": 3
+        }
+      ],
+      "bucketPrice": 500,
+      "dailyOutput": 20,
+      "limitations": "",
+      "plasterType": "",
+      "bucketLiters": 18,
+      "materialCost": 500,
+      "workCategory": "ceilings",
+      "customerPrice": 456.52,
+      "equipmentCost": 0,
+      "layerSettings": [
+        {
+          "name": "שכבה 1",
+          "layer": 1,
+          "coverage": 20,
+          "dailyOutput": 20,
+          "discountPercent": 0
+        },
+        {
+          "name": "שכבה 2",
+          "layer": 2,
+          "coverage": -25,
+          "dailyOutput": 0,
+          "discountPercent": -25
+        },
+        {
+          "name": "שכבה 3",
+          "layer": 3,
+          "coverage": -33.333333333333336,
+          "dailyOutput": 0,
+          "discountPercent": -33.333333333333336
+        }
+      ],
+      "pricingMethod": "quick",
+      "additionalCost": 0,
+      "executionNotes": "",
+      "workerDailyCost": 700,
+      "difficultyFactors": {
+        "hard": {
+          "label": "קשה",
+          "value": 1.5
+        },
+        "normal": {
+          "label": "רגיל",
+          "value": 1
+        },
+        "complex": {
+          "label": "מורכב",
+          "value": 1.3
+        }
+      },
+      "selectedDifficulty": "normal",
+      "averageCostPerMeter": 60,
+      "averageCustomerPrice": 84,
+      "averageProfitPercent": 40,
+      "cleaningCostPerMeter": 0,
+      "desiredProfitPercent": 40,
+      "averageProfitPerMeter": 24,
+      "preparationCostPerMeter": 0
+    }
+  ],
+  "paint_user_defaults": {
+    "expenseTiming": {
+      "labor": {
+        "type": "fixed_day_of_month",
+        "dayOfMonth": 1
+      },
+      "materials": {
+        "type": "days_before_start",
+        "daysBefore": 7
+      }
+    },
+    "workerDailyCost": 700,
+    "desiredProfitPercent": 40
+  },
+  "tiling_items": [
+    {
+      "id": "til_1763839000357_7wwxlrlyb",
+      "unit": "מ\"ר",
+      "category": "tiling",
+      "hasPanel": true,
+      "tileName": "גרניט פורצלן 60x60 איכותי",
+      "workType": [
+        "ריצוף"
+      ],
+      "priceTiers": [
+        {
+          "price": 18,
+          "maxArea": 999999,
+          "minArea": 0
+        }
+      ],
+      "dailyOutput": 200,
+      "materialCost": 0,
+      "pricingMethod": "quick",
+      "selectedSizes": [
+        "60x60"
+      ],
+      "additionalCost": 10,
+      "wastagePercent": 0,
+      "laborCostMethod": "perDay",
+      "laborCostPerDay": 1000,
+      "laborCostPerSqM": 0,
+      "maxProjectRange": "",
+      "selectedQuality": "",
+      "fixedProjectCost": 0,
+      "generalDescription": "",
+      "averageCostPerMeter": 1010,
+      "averageCustomerPrice": 1212,
+      "averageProfitPercent": 20,
+      "desiredProfitPercent": 20,
+      "averageProfitPerMeter": 202,
+      "panelLaborWorkCapacity": 8,
+      "panelUtilizationPercent": 50
+    },
+    {
+      "id": "til_1763839000357_107ph9nan",
+      "unit": "מ\"ר",
+      "category": "tiling",
+      "hasPanel": false,
+      "tileName": "קרמיקה לקיר 30x60",
+      "workType": [
+        "חיפוי קירות"
+      ],
+      "priceTiers": [
+        {
+          "price": 97,
+          "maxArea": 999999,
+          "minArea": 0
+        }
+      ],
+      "dailyOutput": 100,
+      "materialCost": 60,
+      "pricingMethod": "quick",
+      "selectedSizes": [
+        "45x45"
+      ],
+      "additionalCost": 8,
+      "wastagePercent": 5,
+      "laborCostMethod": "perDay",
+      "laborCostPerDay": 1000,
+      "laborCostPerSqM": 0,
+      "maxProjectRange": "",
+      "selectedQuality": "איכותי מאד",
+      "fixedProjectCost": 0,
+      "generalDescription": "",
+      "averageCostPerMeter": 1068,
+      "averageCustomerPrice": 1282,
+      "averageProfitPercent": 20,
+      "desiredProfitPercent": 20,
+      "averageProfitPerMeter": 214,
+      "panelLaborWorkCapacity": 0,
+      "panelUtilizationPercent": 0
+    },
+    {
+      "id": "til_1763839000357_lhlg48t52",
+      "size": "120x60",
+      "quality": "פרמיום",
+      "category": "tiling",
+      "isActive": true,
+      "itemType": "אריח",
+      "tileName": "פורצלן גדול 120x60 פרמיום",
+      "workType": "ריצוף",
+      "laborCost": 60,
+      "materialCost": 150,
+      "customerPrice": 0,
+      "pricingMethod": "percentage",
+      "additionalCost": 15,
+      "complexityValue": 1.2,
+      "laborCostMethod": "perDay",
+      "laborCostPerDay": 1000,
+      "laborCostPerSqM": 0,
+      "averageCostPerMeter": 1365,
+      "averageCustomerPrice": 1638,
+      "averageProfitPercent": 20,
+      "desiredProfitPercent": 20,
+      "averageProfitPerMeter": 273
+    },
+    {
+      "id": "tiling_1763980419359",
+      "unit": "מ\"ר",
+      "category": "tiling",
+      "hasPanel": true,
+      "tileName": "טסט",
+      "workType": [
+        "ריצוף רצפה"
+      ],
+      "priceTiers": [
+        {
+          "price": 177,
+          "maxArea": 999999,
+          "minArea": 0
+        }
+      ],
+      "dailyOutput": 200,
+      "materialCost": 120,
+      "pricingMethod": "quick",
+      "selectedSizes": [
+        "100x100"
+      ],
+      "additionalCost": 0,
+      "wastagePercent": 1,
+      "laborCostMethod": "perDay",
+      "laborCostPerDay": 1000,
+      "laborCostPerSqM": 0,
+      "maxProjectRange": "",
+      "selectedQuality": "פרמיום",
+      "fixedProjectCost": 0,
+      "generalDescription": "",
+      "averageCostPerMeter": 1120,
+      "averageCustomerPrice": 1344,
+      "averageProfitPercent": 20,
+      "desiredProfitPercent": 20,
+      "averageProfitPerMeter": 224,
+      "panelLaborWorkCapacity": 100,
+      "panelUtilizationPercent": 95
+    }
+  ],
+  "tiling_user_defaults": {
+    "expenseTiming": {
+      "labor": {
+        "type": "fixed_day_of_month",
+        "dayOfMonth": 1
+      },
+      "materials": {
+        "type": "days_before_start",
+        "daysBefore": 7
+      }
+    },
+    "laborCostPerDay": 1000,
+    "desiredProfitPercent": 20
+  }
+}

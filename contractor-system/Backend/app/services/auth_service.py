@@ -3,6 +3,8 @@ from app.database import get_supabase_admin, get_supabase
 from app.models.user import UserCreate, UserLogin, Token
 from fastapi import HTTPException, status
 import logging
+import json
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +50,18 @@ async def register_user(user_data: UserCreate) -> dict:
         user_id = auth_response.user.id
         logger.info(f"User created successfully in Auth: {user_id}")
 
-        # Create user profile in user_profiles table
+        # Load default pricing data for new users
+        try:
+            default_data_path = os.path.join(os.path.dirname(__file__), '../data/default_user_data.json')
+            with open(default_data_path, 'r', encoding='utf-8') as f:
+                default_data = json.load(f)
+            logger.info(f"Loaded default user data from {default_data_path}")
+        except Exception as e:
+            logger.error(f"Failed to load default user data: {e}")
+            # Continue with empty defaults if file is not available
+            default_data = {}
+
+        # Create user profile in user_profiles table with default pricing data
         user_profile = {
             "auth_user_id": user_id,
             "email": user_data.email,
@@ -57,11 +70,24 @@ async def register_user(user_data: UserCreate) -> dict:
             "role": "admin" if user_data.email in ["rotemiluz53@gmail.com", "avishaycohen11@gmail.com"] else "user",
             "contract_template": "",
             "contractor_commitments": "",
-            "client_commitments": ""
+            "client_commitments": "",
+            # Add default pricing data for all categories
+            "plumbing_subcontractor_items": default_data.get("plumbing_subcontractor_items", []),
+            "plumbing_defaults": default_data.get("plumbing_defaults", {"desiredProfitPercent": 30}),
+            "electrical_subcontractor_items": default_data.get("electrical_subcontractor_items", []),
+            "electrical_defaults": default_data.get("electrical_defaults", {"desiredProfitPercent": 40}),
+            "construction_subcontractor_items": default_data.get("construction_subcontractor_items", []),
+            "construction_defaults": default_data.get("construction_defaults", {"desiredProfitPercent": 30, "workerCostPerUnit": 1000}),
+            "demolition_items": default_data.get("demolition_items", []),
+            "demolition_defaults": default_data.get("demolition_defaults", {"laborCostPerDay": 1000, "profitPercent": 40}),
+            "tiling_items": default_data.get("tiling_items", []),
+            "tiling_user_defaults": default_data.get("tiling_user_defaults", {}),
+            "paint_items": default_data.get("paint_items", []),
+            "paint_user_defaults": default_data.get("paint_user_defaults", {})
         }
 
         profile_response = supabase.table("user_profiles").insert(user_profile).execute()
-        logger.info(f"User profile created for: {user_id}")
+        logger.info(f"User profile created for: {user_id} with default data - {len(default_data.get('plumbing_subcontractor_items', []))} plumbing items, {len(default_data.get('electrical_subcontractor_items', []))} electrical items, {len(default_data.get('construction_subcontractor_items', []))} construction items, {len(default_data.get('demolition_items', []))} demolition items, {len(default_data.get('tiling_items', []))} tiling items, {len(default_data.get('paint_items', []))} paint items")
 
         # Return Supabase session tokens (if available from auth_response)
         # Note: Supabase returns session with access_token and refresh_token
@@ -188,8 +214,18 @@ async def get_user_by_id(user_id: str, auto_create: bool = False) -> dict:
                         status_code=status.HTTP_404_NOT_FOUND,
                         detail="User not found and cannot be auto-created (missing email)"
                     )
-                
-                # Create basic user profile
+
+                # Load default pricing data for new users
+                try:
+                    default_data_path = os.path.join(os.path.dirname(__file__), '../data/default_user_data.json')
+                    with open(default_data_path, 'r', encoding='utf-8') as f:
+                        default_data = json.load(f)
+                    logger.info(f"Loaded default user data for auto-created profile")
+                except Exception as e:
+                    logger.error(f"Failed to load default user data: {e}")
+                    default_data = {}
+
+                # Create basic user profile with default pricing data
                 user_profile = {
                     "auth_user_id": user_id,
                     "email": email,
@@ -198,7 +234,20 @@ async def get_user_by_id(user_id: str, auto_create: bool = False) -> dict:
                     "role": "admin" if email in ["rotemiluz53@gmail.com", "avishaycohen11@gmail.com"] else "user",
                     "contract_template": "",
                     "contractor_commitments": "",
-                    "client_commitments": ""
+                    "client_commitments": "",
+                    # Add default pricing data for all categories
+                    "plumbing_subcontractor_items": default_data.get("plumbing_subcontractor_items", []),
+                    "plumbing_defaults": default_data.get("plumbing_defaults", {"desiredProfitPercent": 30}),
+                    "electrical_subcontractor_items": default_data.get("electrical_subcontractor_items", []),
+                    "electrical_defaults": default_data.get("electrical_defaults", {"desiredProfitPercent": 40}),
+                    "construction_subcontractor_items": default_data.get("construction_subcontractor_items", []),
+                    "construction_defaults": default_data.get("construction_defaults", {"desiredProfitPercent": 30, "workerCostPerUnit": 1000}),
+                    "demolition_items": default_data.get("demolition_items", []),
+                    "demolition_defaults": default_data.get("demolition_defaults", {"laborCostPerDay": 1000, "profitPercent": 40}),
+                    "tiling_items": default_data.get("tiling_items", []),
+                    "tiling_user_defaults": default_data.get("tiling_user_defaults", {}),
+                    "paint_items": default_data.get("paint_items", []),
+                    "paint_user_defaults": default_data.get("paint_user_defaults", {})
                 }
                 
                 profile_response = supabase.table("user_profiles").insert(user_profile).execute()
