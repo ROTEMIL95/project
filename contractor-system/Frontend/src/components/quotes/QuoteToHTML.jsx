@@ -66,6 +66,13 @@ const CATEGORY_STYLES = {
 export default function QuoteToHTML({ quote }) {
   if (!quote) return null;
 
+  // Helper function to apply price increase to item prices
+  const getAdjustedPrice = (originalPrice) => {
+    const priceIncrease = quote.priceIncrease || 0;
+    if (priceIncrease === 0) return originalPrice;
+    return Math.round(originalPrice * (1 + priceIncrease / 100));
+  };
+
   // קיבוץ פריטים לפי קטגוריות (מסנן פריטי סיכום) + שמירת summary items בנפרד
   const itemsByCategory = {};
   const summaryItemsByCategory = {};
@@ -1936,8 +1943,9 @@ export default function QuoteToHTML({ quote }) {
                             const roomSizeClass = getRoomSizeClass(item);
 
                             if (item.wallPaintQuantity > 0) {
-                              const wallPricePerSqm = item.wallPaintQuantity > 0 && safeQuantity > 0 ? Math.round((item.totalPrice * (item.wallPaintQuantity / safeQuantity)) / item.wallPaintQuantity) : 0;
-                              const wallTotalPrice = safeQuantity > 0 ? Math.round(item.totalPrice * (item.wallPaintQuantity / safeQuantity)) : Math.round(item.totalPrice / 2);
+                              const adjustedTotalPrice = getAdjustedPrice(item.totalPrice);
+                              const wallPricePerSqm = item.wallPaintQuantity > 0 && safeQuantity > 0 ? Math.round((adjustedTotalPrice * (item.wallPaintQuantity / safeQuantity)) / item.wallPaintQuantity) : 0;
+                              const wallTotalPrice = safeQuantity > 0 ? Math.round(adjustedTotalPrice * (item.wallPaintQuantity / safeQuantity)) : Math.round(adjustedTotalPrice / 2);
 
                               // Get paint type - prefer wallPaintName or paintType
                               const wallPaintType = getPaintTypeName(item, item.wallPaintName || item.paintType);
@@ -1956,8 +1964,9 @@ export default function QuoteToHTML({ quote }) {
                             }
 
                             if (item.ceilingPaintQuantity > 0) {
-                              const ceilingPricePerSqm = item.ceilingPaintQuantity > 0 && safeQuantity > 0 ? Math.round((item.totalPrice * (item.ceilingPaintQuantity / safeQuantity)) / item.ceilingPaintQuantity) : 0;
-                              const ceilingTotalPrice = safeQuantity > 0 ? Math.round(item.totalPrice * (item.ceilingPaintQuantity / safeQuantity)) : Math.round(item.totalPrice / 2);
+                              const adjustedTotalPrice = getAdjustedPrice(item.totalPrice);
+                              const ceilingPricePerSqm = item.ceilingPaintQuantity > 0 && safeQuantity > 0 ? Math.round((adjustedTotalPrice * (item.ceilingPaintQuantity / safeQuantity)) / item.ceilingPaintQuantity) : 0;
+                              const ceilingTotalPrice = safeQuantity > 0 ? Math.round(adjustedTotalPrice * (item.ceilingPaintQuantity / safeQuantity)) : Math.round(adjustedTotalPrice / 2);
 
                               // Get ceiling paint type - prefer ceilingPaintName
                               const ceilingPaintType = getPaintTypeName(item, item.ceilingPaintName || item.paintType);
@@ -1978,8 +1987,9 @@ export default function QuoteToHTML({ quote }) {
                             return rows;
                           } else {
                             // Regular single-row display
-                            const pricePerSqm = item.quantity > 0 ? Math.round(item.totalPrice / item.quantity) : 0;
-                            const pricePerUnit = item.quantity > 0 ? Math.round(item.totalPrice / item.quantity) : (item.unitPrice || 0);
+                            const adjustedTotalPrice = getAdjustedPrice(item.totalPrice);
+                            const pricePerSqm = item.quantity > 0 ? Math.round(adjustedTotalPrice / item.quantity) : 0;
+                            const pricePerUnit = item.quantity > 0 ? Math.round(adjustedTotalPrice / item.quantity) : (item.unitPrice || 0);
                             const roomSizeClass = getRoomSizeClass(item);
 
                               return `
@@ -1996,12 +2006,12 @@ export default function QuoteToHTML({ quote }) {
                                 ${categoryId === 'cat_paint_plaster' ? `
                                 <td>₪${formatPrice(pricePerSqm)}</td>
                                 <td>${getComplexityColumn(item)}</td>
-                                <td><strong>₪${formatPrice(item.totalPrice || 0)}</strong></td>
+                                <td><strong>₪${formatPrice(adjustedTotalPrice || 0)}</strong></td>
                                 ` : `
                                 <td>${item.unit || 'יח\''}</td>
                                 <td>₪${formatPrice(pricePerUnit)}</td>
                                 <td>${getComplexityColumn(item)}</td>
-                                <td><strong>₪${formatPrice(item.totalPrice || 0)}</strong></td>
+                                <td><strong>₪${formatPrice(adjustedTotalPrice || 0)}</strong></td>
                                 `}
                               </tr>
                             `;
@@ -2015,7 +2025,7 @@ export default function QuoteToHTML({ quote }) {
                       <div class="summary-grid">
                         <div class="summary-item">
                           <div class="summary-label">סה"כ מחיר</div>
-                          <div class="summary-value" style="color: ${style.textColor};">₪${formatPrice(summary.totalPrice)}</div>
+                          <div class="summary-value" style="color: ${style.textColor};">₪${formatPrice(getAdjustedPrice(summary.totalPrice))}</div>
                         </div>
                         
                         ${timings.startDate ? `
@@ -2105,14 +2115,22 @@ export default function QuoteToHTML({ quote }) {
             <div class="final-summary">
               <h2>סיכום כולל</h2>
               <div class="final-grid">
-                ${(quote.discount || quote.discountPercent) > 0 ? `
+                ${(quote.discount || quote.discountPercent) > 0 || (quote.priceIncrease || 0) > 0 ? `
                   <div class="final-item">
-                    <div class="final-label">סה"כ לפני הנחה</div>
+                    <div class="final-label">סה"כ מחיר בסיס</div>
                     <div class="final-value">₪${formatPrice(quote.totalAmount || 0)}</div>
                   </div>
+                ` : ''}
+                ${(quote.priceIncrease || 0) > 0 ? `
                   <div class="final-item">
-                    <div class="final-label">הנחה (${quote.discount || quote.discountPercent}%)</div>
-                    <div class="final-value">₪${formatPrice((quote.totalAmount || 0) * ((quote.discount || quote.discountPercent) / 100))}</div>
+                    <div class="final-label">תוספת מחיר (+${quote.priceIncrease}%)</div>
+                    <div class="final-value">₪${formatPrice((quote.totalAmount || 0) * ((quote.priceIncrease || 0) / 100))}</div>
+                  </div>
+                ` : ''}
+                ${(quote.discount || quote.discountPercent) > 0 ? `
+                  <div class="final-item">
+                    <div class="final-label">הנחה (-${quote.discount || quote.discountPercent}%)</div>
+                    <div class="final-value">-₪${formatPrice((quote.totalAmount || 0) * ((quote.discount || quote.discountPercent) / 100))}</div>
                   </div>
                 ` : ''}
                 <div class="final-item">
