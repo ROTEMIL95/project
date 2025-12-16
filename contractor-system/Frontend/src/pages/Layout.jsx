@@ -138,23 +138,23 @@ const PageLayout = ({ children, currentPageName }) => {
         }
         .page-fade-enter { animation: page-fade-in 180ms ease-out; }
       `}</style>
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4 lg:px-8 fixed w-full top-0 z-[100]">
-        <div className="flex items-center gap-2 sm:gap-4">
-          {/* Changed: Menu button is now always visible */}
-          <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} className="mr-1 sm:mr-2 h-9 w-9 sm:h-10 sm:w-10">
-            <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
-          </Button>
-          <div
-            className="relative overflow-hidden flex items-center cursor-pointer shimmer-element p-1.5 sm:p-2 rounded-lg"
-            onClick={() => navigate(createPageUrl('Dashboard'))}
-          >
-            <div className="text-base sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight">לחשב חכם</div>
-          </div>
+      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 h-14 sm:h-16 flex items-center px-3 sm:px-4 lg:px-8 fixed w-full top-0 z-[100]">
+        {/* Menu button - always visible */}
+        <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} className="mr-1 sm:mr-2 h-9 w-9 sm:h-10 sm:w-10 shrink-0">
+          <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
+        </Button>
+
+        {/* Logo - centered on mobile, hidden on tablet, visible on large desktop */}
+        <div
+          className="flex-1 md:hidden lg:flex lg:flex-initial justify-center lg:justify-start overflow-hidden items-center cursor-pointer shimmer-element p-1.5 sm:p-2 rounded-lg"
+          onClick={() => navigate(createPageUrl('Dashboard'))}
+        >
+          <div className="text-base sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight">לחשב חכם</div>
         </div>
         
-        {/* --- New Navigation Buttons for Desktop (centered) --- */}
-        <nav className="hidden lg:flex items-center gap-3 flex-1 justify-center">
-          <Button 
+        {/* --- New Navigation Buttons for Desktop and Tablet (centered) --- */}
+        <nav className="hidden md:flex items-center gap-3 flex-1 justify-center">
+          <Button
             onClick={() => navigate(createPageUrl('ContractorPricing'))}
             variant="ghost"
             className="font-semibold text-gray-600 hover:bg-teal-50 hover:text-teal-700"
@@ -166,7 +166,7 @@ const PageLayout = ({ children, currentPageName }) => {
           <Separator orientation="vertical" className="h-6" />
 
           {/* Emphasized primary action in the center */}
-          <Button 
+          <Button
             onClick={() => navigate(createPageUrl('QuoteCreate'))}
             className="px-5 py-2.5 text-base rounded-full bg-gradient-to-r from-green-500 to-teal-500 text-white hover:from-green-600 hover:to-teal-600 shadow-sm"
           >
@@ -176,8 +176,8 @@ const PageLayout = ({ children, currentPageName }) => {
 
           <Separator orientation="vertical" className="h-6" />
 
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => navigate(createPageUrl('PricebookSettings'))} // Open PricebookSettings page
             className="font-semibold text-gray-600 hover:bg-purple-50 hover:text-purple-700"
           >
@@ -188,7 +188,7 @@ const PageLayout = ({ children, currentPageName }) => {
         {/* --- End of Navigation Buttons --- */}
 
         {user && (
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <span className="hidden md:inline-block text-xs sm:text-sm font-medium text-gray-700">{user.full_name}</span>
             <button
               onClick={() => navigate(createPageUrl('ContractAgreement'))}
@@ -210,7 +210,11 @@ const PageLayout = ({ children, currentPageName }) => {
         >
           {/* Added: Close button and header for sidebar */}
           <div className="flex justify-between items-center p-3 sm:p-4 border-b">
-             <div className="text-lg sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight">תפריט</div>
+            <div className="flex items-center gap-2">
+              <div className="text-lg sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight">לחשב חכם</div>
+              <Separator orientation="vertical" className="h-6" />
+              <div className="text-sm sm:text-base font-semibold text-gray-600">תפריט</div>
+            </div>
             <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)} className="h-9 w-9">
               <X className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
             </Button>
