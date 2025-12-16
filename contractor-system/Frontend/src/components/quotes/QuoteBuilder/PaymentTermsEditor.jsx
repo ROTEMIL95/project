@@ -10,8 +10,9 @@ import { format, addDays } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { isApprovalDependent, recalculatePaymentDates } from '@/lib/paymentDateUtils';
 
-export default function PaymentTermsEditor({ terms, onUpdateTerms, projectStartDate, projectEndDate }) {
+export default function PaymentTermsEditor({ terms, onUpdateTerms, projectStartDate, projectEndDate, approvalDate }) {
   const [localTerms, setLocalTerms] = useState(terms || []);
   const [isOpen, setIsOpen] = useState(false); // Default to closed
 
@@ -44,42 +45,18 @@ export default function PaymentTermsEditor({ terms, onUpdateTerms, projectStartD
     onUpdateTerms(updatedTerms);
   };
 
-  // Calculate dynamic payment dates based on project timeline
+  // Calculate dynamic payment dates based on project timeline using shared utility
   const calculateDynamicPaymentDates = () => {
-    if (!projectStartDate || !projectEndDate || localTerms.length === 0) {
-      return localTerms;
-    }
-
-    const startDate = new Date(projectStartDate);
-    const endDate = new Date(projectEndDate);
-    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-
-    return localTerms.map((term, index) => {
-      // Smart detection based on milestone description
-      const milestone = (term.milestone || '').toLowerCase();
-
-      let calculatedDate;
-
-      // First payment - start date
-      if (index === 0 || milestone.includes('מקדמה') || milestone.includes('ראשון') || milestone.includes('התחלה')) {
-        calculatedDate = startDate;
-      }
-      // Last payment - end date
-      else if (index === localTerms.length - 1 || milestone.includes('סופי') || milestone.includes('סיום') || milestone.includes('אחרון')) {
-        calculatedDate = endDate;
-      }
-      // Middle payments - distributed evenly
-      else {
-        const interval = totalDays / (localTerms.length - 1);
-        const daysToAdd = Math.round(interval * index);
-        calculatedDate = addDays(startDate, daysToAdd);
-      }
-
-      return {
-        ...term,
-        paymentDate: calculatedDate
-      };
-    });
+    return recalculatePaymentDates(
+      localTerms,
+      projectStartDate,
+      projectEndDate,
+      approvalDate
+    ).map(term => ({
+      ...term,
+      // Convert ISO string back to Date object for local state
+      paymentDate: term.paymentDate ? new Date(term.paymentDate) : null
+    }));
   };
 
   // Handler for auto-fill dates button
@@ -173,14 +150,41 @@ export default function PaymentTermsEditor({ terms, onUpdateTerms, projectStartD
             </Alert>
           )}
 
+          {/* Info about first payment date source */}
+          {localTerms.length > 0 && projectStartDate && (
+            <Alert className="bg-blue-50 border-blue-200">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800 text-sm">
+                {approvalDate ? (
+                  <>
+                    <strong>תשלום ראשון יחושב מתאריך אישור ההצעה:</strong>{' '}
+                    {format(new Date(approvalDate), 'd MMMM yyyy', { locale: he })}
+                  </>
+                ) : (
+                  <>
+                    <strong>תשלום ראשון יחושב מתאריך התחלת הפרויקט:</strong>{' '}
+                    {format(new Date(projectStartDate), 'd MMMM yyyy', { locale: he })}
+                    <br />
+                    <span className="text-xs text-blue-600 mt-1 inline-block">
+                      (תאריך האישור יעודכן אוטומטית כשתשנה את סטטוס ההצעה ל"אושר")
+                    </span>
+                  </>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {localTerms.map((term, index) => {
             // Check if this specific term has date conflicts based on the checkDateOrder logic
-            const hasConflict = dateOrderCheck.conflicts.some(conflict => 
+            const hasConflict = dateOrderCheck.conflicts.some(conflict =>
               conflict.current === index || conflict.next === index
             );
 
             // Get the payment date of the previous term to disable earlier dates in the calendar
             const previousTermDate = index > 0 ? localTerms[index - 1].paymentDate : null;
+
+            // Check if this payment is approval-dependent and if quote is not yet approved
+            const isAwaitingApproval = isApprovalDependent(term.milestone) && !approvalDate && !term.paymentDate;
 
             return (
               <div key={term.id || index} className="flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:gap-x-3 items-stretch sm:items-center p-2 sm:p-3 rounded-md bg-gray-50/50 hover:bg-gray-100/50 transition-colors">
@@ -216,7 +220,9 @@ export default function PaymentTermsEditor({ terms, onUpdateTerms, projectStartD
                               variant={"outline"}
                               className={cn(
                                   "w-full justify-start text-right font-normal text-xs sm:text-sm transition-colors duration-200 bg-white",
-                                  !term.paymentDate
+                                  isAwaitingApproval
+                                      ? "border-purple-300 text-purple-700 hover:bg-purple-50"
+                                      : !term.paymentDate
                                       ? "border-red-200 text-red-700 hover:bg-red-50"
                                       : hasConflict
                                       ? "border-amber-300 text-amber-800 hover:bg-amber-50"
@@ -225,7 +231,13 @@ export default function PaymentTermsEditor({ terms, onUpdateTerms, projectStartD
                           >
                               <CalendarIcon className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                               {hasConflict && <AlertCircle className="ml-1 h-3 w-3 text-amber-600" />}
-                              {term.paymentDate ? format(new Date(term.paymentDate), "d MMMM, yyyy", { locale: he }) : <span>בחר תאריך</span>}
+                              {isAwaitingApproval ? (
+                                <span>תאריך אישור ההצעה</span>
+                              ) : term.paymentDate ? (
+                                format(new Date(term.paymentDate), "d MMMM, yyyy", { locale: he })
+                              ) : (
+                                <span>בחר תאריך</span>
+                              )}
                           </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">

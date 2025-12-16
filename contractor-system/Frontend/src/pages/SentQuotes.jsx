@@ -5,6 +5,7 @@ import { createPageUrl } from '@/utils';
 import { Quote, FinancialTransaction } from '@/lib/entities';
 import { useUser } from '@/components/utils/UserContext';
 import { toHebrewStatus, toEnglishStatus } from '@/lib/statusMapping';
+import { recalculatePaymentDates } from '@/lib/paymentDateUtils';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -250,10 +251,43 @@ export default function SentQuotes() {
         }
 
         const oldStatus = quote.status;
-        
+
         try {
+            // בניית אובייקט העדכון
+            const updateData = { status: newStatus };
+
+            // שמירת תאריך אישור כאשר מאשרים הצעה
+            if (newStatus === 'approved' && oldStatus !== 'approved') {
+                const now = new Date().toISOString();
+                updateData.approved_at = now;
+
+                // ✅ חישוב מחדש של תאריכי תשלום
+                if (quote.paymentTerms && quote.paymentTerms.length > 0) {
+                    updateData.paymentTerms = recalculatePaymentDates(
+                        quote.paymentTerms,
+                        quote.generalStartDate,
+                        quote.generalEndDate,
+                        now  // תאריך האישור!
+                    );
+                }
+            }
+            // מחיקת תאריך אישור כאשר מבטלים אישור
+            else if (oldStatus === 'approved' && newStatus !== 'approved') {
+                updateData.approved_at = null;
+
+                // ✅ חישוב מחדש של תאריכי תשלום ללא תאריך אישור
+                if (quote.paymentTerms && quote.paymentTerms.length > 0) {
+                    updateData.paymentTerms = recalculatePaymentDates(
+                        quote.paymentTerms,
+                        quote.generalStartDate,
+                        quote.generalEndDate,
+                        null  // ביטול אישור - ללא תאריך אישור
+                    );
+                }
+            }
+
             // עדכון סטטוס ההצעה
-            await Quote.update(quote.id, { status: newStatus });
+            await Quote.update(quote.id, updateData);
             
             // טיפול בטרנזקציות פיננסיות בהתאם לשינוי הסטטוס
             await handleFinancialTransactionSync(quote, oldStatus, newStatus);

@@ -2491,6 +2491,7 @@ export default function QuoteCreate() {
                   onUpdateTerms={setPaymentTerms}
                   projectStartDate={projectInfo.generalStartDate}
                   projectEndDate={projectInfo.generalEndDate}
+                  approvalDate={projectInfo.approved_at}
                 />
               </div>
             </CardContent>

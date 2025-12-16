@@ -3,6 +3,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { formatPrice } from '@/lib/utils';
+import { isApprovalDependent } from '@/lib/paymentDateUtils';
 
 // מפת צבעים לקטגוריות - צבעים עדינים ורכים
 const CATEGORY_STYLES = {
@@ -550,29 +551,35 @@ export default function QuoteToHTML({ quote }) {
         gap: 20px;
         align-items: center;
       }
-      
+
       .term-percentage {
         font-size: 18px;
         font-weight: 700;
         color: #111827;
+        width: 60px;
         min-width: 60px;
         text-align: center;
+        flex-shrink: 0;
       }
 
       .term-amount {
         font-size: 18px;
         font-weight: 700;
         color: #111827;
+        width: 120px;
         min-width: 120px;
         text-align: left;
+        flex-shrink: 0;
       }
-      
+
       .term-date {
         color: #6b7280;
         font-size: 14px;
         font-weight: 500;
-        min-width: 100px;
+        width: 150px;
+        min-width: 150px;
         text-align: left;
+        flex-shrink: 0;
       }
       
       /* New: Variable Costs Section - מונוכרומי */
@@ -2143,14 +2150,19 @@ export default function QuoteToHTML({ quote }) {
                   ${quote.paymentTerms.map(term => {
                     const finalAmount = quote.finalAmount || 0;
                     const termAmount = Math.round((finalAmount * (term.percentage || 0)) / 100);
-                    
+
+                    // Check if this payment is approval-dependent and if quote is not yet approved
+                    const isAwaitingApproval = isApprovalDependent(term.milestone) && !quote.approved_at && !term.paymentDate;
+
                     return `
                       <div class="payment-term">
                         <div class="term-milestone">${term.milestone || ''}</div>
                         <div class="term-details">
                           <div class="term-percentage">${term.percentage || 0}%</div>
                           <div class="term-amount">₪${formatPrice(termAmount)}</div>
-                          ${term.paymentDate ? `
+                          ${isAwaitingApproval ? `
+                            <div class="term-date" style="color: #9333ea; font-weight: 600;">תאריך אישור ההצעה</div>
+                          ` : term.paymentDate ? `
                             <div class="term-date">${format(new Date(term.paymentDate), 'd/M/yyyy', { locale: he })}</div>
                           ` : ''}
                         </div>

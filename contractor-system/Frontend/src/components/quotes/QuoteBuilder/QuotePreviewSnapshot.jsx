@@ -30,6 +30,8 @@ export default function QuotePreviewSnapshot({ projectInfo, totals, selectedItem
         generalStartDate: projectInfo.generalStartDate,
         workDays: projectInfo.workDays,
         generalEndDate: projectInfo.generalEndDate,
+        paymentTerms: projectInfo.paymentTerms,  // ✅ Added payment terms
+        approved_at: projectInfo.approved_at,  // ✅ Added approval date
       };
 
       // ✅ צור root רק פעם אחת, אחר כך רק עדכן

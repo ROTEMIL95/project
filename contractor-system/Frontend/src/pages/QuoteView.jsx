@@ -107,19 +107,19 @@ export default function QuoteView() {
   return (
     <div className="bg-gray-100 min-h-screen">
       <div className="container mx-auto p-4 sm:p-8">
-        <div className="bg-white rounded-t-lg shadow-md p-4 border-b flex justify-between items-center">
-            <h2 className="text-xl font-bold text-gray-800">תצוגה מקדימה: {quote.projectName}</h2>
-            <div className="flex gap-2">
-                 <Button variant="outline" onClick={handleEdit} className="ml-2">
-                    <Edit className="mr-2 h-4 w-4" />
+        <div className="bg-white rounded-t-lg shadow-md p-3 sm:p-4 border-b flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-0">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 text-center sm:text-right">תצוגה מקדימה: {quote.projectName}</h2>
+            <div className="flex flex-col sm:flex-row gap-2">
+                 <Button variant="outline" onClick={handleEdit} className="w-full sm:w-auto text-sm sm:text-base">
+                    <Edit className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                     ערוך הצעה
                  </Button>
-                 <Button variant="outline" onClick={handlePrintDownload}>
-                    <Download className="mr-2 h-4 w-4" />
-                    הורדה/הדפסה
+                 <Button variant="outline" onClick={handlePrintDownload} className="w-full sm:w-auto text-sm sm:text-base">
+                    <Download className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    הורדה
                  </Button>
-                 <Button onClick={() => navigate(createPageUrl('SentQuotes'))}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
+                 <Button onClick={() => navigate(createPageUrl('SentQuotes'))} className="w-full sm:w-auto text-sm sm:text-base">
+                    <ArrowLeft className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                     חזור לרשימה
                  </Button>
             </div>
