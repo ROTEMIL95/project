@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon, Trash2, PlusCircle, AlertCircle, Info, ChevronDown, ChevronUp, Settings } from 'lucide-react';
-import { format } from 'date-fns';
+import { Calendar as CalendarIcon, Trash2, PlusCircle, AlertCircle, Info, ChevronDown, ChevronUp, Settings, Sparkles } from 'lucide-react';
+import { format, addDays } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export default function PaymentTermsEditor({ terms, onUpdateTerms }) {
+export default function PaymentTermsEditor({ terms, onUpdateTerms, projectStartDate, projectEndDate }) {
   const [localTerms, setLocalTerms] = useState(terms || []);
   const [isOpen, setIsOpen] = useState(false); // Default to closed
 
@@ -40,6 +40,51 @@ export default function PaymentTermsEditor({ terms, onUpdateTerms }) {
 
   const handleRemoveTerm = (index) => {
     const updatedTerms = localTerms.filter((_, i) => i !== index);
+    setLocalTerms(updatedTerms);
+    onUpdateTerms(updatedTerms);
+  };
+
+  // Calculate dynamic payment dates based on project timeline
+  const calculateDynamicPaymentDates = () => {
+    if (!projectStartDate || !projectEndDate || localTerms.length === 0) {
+      return localTerms;
+    }
+
+    const startDate = new Date(projectStartDate);
+    const endDate = new Date(projectEndDate);
+    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+
+    return localTerms.map((term, index) => {
+      // Smart detection based on milestone description
+      const milestone = (term.milestone || '').toLowerCase();
+
+      let calculatedDate;
+
+      // First payment - start date
+      if (index === 0 || milestone.includes('מקדמה') || milestone.includes('ראשון') || milestone.includes('התחלה')) {
+        calculatedDate = startDate;
+      }
+      // Last payment - end date
+      else if (index === localTerms.length - 1 || milestone.includes('סופי') || milestone.includes('סיום') || milestone.includes('אחרון')) {
+        calculatedDate = endDate;
+      }
+      // Middle payments - distributed evenly
+      else {
+        const interval = totalDays / (localTerms.length - 1);
+        const daysToAdd = Math.round(interval * index);
+        calculatedDate = addDays(startDate, daysToAdd);
+      }
+
+      return {
+        ...term,
+        paymentDate: calculatedDate
+      };
+    });
+  };
+
+  // Handler for auto-fill dates button
+  const handleAutoFillDates = () => {
+    const updatedTerms = calculateDynamicPaymentDates();
     setLocalTerms(updatedTerms);
     onUpdateTerms(updatedTerms);
   };
@@ -207,10 +252,22 @@ export default function PaymentTermsEditor({ terms, onUpdateTerms }) {
           })}
 
           <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center pt-3 border-t gap-2 sm:gap-3">
-            <Button variant="outline" onClick={handleAddTerm} className="text-xs sm:text-sm w-full sm:w-auto">
-              <PlusCircle className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
-              הוסף שלב תשלום
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button variant="outline" onClick={handleAddTerm} className="text-xs sm:text-sm w-full sm:w-auto">
+                <PlusCircle className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                הוסף שלב תשלום
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleAutoFillDates}
+                disabled={!projectStartDate || !projectEndDate || localTerms.length === 0}
+                className="text-xs sm:text-sm w-full sm:w-auto border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!projectStartDate || !projectEndDate ? "נא למלא תאריכי פרויקט" : "מלא תאריכים אוטומטית לפי לוח זמנים"}
+              >
+                <Sparkles className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                מלא תאריכים אוטומטית
+              </Button>
+            </div>
             <div className={cn("text-xs sm:text-sm font-bold flex items-center justify-center sm:justify-end gap-1 sm:gap-2", totalPercentage === 100 ? "text-green-600" : "text-red-600")}>
                 {totalPercentage !== 100 && <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />}
                 <span>סה"כ: {totalPercentage}%</span>

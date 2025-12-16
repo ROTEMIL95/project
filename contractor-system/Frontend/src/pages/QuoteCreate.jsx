@@ -2489,6 +2489,8 @@ export default function QuoteCreate() {
                 <PaymentTermsEditor
                   terms={paymentTerms}
                   onUpdateTerms={setPaymentTerms}
+                  projectStartDate={projectInfo.generalStartDate}
+                  projectEndDate={projectInfo.generalEndDate}
                 />
               </div>
             </CardContent>
