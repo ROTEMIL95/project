@@ -1067,18 +1067,7 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <Label htmlFor="panelUtilizationPercent">כמות תפוקה לפאנל באחוזים (%)</Label>
-                                                     <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                          <span className="w-4 h-4 rounded-full bg-gray-400 text-white text-xs flex items-center justify-center cursor-help">
-                                                            ?
-                                                          </span>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent side="bottom" align="start" className="max-w-xs bg-gray-800 text-white p-3 rounded-lg border-none">
-                                                            <p className="font-bold">קובע איזה אחוז מעלות מטר מרובע של האריח המקורי מתורגם לעלות מטר רץ אחד של פאנל מוגמר.</p>
-                                                            <p className="mt-2"><strong>דוגמה:</strong> אם מחיר למטר מרובע של אריח הוא 60 ש"ח, וכמות התפוקה לפאנל היא 50%, אז עלות החומר למטר רץ של פאנל תהיה 30 ש"ח.</p>
-                                                        </TooltipContent>
-                                                      </Tooltip>
+                                                <Label htmlFor="panelUtilizationPercent">אחוז ניצול חומר לפאנל (%)</Label>
                                                 </div>
                                                 <Input
                                                     id="panelUtilizationPercent"
@@ -1089,6 +1078,9 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
                                                     placeholder="ברירת מחדל מהגדרות"
                                                     className="bg-white border-amber-200 focus:border-amber-400 h-12 text-base md:text-lg"
                                                 />
+                                                <p className="text-xs text-amber-700 mt-1">
+                                                    💡 ככל שהאחוז נמוך יותר – העלות למטר יורדת
+                                                </p>
                                             </div>
                                     </div>
                                     <p className="text-xs text-amber-700">
