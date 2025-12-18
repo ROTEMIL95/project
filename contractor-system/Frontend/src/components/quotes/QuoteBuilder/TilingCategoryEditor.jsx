@@ -1494,8 +1494,37 @@ export default React.forwardRef(function TilingCategoryEditor({
                             <div className="grid grid-cols-3 gap-3">
                               <div className="p-3 bg-gray-100 rounded-lg text-center shadow-sm border border-gray-200">
                                 <Label className="text-xs text-gray-500">עלות חומרים (סה"כ)</Label>
-                                <p className="font-bold text-black text-base">₪{formatPrice(itemMetrics.totalMaterialCost || 0)}</p>
-                                <span className="text-xs text-gray-400">ריצוף + חומר שחור</span>
+                                {(() => {
+                                  // Get quantities and costs
+                                  const regularQuantity = parseFloat(item.quantity) || 0;
+                                  const panelQuantity = parseFloat(item.panelQuantity) || 0;
+                                  const panelUtilization = parseFloat(item.selectedItemData?.panelUtilizationPercent) || 0;
+                                  const tilingCost = parseFloat(item.selectedItemData?.materialCost) || 0;
+                                  const blackMaterialCost = parseFloat(item.selectedItemData?.additionalCost) || 0;
+
+                                  const hasAnyData = (regularQuantity > 0 || panelQuantity > 0) && (tilingCost > 0 || blackMaterialCost > 0);
+
+                                  // Calculate total from breakdown
+                                  let totalFromBreakdown = 0;
+
+                                  // Regular tiling
+                                  if (regularQuantity > 0) {
+                                    if (tilingCost > 0) totalFromBreakdown += tilingCost * regularQuantity;
+                                    if (blackMaterialCost > 0) totalFromBreakdown += blackMaterialCost * regularQuantity;
+                                  }
+
+                                  // Panel
+                                  if (panelQuantity > 0 && panelUtilization > 0) {
+                                    if (tilingCost > 0) totalFromBreakdown += (tilingCost * (panelUtilization / 100)) * panelQuantity;
+                                    if (blackMaterialCost > 0) totalFromBreakdown += (blackMaterialCost * (panelUtilization / 100)) * panelQuantity;
+                                  }
+
+                                  if (!hasAnyData) {
+                                    return <p className="font-bold text-gray-400 text-base">₪0</p>;
+                                  }
+
+                                  return <p className="font-bold text-black text-base">₪{formatPrice(Math.round(totalFromBreakdown))}</p>;
+                                })()}
                               </div>
                               <div className="p-3 bg-gray-100 rounded-lg text-center shadow-sm border border-gray-200">
                                 <Label className="text-xs text-gray-500">עלות עובדים סה"כ</Label>
