@@ -1096,7 +1096,7 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
                                                                 <span className="font-semibold text-teal-800">
                                                                     {formatPrice(Math.round(totalPanelCost))} ש״ח
                                                                 </span>
-                                                                <span className="text-teal-700"> ניצול חומר לפאנל למטר רץ</span>
+                                                                <span className="text-teal-700"> עלות חומר לפאנל למטר רץ</span>
                                                             </div>
                                                         );
                                                     }
@@ -1104,9 +1104,6 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
                                                 })()}
                                             </div>
                                     </div>
-                                    <p className="text-xs text-amber-700">
-                                        💡 הערכים למעלה נלקחים מברירות המחדל שהגדרת ב"ניהול מתקדם", אך ניתן לשנות אותם עבור פריט זה בלבד. הכמות הפועלית של הפאנל תיבחר בהצעת המחיר.
-                                    </p>
                                 </div>
                             )}
                         </div>
