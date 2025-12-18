@@ -1081,6 +1081,27 @@ export default function TilingForm({ editItem, onSubmit, onCancel, defaults, use
                                                 <p className="text-xs text-amber-700 mt-1">
                                                     💡 ככל שהאחוז נמוך יותר – העלות למטר יורדת
                                                 </p>
+                                                {(() => {
+                                                    const utilizationPercent = Number(formData.panelUtilizationPercent) || 0;
+                                                    const tilingCost = Number(formData.materialCost) || 0;
+                                                    const blackMaterialCost = Number(formData.additionalCost) || 0;
+
+                                                    if (utilizationPercent > 0 && (tilingCost > 0 || blackMaterialCost > 0)) {
+                                                        const tilingUtilization = tilingCost * (utilizationPercent / 100);
+                                                        const blackMaterialUtilization = blackMaterialCost * (utilizationPercent / 100);
+                                                        const totalPanelCost = tilingUtilization + blackMaterialUtilization;
+
+                                                        return (
+                                                            <div className="mt-2 p-2 bg-teal-50 border border-teal-200 rounded text-sm">
+                                                                <span className="font-semibold text-teal-800">
+                                                                    {formatPrice(Math.round(totalPanelCost))} ש״ח
+                                                                </span>
+                                                                <span className="text-teal-700"> ניצול חומר לפאנל למטר רץ</span>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })()}
                                             </div>
                                     </div>
                                     <p className="text-xs text-amber-700">
