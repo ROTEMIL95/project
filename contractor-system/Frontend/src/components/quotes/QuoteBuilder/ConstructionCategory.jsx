@@ -78,6 +78,8 @@ export default function ConstructionCategory({
   selectedItems = [],
   setSelectedItems,
   onProceed,
+  generalStartDate,
+  generalEndDate,
 }) {
   const { user: currentUser } = useUser();
   const [pricingDefaults, setPricingDefaults] = React.useState({
@@ -568,7 +570,24 @@ export default function ConstructionCategory({
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start" side="bottom">
-                          <Calendar mode="single" selected={startDate} onSelect={handleStartSelect} initialFocus />
+                          <Calendar
+                            mode="single"
+                            selected={startDate}
+                            onSelect={handleStartSelect}
+                            initialFocus
+                            disabled={(date) => {
+                              if (!generalStartDate) return false;
+                              const minDate = new Date(generalStartDate);
+                              if (generalEndDate) {
+                                const maxDate = new Date(generalEndDate);
+                                minDate.setHours(0,0,0,0);
+                                maxDate.setHours(23,59,59,999);
+                                return date < minDate || date > maxDate;
+                              }
+                              minDate.setHours(0,0,0,0);
+                              return date < minDate;
+                            }}
+                          />
                         </PopoverContent>
                       </Popover>
                     </div>
@@ -586,7 +605,33 @@ export default function ConstructionCategory({
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start" side="bottom">
-                          <Calendar mode="single" selected={endDate} onSelect={handleEndSelect} initialFocus />
+                          <Calendar
+                            mode="single"
+                            selected={endDate}
+                            onSelect={handleEndSelect}
+                            initialFocus
+                            disabled={(date) => {
+                              const getTomorrow = (d) => {
+                                const nextDay = new Date(d);
+                                nextDay.setDate(d.getDate() + 1);
+                                return nextDay;
+                              };
+                              const minDate = startDate ? getTomorrow(startDate) : (generalStartDate ? new Date(generalStartDate) : undefined);
+                              const generalMaxDate = generalEndDate ? new Date(generalEndDate) : undefined;
+                              generalMaxDate?.setHours(23,59,59,999);
+
+                              if (minDate && generalMaxDate) {
+                                minDate.setHours(0,0,0,0);
+                                return date < minDate || date > generalMaxDate;
+                              } else if (minDate) {
+                                minDate.setHours(0,0,0,0);
+                                return date < minDate;
+                              } else if (generalMaxDate) {
+                                return date > generalMaxDate;
+                              }
+                              return false;
+                            }}
+                          />
                         </PopoverContent>
                       </Popover>
                     </div>

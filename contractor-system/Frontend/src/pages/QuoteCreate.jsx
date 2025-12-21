@@ -303,6 +303,8 @@ function PersistedStep3({
           categoriesNav={orderedCategories}
           currentCategoryId={effectiveCategoryId}
           onSelectCategory={setCurrentCategoryForItems}
+          generalStartDate={generalStartDate}
+          generalEndDate={generalEndDate}
         />
       </ErrorBoundary>
     );
@@ -320,6 +322,8 @@ function PersistedStep3({
           selectedItems={selectedItems}
           setSelectedItems={setSelectedItems}
           onProceed={onProceedToAdditionalCosts}
+          generalStartDate={generalStartDate}
+          generalEndDate={generalEndDate}
         />
       </ErrorBoundary>
     );
@@ -337,6 +341,8 @@ function PersistedStep3({
           currentCategoryId={effectiveCategoryId}
           onSelectCategory={setCurrentCategoryForItems}
           onProceed={onProceedToAdditionalCosts}
+          generalStartDate={generalStartDate}
+          generalEndDate={generalEndDate}
         />
       </ErrorBoundary>
     );
@@ -354,6 +360,8 @@ function PersistedStep3({
           currentCategoryId={effectiveCategoryId}
           onSelectCategory={setCurrentCategoryForItems}
           onProceed={onProceedToAdditionalCosts}
+          generalStartDate={generalStartDate}
+          generalEndDate={generalEndDate}
         />
       </ErrorBoundary>
     );

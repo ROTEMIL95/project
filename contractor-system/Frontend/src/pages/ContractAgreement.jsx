@@ -148,14 +148,7 @@ export default function ContractAgreementPage() {
     }
     
     if (position === 'middle') {
-      switch (paymentRule.type) {
-        case 'proportional':
-          return 'תשלום אמצע - פרופורציונלי (חלוקה שווה)';
-        case 'before_category_start':
-          return 'תשלום אמצע - לפי התקדמות (לפני שלב)';
-        default:
-          return 'תשלום אמצע - באמצע הפרויקט';
-      }
+      return 'תשלום אמצע - באמצע הפרויקט';
     }
     
     if (position === 'last') {
@@ -889,18 +882,9 @@ export default function ContractAgreementPage() {
                                             )}
                                         </>
                                     ) : (
-                                        <Select 
-                                            value={term.paymentDateRule.type} 
-                                            onValueChange={(value) => handlePaymentRuleChange(term.id, 'type', value)}
-                                        >
-                                            <SelectTrigger className="text-sm">
-                                                <SelectValue placeholder="בחר כלל תזמון" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="proportional">פרופורציונלי (חלוקה שווה)</SelectItem>
-                                                <SelectItem value="before_category_start">לפי התקדמות (לפני שלב)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <div className="text-sm text-gray-600 text-center">
+                                            באמצע הפרויקט
+                                        </div>
                                     )}
                                     </div>
                                 </TableCell>
