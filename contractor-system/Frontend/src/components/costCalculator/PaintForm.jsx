@@ -176,6 +176,71 @@ const calculateInternalPaintMetrics = (formData, squareMeters, layersToApply, de
   };
 };
 
+// פונקציה לחישוב ממוצע של כל השכבות האפשריות
+const calculateAverageMetricsForAllLayers = (formData, referenceQuantity, desiredProfitPercent, roundBucketCost, roundWorkDays, userDefaults) => {
+  const numLayers = formData.layerSettings?.length || 0;
+
+  if (numLayers === 0 || !referenceQuantity || referenceQuantity <= 0) {
+    return null;
+  }
+
+  // חשב עבור כל מספר שכבות אפשרי (1, 2, 3...)
+  const metricsPerLayerCount = [];
+
+  for (let layerCount = 1; layerCount <= numLayers; layerCount++) {
+    const fd = {
+      ...formData,
+      workerDailyCost: Number(formData.workerDailyCost || userDefaults?.workerDailyCost || 0)
+    };
+
+    const metrics = calculateInternalPaintMetrics(
+      fd,
+      referenceQuantity,
+      layerCount,
+      desiredProfitPercent,
+      roundBucketCost,
+      roundWorkDays
+    );
+
+    if (metrics) {
+      metricsPerLayerCount.push(metrics);
+    }
+  }
+
+  if (metricsPerLayerCount.length === 0) {
+    return null;
+  }
+
+  // חשב ממוצע
+  const avgCostPerMeter = metricsPerLayerCount.reduce((sum, m) => sum + m.costPerMeter, 0) / metricsPerLayerCount.length;
+  const avgPricePerMeter = metricsPerLayerCount.reduce((sum, m) => sum + m.pricePerMeter, 0) / metricsPerLayerCount.length;
+  const avgProfitPerMeter = metricsPerLayerCount.reduce((sum, m) => sum + m.profitPerMeter, 0) / metricsPerLayerCount.length;
+  const avgProfitPercentage = avgCostPerMeter > 0 ? (avgProfitPerMeter / avgCostPerMeter) * 100 : 0;
+
+  console.log('🎨 Average metrics for all layers:', {
+    numLayers,
+    metricsPerLayerCount: metricsPerLayerCount.map(m => ({
+      costPerMeter: m.costPerMeter,
+      pricePerMeter: m.pricePerMeter,
+      profitPerMeter: m.profitPerMeter
+    })),
+    averages: {
+      avgCostPerMeter,
+      avgPricePerMeter,
+      avgProfitPerMeter,
+      avgProfitPercentage
+    }
+  });
+
+  return {
+    costPerMeter: avgCostPerMeter,
+    pricePerMeter: avgPricePerMeter,
+    profitPerMeter: avgProfitPerMeter,
+    profitPercentage: avgProfitPercentage,
+    layerRange: `1-${numLayers}`
+  };
+};
+
 function TypeManagerDialog({ isOpen, onOpenChange, title, types, onSave }) {
   const [editableTypes, setEditableTypes] = useState([]);
 
@@ -833,10 +898,22 @@ export default function PaintForm({ onSubmit, onCancel, editItem, userPaintDefau
         const finalDesiredProfitPercent = (formData.desiredProfitPercent !== '' && formData.desiredProfitPercent !== undefined)
           ? Number(formData.desiredProfitPercent)
           : Number(userPaintDefaults?.desiredProfitPercent || 0);
-        const avgCostPerSqm = quickMetrics.costPerMeter;
-        const avgCustomerPrice = quickMetrics.pricePerMeter;
-        const avgProfitPerSqm = Number(quickMetrics.profitPerMeter); // Ensure this is a number from the calculation
-        const avgProfitPercent = quickMetrics.profitPercentage;
+
+        // ✅ חשב ממוצע של כל השכבות במקום רק השכבות האינדיקטיביות
+        const averageMetrics = calculateAverageMetricsForAllLayers(
+          formData,
+          quickPricingMode.indicativeQuantity || 50, // כמות ייחוס
+          finalDesiredProfitPercent,
+          roundBucketCost,
+          roundWorkDays,
+          userPaintDefaults
+        );
+
+        // אם הצלחנו לחשב ממוצע - השתמש בו, אחרת השתמש בערכים הרגילים
+        const avgCostPerSqm = averageMetrics?.costPerMeter || quickMetrics.costPerMeter;
+        const avgCustomerPrice = averageMetrics?.pricePerMeter || quickMetrics.pricePerMeter;
+        const avgProfitPerSqm = averageMetrics?.profitPerMeter || Number(quickMetrics.profitPerMeter);
+        const avgProfitPercent = averageMetrics?.profitPercentage || quickMetrics.profitPercentage;
 
         const newItem = {
             id: formData.id || editItem?.id || `paint_${Date.now()}`,

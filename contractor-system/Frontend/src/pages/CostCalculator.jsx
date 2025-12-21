@@ -1475,10 +1475,10 @@ export default function CostCalculator() {
                                         <TableCell colSpan={6} className="text-right font-bold text-blue-800">צבע</TableCell>
                                       </TableRow>
                                       {paintGroup.map(item => {
-                                        const costPerMeter = item.averageCostPerMeter !== undefined ? Number(item.averageCostPerMeter) : calculatePaintCostPerMeter(item);
-                                        const pricePerMeter = item.averageCustomerPrice !== undefined ? Number(item.averageCustomerPrice) : calculatePaintPricePerMeter(item);
-                                        let profitPerMeter = 0; // let profitPercent = 0; // Removed as profit percent column is removed
-                                        if (costPerMeter > 0) { profitPerMeter = pricePerMeter - costPerMeter; /* profitPercent = (profitPerMeter / costPerMeter) * 100; */ } else if (pricePerMeter > 0) { profitPerMeter = pricePerMeter; /* profitPercent = Infinity; */ }
+                                        // ✅ תמיד להשתמש בערכים השמורים מהטופס (מתחתית הטופס)
+                                        const costPerMeter = Number(item.averageCostPerMeter || 0);
+                                        const pricePerMeter = Number(item.averageCustomerPrice || 0);
+                                        const profitPerMeter = Number(item.averageProfitPerMeter || 0);
 
                                         let displayName = item.itemName ? item.itemName.replace('עבודת צבע ', '').trim() : (item.paintName || 'צבע');
                                         const itemTypeDisplay = "צבע";
@@ -1517,10 +1517,10 @@ export default function CostCalculator() {
                                         <TableCell colSpan={6} className="text-right font-bold text-orange-800">שפכטל</TableCell>
                                       </TableRow>
                                       {plasterGroup.map(item => {
-                                        const costPerMeter = item.averageCostPerMeter !== undefined ? Number(item.averageCostPerMeter) : calculatePaintCostPerMeter(item);
-                                        const pricePerMeter = item.averageCustomerPrice !== undefined ? Number(item.averageCustomerPrice) : calculatePaintPricePerMeter(item);
-                                        let profitPerMeter = 0; // let profitPercent = 0; // Removed as profit percent column is removed
-                                        if (costPerMeter > 0) { profitPerMeter = pricePerMeter - costPerMeter; /* profitPercent = (profitPerMeter / costPerMeter) * 100; */ } else if (pricePerMeter > 0) { profitPerMeter = pricePerMeter; /* profitPercent = Infinity; */ }
+                                        // ✅ תמיד להשתמש בערכים השמורים מהטופס (מתחתית הטופס)
+                                        const costPerMeter = Number(item.averageCostPerMeter || 0);
+                                        const pricePerMeter = Number(item.averageCustomerPrice || 0);
+                                        const profitPerMeter = Number(item.averageProfitPerMeter || 0);
 
                                         let displayName = item.itemName ? item.itemName.replace('עבודת טיח ', '').replace('עבודת שפכטל ', '').trim() : (item.plasterName || 'שפכטל');
                                         const itemTypeDisplay = "שפכטל";
