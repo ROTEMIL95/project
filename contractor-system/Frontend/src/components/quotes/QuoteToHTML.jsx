@@ -792,6 +792,58 @@ export default function QuoteToHTML({ quote }) {
         color: #374151; /* text-gray-700 */
       }
 
+      /* ===== SIGNATURE SECTION ===== */
+      .signature-section {
+        margin: 40px;
+        padding: 32px;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        page-break-inside: avoid;
+      }
+
+      .signature-section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #111827;
+        text-align: center;
+        margin-bottom: 32px;
+        letter-spacing: -0.3px;
+      }
+
+      .signatures-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 48px;
+      }
+
+      .signature-box {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .signature-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: #374151;
+        text-align: center;
+      }
+
+      .signature-line {
+        border-bottom: 2px solid #111827;
+        height: 60px;
+        background: #fafafa;
+        border-radius: 4px;
+      }
+
+      .signature-date-line {
+        font-size: 14px;
+        color: #6b7280;
+        text-align: center;
+        margin-top: 8px;
+      }
+
       /* ===== RESPONSIVE MOBILE STYLES ===== */
       @media (max-width: 768px) {
         body {
@@ -1037,6 +1089,33 @@ export default function QuoteToHTML({ quote }) {
         }
 
         .quote-footer p {
+          font-size: 13px;
+        }
+
+        .signature-section {
+          margin: 24px 16px;
+          padding: 20px;
+        }
+
+        .signature-section-title {
+          font-size: 18px;
+          margin-bottom: 24px;
+        }
+
+        .signatures-grid {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+
+        .signature-label {
+          font-size: 15px;
+        }
+
+        .signature-line {
+          height: 50px;
+        }
+
+        .signature-date-line {
           font-size: 13px;
         }
       }
@@ -1519,6 +1598,41 @@ export default function QuoteToHTML({ quote }) {
           color: #000 !important;
         }
 
+        /* ===== Signature Section ===== */
+        .signature-section {
+          margin: 15px 10px !important;
+          padding: 20px 15px !important;
+          background: white !important;
+          border: 2px solid #000 !important;
+          page-break-inside: avoid;
+        }
+
+        .signature-section-title {
+          font-size: 14pt;
+          margin-bottom: 20px;
+          color: #000 !important;
+        }
+
+        .signatures-grid {
+          gap: 30px;
+        }
+
+        .signature-label {
+          font-size: 11pt;
+          color: #000 !important;
+        }
+
+        .signature-line {
+          border-bottom: 2px solid #000 !important;
+          background: #f9f9f9 !important;
+          height: 50px;
+        }
+
+        .signature-date-line {
+          font-size: 9pt;
+          color: #333 !important;
+        }
+
         /* ===== Page Break Controls ===== */
         /* Prevent breaking inside key sections */
         .category-block,
@@ -1527,6 +1641,7 @@ export default function QuoteToHTML({ quote }) {
         .final-summary,
         .payment-terms,
         .commitments-wrapper,
+        .signature-section,
         .quote-footer {
           page-break-inside: avoid;
           break-inside: avoid;
@@ -1953,7 +2068,10 @@ export default function QuoteToHTML({ quote }) {
 
                               rows += `
                               <tr class="${roomSizeClass}">
-                                <td><strong>${item.name || item.description || ''} - קירות</strong></td>
+                                <td>
+                                  <strong>${item.name || item.description || ''} - קירות</strong>
+                                  ${item.name && item.description ? `<br/><span style="font-size: 12px; color: #6b7280; font-weight: normal;">${item.description}</span>` : ''}
+                                </td>
                                 <td>${wallPaintType}</td>
                                 <td>${wallLayers}</td>
                                 <td>${formatPrice(item.wallPaintQuantity || 0)} מ"ר</td>
@@ -1974,7 +2092,10 @@ export default function QuoteToHTML({ quote }) {
 
                               rows += `
                               <tr class="${roomSizeClass}">
-                                <td><strong>${item.name || item.description || ''} - תקרה</strong></td>
+                                <td>
+                                  <strong>${item.name || item.description || ''} - תקרה</strong>
+                                  ${item.name && item.description ? `<br/><span style="font-size: 12px; color: #6b7280; font-weight: normal;">${item.description}</span>` : ''}
+                                </td>
                                 <td>${ceilingPaintType}</td>
                                 <td>${ceilingLayers}</td>
                                 <td>${formatPrice(item.ceilingPaintQuantity || 0)} מ"ר</td>
@@ -1994,7 +2115,10 @@ export default function QuoteToHTML({ quote }) {
 
                               return `
                               <tr class="${roomSizeClass}">
-                                <td><strong>${item.name || item.description || ''}</strong></td>
+                                <td>
+                                  <strong>${item.name || item.description || ''}</strong>
+                                  ${item.name && item.description ? `<br/><span style="font-size: 12px; color: #6b7280; font-weight: normal;">${item.description}</span>` : ''}
+                                </td>
                                 ${categoryId === 'cat_tiling' ? `
                                 <td>${getWorkTypeName(item.workType)}</td>
                                 <td>${getSelectedSize(item)}</td>
@@ -2226,6 +2350,23 @@ export default function QuoteToHTML({ quote }) {
                   </p>
                 </div>
               ` : ''}
+            </div>
+
+            <!-- אזור חתימות -->
+            <div class="signature-section">
+              <div class="signature-section-title">חתימות</div>
+              <div class="signatures-grid">
+                <div class="signature-box">
+                  <div class="signature-label">חתימת הקבלן</div>
+                  <div class="signature-line"></div>
+                  <div class="signature-date-line">תאריך: ___/___/______</div>
+                </div>
+                <div class="signature-box">
+                  <div class="signature-label">חתימת הלקוח</div>
+                  <div class="signature-line"></div>
+                  <div class="signature-date-line">תאריך: ___/___/______</div>
+                </div>
+              </div>
             </div>
 
             <!-- Footer -->
