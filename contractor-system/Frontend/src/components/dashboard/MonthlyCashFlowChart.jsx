@@ -10,44 +10,55 @@ import { createPageUrl } from "@/utils";
 import { supabase } from '@/lib/supabase';
 
 // פונקציה לחישוב תאריך הוצאה לפי כללי תזמון
+// תומך בכל אפשרויות התזמון מהמחירון קבלן (PricebookSettings)
 const calculateExpenseDate = (timingRule, categoryStartDate, categoryEndDate, baseDate = new Date()) => {
   if (!timingRule || !timingRule.type) {
     return categoryStartDate; // ברירת מחדל
   }
 
-  const { type, dayOfMonth, offsetDays } = timingRule;
+  const { type, dayOfMonth, offsetDays, daysBefore } = timingRule;
 
   switch (type) {
     case 'fixed_day_of_month': {
-      // מחשב את התאריך הקרוב ביותר שיש בו את היום הנדרש
+      // יום קבוע בחודש (למשל: משכורת ב-1 לחודש)
       const targetDay = Number(dayOfMonth) || 1;
       const startMonth = new Date(categoryStartDate);
       const startYear = startMonth.getFullYear();
       const startMonthNum = startMonth.getMonth();
-      
+
       // נסה להניח את התשלום בחודש של תחילת העבודה
       let targetDate = new Date(startYear, startMonthNum, targetDay);
-      
+
       // אם התאריך עבר, קח את החודש הבא
       if (targetDate < startMonth) {
         targetDate = new Date(startYear, startMonthNum + 1, targetDay);
       }
-      
+
       return targetDate;
     }
 
     case 'category_start':
+      // תחילת עבודה - לרוב משמש לחומרים
       return new Date(categoryStartDate);
 
     case 'category_end':
+      // סיום עבודה - לרוב משמש לתשלום פועלים
       return new Date(categoryEndDate);
 
+    case 'days_before_start': {
+      // X ימים לפני תחילת עבודה - לרוב משמש לחומרים (קנייה מוקדמת)
+      const daysBeforeNum = Number(daysBefore) || 0;
+      return addDays(new Date(categoryStartDate), -daysBeforeNum);
+    }
+
     case 'offset_from_category_start': {
+      // תאריך מסוים אחרי תחילת עבודה
       const offset = Number(offsetDays) || 0;
       return addDays(new Date(categoryStartDate), offset);
     }
 
     case 'offset_from_category_end': {
+      // תאריך מסוים אחרי סיום עבודה
       const offset = Number(offsetDays) || 0;
       return addDays(new Date(categoryEndDate), offset);
     }
@@ -128,32 +139,52 @@ export default function MonthlyCashFlowChart({ user }) {
         };
 
         // טעינת הגדרות תזמון מהמשתמש לכל קטגוריה
-        const paintExpenseTiming = user?.paintUserDefaults?.expenseTiming || {
-          labor: { type: "category_start" },
-          materials: { type: "category_start" }
-        };
+        // תומך בשני פורמטים: camelCase (paintUserDefaults) ו-snake_case (paint_user_defaults)
 
-        const tilingExpenseTiming = user?.tilingUserDefaults?.expenseTiming || {
-          labor: { type: "category_start" },
-          materials: { type: "category_start" }
-        };
+        // צבע ושפכטל - ברירת מחדל: עבודה בסוף, חומרים 7 ימים לפני
+        const paintExpenseTiming = user?.paintUserDefaults?.expenseTiming
+          || user?.paint_user_defaults?.expenseTiming
+          || {
+            labor: { type: "category_end" },
+            materials: { type: "days_before_start", daysBefore: 7 }
+          };
 
-        const demolitionExpenseTiming = user?.demolitionDefaults?.expenseTiming || {
-          labor: { type: "category_end" }
-        };
+        // ריצוף וחיפוי - ברירת מחדל: עבודה בסוף, חומרים 7 ימים לפני
+        const tilingExpenseTiming = user?.tilingUserDefaults?.expenseTiming
+          || user?.tiling_user_defaults?.expenseTiming
+          || {
+            labor: { type: "category_end" },
+            materials: { type: "days_before_start", daysBefore: 7 }
+          };
 
-        const constructionExpenseTiming = user?.constructionDefaults?.expenseTiming || {
-          labor: { type: "category_start" },
-          materials: { type: "category_start" }
-        };
+        // הריסה ופינוי - ברירת מחדל: תשלום בסוף העבודה (רק עבודה, אין חומרים)
+        const demolitionExpenseTiming = user?.demolitionDefaults?.expenseTiming
+          || user?.demolition_defaults?.expenseTiming
+          || {
+            labor: { type: "category_end" }
+          };
 
-        const plumbingExpenseTiming = user?.plumbingDefaults?.expenseTiming || {
-          payment: { type: "category_start" }
-        };
+        // בינוי - ברירת מחדל: עבודה בסוף, חומרים 5 ימים לפני
+        const constructionExpenseTiming = user?.constructionDefaults?.expenseTiming
+          || user?.construction_defaults?.expenseTiming
+          || {
+            labor: { type: "category_end" },
+            materials: { type: "days_before_start", daysBefore: 5 }
+          };
 
-        const electricalExpenseTiming = user?.electricalDefaults?.expenseTiming || {
-          payment: { type: "category_end" }
-        };
+        // אינסטלציה (קבלן משנה) - ברירת מחדל: תשלום בתחילת עבודה
+        const plumbingExpenseTiming = user?.plumbingDefaults?.expenseTiming
+          || user?.plumbing_defaults?.expenseTiming
+          || {
+            payment: { type: "category_start" }
+          };
+
+        // חשמל (קבלן משנה) - ברירת מחדל: תשלום בסוף עבודה
+        const electricalExpenseTiming = user?.electricalDefaults?.expenseTiming
+          || user?.electrical_defaults?.expenseTiming
+          || {
+            payment: { type: "category_end" }
+          };
 
         approvedQuotes.forEach(quote => {
           const {
@@ -385,29 +416,72 @@ export default function MonthlyCashFlowChart({ user }) {
                   // עבור קטגוריות עם עבודה + חומרים
                   // הוצאות עבודה
                   if (hasLaborTiming && categoryLaborCost > 0) {
-                    const laborExpenseDate = calculateExpenseDate(
-                      expenseTiming.labor,
-                      startDate,
-                      endDate,
-                      today
-                    );
+                    // בדיקה אם התזמון הוא daily (פיזור על ימי עבודה)
+                    if (expenseTiming.labor.type === 'daily') {
+                      // חישוב כל ימי העבודה (ראשון-חמישי) בתקופת הקטגוריה
+                      const workDays = [];
+                      const currentDate = new Date(startDate);
+                      const endDateClone = new Date(endDate);
 
-                    if (isWithinInterval(laborExpenseDate, { start: today, end: endDateRange })) {
-                      const dateKey = format(laborExpenseDate, 'yyyy-MM-dd');
-                      if (dailyDataMap.has(dateKey)) {
-                        const current = dailyDataMap.get(dateKey);
-                        current.expenses += categoryLaborCost;
-                        current.expenseItems.push({
-                          quoteId: quote.id,
-                          projectName: quote.projectName || 'פרויקט ללא שם',
-                          clientName: quote.clientName || '',
-                          categoryId,
-                          categoryName: derivedCategoryName,
-                          amount: categoryLaborCost,
-                          source: 'עלויות עבודה'
-                        });
-                        dailyDataMap.set(dateKey, current);
-                        totalExpensesSum += categoryLaborCost;
+                      while (currentDate <= endDateClone) {
+                        const dayOfWeek = currentDate.getDay();
+                        // ימי עבודה בישראל: ראשון (0) עד חמישי (4)
+                        if (dayOfWeek >= 0 && dayOfWeek <= 4) {
+                          workDays.push(new Date(currentDate));
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
+                      }
+
+                      // חלוקת העלות על כל ימי העבודה
+                      const dailyCost = workDays.length > 0 ? categoryLaborCost / workDays.length : categoryLaborCost;
+
+                      // הוספת הוצאה לכל יום עבודה
+                      workDays.forEach(workDay => {
+                        if (isWithinInterval(workDay, { start: today, end: endDateRange })) {
+                          const dateKey = format(workDay, 'yyyy-MM-dd');
+                          if (dailyDataMap.has(dateKey)) {
+                            const current = dailyDataMap.get(dateKey);
+                            current.expenses += dailyCost;
+                            current.expenseItems.push({
+                              quoteId: quote.id,
+                              projectName: quote.projectName || 'פרויקט ללא שם',
+                              clientName: quote.clientName || '',
+                              categoryId,
+                              categoryName: derivedCategoryName,
+                              amount: dailyCost,
+                              source: 'עלויות עבודה (יומי)'
+                            });
+                            dailyDataMap.set(dateKey, current);
+                            totalExpensesSum += dailyCost;
+                          }
+                        }
+                      });
+                    } else {
+                      // תזמון רגיל (לא daily) - חישוב תאריך בודד
+                      const laborExpenseDate = calculateExpenseDate(
+                        expenseTiming.labor,
+                        startDate,
+                        endDate,
+                        today
+                      );
+
+                      if (isWithinInterval(laborExpenseDate, { start: today, end: endDateRange })) {
+                        const dateKey = format(laborExpenseDate, 'yyyy-MM-dd');
+                        if (dailyDataMap.has(dateKey)) {
+                          const current = dailyDataMap.get(dateKey);
+                          current.expenses += categoryLaborCost;
+                          current.expenseItems.push({
+                            quoteId: quote.id,
+                            projectName: quote.projectName || 'פרויקט ללא שם',
+                            clientName: quote.clientName || '',
+                            categoryId,
+                            categoryName: derivedCategoryName,
+                            amount: categoryLaborCost,
+                            source: 'עלויות עבודה'
+                          });
+                          dailyDataMap.set(dateKey, current);
+                          totalExpensesSum += categoryLaborCost;
+                        }
                       }
                     }
                   }

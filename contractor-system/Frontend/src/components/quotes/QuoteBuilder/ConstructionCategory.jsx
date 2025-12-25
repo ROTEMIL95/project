@@ -22,6 +22,7 @@ import ConstructionManualItemDialog from "./ConstructionManualItemDialog";
 import { getCategoryTheme } from "./categoryTheme";
 import CategoryFloatingAddButton from './CategoryFloatingAddButton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { supabase } from "@/lib/supabase";
 
 
 const formatPrice = (n) =>
@@ -141,68 +142,86 @@ export default function ConstructionCategory({
   };
 
   React.useEffect(() => {
-    if (!currentUser?.user_metadata) {
-      console.warn('[ConstructionCategory] No user_metadata available');
+    if (!currentUser?.id) {
+      console.warn('[ConstructionCategory] No user available');
       return;
     }
 
-    try {
-      const me = currentUser.user_metadata;
-      const d = me?.constructionDefaults || {};
+    const loadConstructionData = async () => {
+      try {
+        console.log('[ConstructionCategory] Loading construction data from user_profiles');
 
-      console.log('[ConstructionCategory] Loading construction data:', {
-        userId: currentUser.id,
-        email: currentUser.email,
-        hasMetadata: !!me,
-        hasDefaults: !!d,
-        hasItems: !!me?.constructionSubcontractorItems,
-        rawItemsCount: me?.constructionSubcontractorItems?.length || 0,
-      });
+        // Load data from user_profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('construction_defaults, construction_subcontractor_items')
+          .eq('auth_user_id', currentUser.id)
+          .single();
 
-      let day = 1000;
-      const dayCandidate = Number(d.laborCostPerDay);
-      const workerCost = Number(d.workerCostPerUnit);
-      if (!isNaN(dayCandidate) && dayCandidate > 0) {
-        day = dayCandidate;
-      } else if (!isNaN(workerCost) && workerCost > 0) {
-        day = workerCost <= 500 ? workerCost * 8 : workerCost;
+        if (profileError) {
+          console.error('[ConstructionCategory] Error loading construction data:', profileError);
+          return;
+        }
+
+        const d = profile?.construction_defaults || {};
+        const rawItems = profile?.construction_subcontractor_items || [];
+
+        console.log('[ConstructionCategory] Loaded construction data:', {
+          userId: currentUser.id,
+          email: currentUser.email,
+          hasDefaults: !!d,
+          hasItems: Array.isArray(rawItems),
+          rawItemsCount: rawItems?.length || 0,
+        });
+
+        // Calculate labor cost per day
+        let day = 1000;
+        const dayCandidate = Number(d.laborCostPerDay);
+        const workerCost = Number(d.workerCostPerUnit);
+        if (!isNaN(dayCandidate) && dayCandidate > 0) {
+          day = dayCandidate;
+        } else if (!isNaN(workerCost) && workerCost > 0) {
+          day = workerCost <= 500 ? workerCost * 8 : workerCost;
+        }
+
+        console.log('[ConstructionCategory] Pricing defaults:', {
+          laborCostPerDay: d.laborCostPerDay,
+          workerCostPerUnit: d.workerCostPerUnit,
+          calculated: day,
+          desiredProfitPercent: d.desiredProfitPercent
+        });
+
+        setPricingDefaults({
+          laborCostPerDay: day > 0 ? day : 1000,
+          desiredProfitPercent: Number(d.desiredProfitPercent) || 30
+        });
+
+        // Filter active items
+        const items = Array.isArray(rawItems)
+          ? rawItems.filter(it => it.isActive !== false)
+          : [];
+
+        console.log('[ConstructionCategory] Catalog items loaded:', {
+          totalItems: rawItems?.length || 0,
+          activeItems: items.length,
+          filteredOut: (rawItems?.length || 0) - items.length,
+          sampleItem: items[0] ? {
+            id: items[0].id,
+            name: items[0].name,
+            subCategory: items[0].subCategory,
+            isActive: items[0].isActive,
+            contractorCostPerUnit: items[0].contractorCostPerUnit,
+            clientPricePerUnit: items[0].clientPricePerUnit
+          } : null
+        });
+
+        setCatalogItems(items);
+      } catch (e) {
+        console.error("[ConstructionCategory] Failed to load construction defaults or catalog items:", e);
       }
+    };
 
-      console.log('[ConstructionCategory] Pricing defaults:', {
-        laborCostPerDay: d.laborCostPerDay,
-        workerCostPerUnit: d.workerCostPerUnit,
-        calculated: day,
-        desiredProfitPercent: d.desiredProfitPercent
-      });
-
-      setPricingDefaults({
-        laborCostPerDay: day > 0 ? day : 1000,
-        desiredProfitPercent: Number(d.desiredProfitPercent) || 30
-      });
-
-      const rawItems = me?.constructionSubcontractorItems;
-      const items = Array.isArray(rawItems)
-        ? rawItems.filter(it => it.isActive !== false)
-        : [];
-
-      console.log('[ConstructionCategory] Catalog items loaded:', {
-        totalItems: rawItems?.length || 0,
-        activeItems: items.length,
-        filteredOut: (rawItems?.length || 0) - items.length,
-        sampleItem: items[0] ? {
-          id: items[0].id,
-          name: items[0].name,
-          subCategory: items[0].subCategory,
-          isActive: items[0].isActive,
-          contractorCostPerUnit: items[0].contractorCostPerUnit,
-          clientPricePerUnit: items[0].clientPricePerUnit
-        } : null
-      });
-
-      setCatalogItems(items);
-    } catch (e) {
-      console.error("[ConstructionCategory] Failed to load construction defaults or catalog items:", e);
-    }
+    loadConstructionData();
   }, [currentUser]);
 
   // NEW: compute available subcats from catalog
