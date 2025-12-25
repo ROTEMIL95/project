@@ -18,6 +18,7 @@ import { createPageUrl } from "@/utils";
 import DemolitionItemDialog from "./DemolitionItemDialog";
 import { getCategoryTheme } from "./categoryTheme";
 import CategoryFloatingAddButton from './CategoryFloatingAddButton';
+import { supabase } from "@/lib/supabase";
 
 const formatNis = (n) => `₪${(Number(n) || 0).toLocaleString("he-IL")}`;
 const formatNum = (n) => (Number(n) || 0).toLocaleString("he-IL");
@@ -59,21 +60,50 @@ export default function DemolitionCategory({
 
   // טעינת פריטי הריסה מהמחירון
   useEffect(() => {
-    const run = () => {
-      setLoading(true);
-      if (currentUser?.user_metadata) {
-        const u = currentUser.user_metadata;
-        setItems((u.demolitionItems || []).filter((x) => x.isActive !== false));
-        setDefaults({
-          laborCostPerDay: Number(u.demolitionDefaults?.laborCostPerDay) || 1000,
-          profitPercent: Number(u.demolitionDefaults?.profitPercent) || 30,
-        });
-      }
+    if (!currentUser?.id) {
       setLoading(false);
-    };
-    if (currentUser) {
-      run();
+      return;
     }
+
+    const loadDemolitionData = async () => {
+      setLoading(true);
+      try {
+        console.log('[DemolitionCategory] Loading demolition data from user_profiles');
+
+        // Load data from user_profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('demolition_defaults, demolition_items')
+          .eq('auth_user_id', currentUser.id)
+          .single();
+
+        if (profileError) {
+          console.error('[DemolitionCategory] Error loading demolition data:', profileError);
+          setLoading(false);
+          return;
+        }
+
+        const demolitionItems = profile?.demolition_items || [];
+        const demolitionDefaults = profile?.demolition_defaults || { laborCostPerDay: 1000, profitPercent: 30 };
+
+        console.log('[DemolitionCategory] Loaded demolition data:', {
+          itemsCount: demolitionItems.length,
+          defaults: demolitionDefaults
+        });
+
+        setItems(demolitionItems.filter((x) => x.isActive !== false));
+        setDefaults({
+          laborCostPerDay: Number(demolitionDefaults.laborCostPerDay) || 1000,
+          profitPercent: Number(demolitionDefaults.profitPercent) || 30,
+        });
+        setLoading(false);
+      } catch (e) {
+        console.error('[DemolitionCategory] Failed to load demolition data:', e);
+        setLoading(false);
+      }
+    };
+
+    loadDemolitionData();
   }, [currentUser]);
 
   const timing = categoryTimings?.[categoryId] || { startDate: "", endDate: "" };

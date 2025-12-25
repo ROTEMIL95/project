@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import PlumbingItemDialog from "./PlumbingItemDialog";
 import { getCategoryTheme } from "./categoryTheme";
 import CategoryFloatingAddButton from './CategoryFloatingAddButton';
+import { supabase } from "@/lib/supabase";
 
 const SUBCATS = [
   { key: "infrastructure", label: "תשתיות וצנרת" },
@@ -59,37 +60,49 @@ export default function PlumbingCategory({
 
   // Load user's plumbing price list
   useEffect(() => {
-    const run = () => {
+    if (!currentUser?.id) {
+      setLoading(false);
+      return;
+    }
+
+    const loadPlumbingData = async () => {
       setLoading(true);
+      try {
+        console.log('[PlumbingCategory] Loading plumbing data from user_profiles');
 
-      console.log('🔍 [PlumbingCategory] Loading data:', {
-        hasCurrentUser: !!currentUser,
-        currentUserKeys: currentUser ? Object.keys(currentUser) : [],
-        hasUserMetadata: !!currentUser?.user_metadata,
-        plumbingItems: currentUser?.user_metadata?.plumbingSubcontractorItems?.length || 0
-      });
+        // Load data from user_profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('plumbing_defaults, plumbing_subcontractor_items')
+          .eq('auth_user_id', currentUser.id)
+          .single();
 
-      if (currentUser?.user_metadata) {
-        const u = currentUser.user_metadata;
-        setUser(u); // Store the user object
-        const plumbingItems = (u.plumbingSubcontractorItems || []).filter((x) => x.isActive !== false);
+        if (profileError) {
+          console.error('[PlumbingCategory] Error loading plumbing data:', profileError);
+          setLoading(false);
+          return;
+        }
 
-        console.log('🔍 [PlumbingCategory] Items loaded:', {
-          totalItems: u.plumbingSubcontractorItems?.length || 0,
-          activeItems: plumbingItems.length,
-          defaults: u.plumbingDefaults
+        const plumbingItems = profile?.plumbing_subcontractor_items || [];
+        const plumbingDefaults = profile?.plumbing_defaults || { desiredProfitPercent: 30 };
+
+        console.log('[PlumbingCategory] Loaded plumbing data:', {
+          itemsCount: plumbingItems.length,
+          defaults: plumbingDefaults
         });
 
-        setItems(plumbingItems);
-        setDefaults(u.plumbingDefaults || { desiredProfitPercent: 30 }); // CHANGED: default profit percent from 40 to 30
-      } else {
-        console.warn('🔍 [PlumbingCategory] No user_metadata found!');
+        // Store for backward compatibility
+        setUser({ plumbingSubcontractorItems: plumbingItems, plumbingDefaults: plumbingDefaults });
+        setItems(plumbingItems.filter((x) => x.isActive !== false));
+        setDefaults(plumbingDefaults);
+        setLoading(false);
+      } catch (e) {
+        console.error('[PlumbingCategory] Failed to load plumbing data:', e);
+        setLoading(false);
       }
-      setLoading(false);
     };
-    if (currentUser) {
-      run();
-    }
+
+    loadPlumbingData();
   }, [currentUser]);
 
   // אוטוקומפליט לשם פריט בדיאלוג אינסטלציה – הצעות בתוך הדיאלוג (לא חלון דפדפן)

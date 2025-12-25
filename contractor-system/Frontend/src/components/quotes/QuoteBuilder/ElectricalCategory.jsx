@@ -17,6 +17,7 @@ import { createPageUrl } from "@/utils";
 import ElectricalManualItemDialog from "./ElectricalManualItemDialog";
 import ElectricalItemDialog from "./ElectricalItemDialog";
 import CategoryFloatingAddButton from './CategoryFloatingAddButton';
+import { supabase } from "@/lib/supabase";
 
 const SUBCATS = [
   { key: "points", label: "נקודות חשמל" },
@@ -65,16 +66,47 @@ export default function ElectricalCategory({
 
   // Load user's electrical price list
   useEffect(() => {
-    if (!user) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
-    const electricalItems = user.user_metadata?.electricalSubcontractorItems || [];
-    setItems(electricalItems.filter((x) => x.isActive !== false));
-    setDefaults(user.user_metadata?.electricalDefaults || { desiredProfitPercent: 40 });
-    setLoading(false);
+    const loadElectricalData = async () => {
+      setLoading(true);
+      try {
+        console.log('[ElectricalCategory] Loading electrical data from user_profiles');
+
+        // Load data from user_profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('electrical_defaults, electrical_subcontractor_items')
+          .eq('auth_user_id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('[ElectricalCategory] Error loading electrical data:', profileError);
+          setLoading(false);
+          return;
+        }
+
+        const electricalItems = profile?.electrical_subcontractor_items || [];
+        const electricalDefaults = profile?.electrical_defaults || { desiredProfitPercent: 40 };
+
+        console.log('[ElectricalCategory] Loaded electrical data:', {
+          itemsCount: electricalItems.length,
+          defaults: electricalDefaults
+        });
+
+        setItems(electricalItems.filter((x) => x.isActive !== false));
+        setDefaults(electricalDefaults);
+        setLoading(false);
+      } catch (e) {
+        console.error('[ElectricalCategory] Failed to load electrical data:', e);
+        setLoading(false);
+      }
+    };
+
+    loadElectricalData();
   }, [user]);
 
   const timing = categoryTimings?.[categoryId] || { startDate: "", endDate: "" };
